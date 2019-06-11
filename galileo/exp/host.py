@@ -11,7 +11,10 @@ from typing import Iterable, Dict
 
 import redis
 
+import symmetry.eventbus as eventbus
 from galileo import util
+from galileo.exp import RegisterEvent, RegisterCommand, UnregisterEvent, SpawnClientsCommand, InfoCommand, \
+    SetRpsCommand, RuntimeMetric, CloseRuntimeCommand
 from galileo.exp.client import ExperimentService
 from galileo.exp.router import Router, ServiceRequestTrace
 
@@ -284,8 +287,8 @@ class TraceFileLogger(TraceLogger):
 
 class ExperimentHost:
     """
-    An experiment host manages multiple ExperimentService runtimes on a host and accepts commands via the redis exp/
-    pubsub channels.
+    An experiment host manages multiple ExperimentService runtimes on a host and accepts commands via the symmetry
+    event bus.
     """
 
     def __init__(self, rds: redis.Redis, services: Iterable[ExperimentService], router: Router, trace_logging='file',
@@ -301,8 +304,14 @@ class ExperimentHost:
 
         self.rt_index: Dict[str, ServiceRuntime] = dict()
         self.rt_executor: ThreadPoolExecutor = None
-        self.pubsub = None
         self._require_runtime_lock = Lock()
+        self._closed = Event()
+
+        eventbus.listener(self._on_register_command)
+        eventbus.listener(self._on_info)
+        eventbus.listener(self._on_close_runtime, CloseRuntimeCommand.channel(self.host_name))
+        eventbus.listener(self._on_spawn_client, SpawnClientsCommand.channel(self.host_name))
+        eventbus.listener(self._on_set_rps, SetRpsCommand.channel(self.host_name))
 
     def _create_trace_logger(self, trace_logging) -> TraceLogger:
         log.debug('trace logging: %s', trace_logging)
@@ -317,37 +326,13 @@ class ExperimentHost:
             raise ValueError('Unknown trace logging type %s' % trace_logging)
 
     def run(self):
-        self.pubsub = self.rds.pubsub()
-        self.pubsub.psubscribe([
-            'exp/spawn/%s/*' % self.host_name,
-            'exp/rps/%s/*' % self.host_name,
-        ])
-        self.pubsub.subscribe([
-            'exp/close/%s' % self.host_name,
-            'exp/ping',
-            'exp/info',
-        ])
-
         log.info('started with experiment services: %s', list(self.services.keys()))
 
         self.rt_executor = ThreadPoolExecutor()
         self._register_host()
         self.trace_logger.start()
 
-        try:
-            for event in self.pubsub.listen():
-                if event['type'] not in ['message', 'pmessage']:
-                    continue
-
-                try:
-                    self._on_event(event['channel'], event['data'])
-                except Exception as e:
-                    log.error('caught exception %s: %s', type(e), e)
-        except Exception as e:
-            log.error('caught exception %s, exitting: %s', type(e), e)
-            self.close()
-        finally:
-            self.pubsub.close()
+        self._closed.wait()
 
     def close_runtime(self, service):
         with self._require_runtime_lock:
@@ -362,11 +347,6 @@ class ExperimentHost:
     def close(self):
         try:
             with self._require_runtime_lock:
-                log.info('Closing redis pubsub connection')
-                if self.pubsub:
-                    self.pubsub.unsubscribe()
-                    self.pubsub.punsubscribe()
-
                 for service in self.rt_index.values():
                     log.info('Closing service runtime %s', service.service.name)
                     service.close()
@@ -378,6 +358,7 @@ class ExperimentHost:
                 log.info('shutting down trace logger')
                 self.trace_logger.close()
         finally:
+            self._closed.set()
             self._unregister_host()
 
     def _require_runtime(self, service: str) -> ServiceRuntime:
@@ -401,35 +382,25 @@ class ExperimentHost:
 
             return service_runtime
 
-    def _on_event(self, channel, data):
-        if channel.startswith('exp/ping'):
-            self._on_ping()
-        elif channel.startswith('exp/spawn'):
-            service = channel.split('/')[-1].strip()
-            self._on_spawn_client(service, int(data))
-        elif channel.startswith('exp/rps'):
-            service = channel.split('/')[-1].strip()
-            self._on_set_rps(service, float(data))
-        elif channel.startswith('exp/close'):
-            self._on_close_runtime(data)
-        elif channel.startswith('exp/info'):
-            self._on_info()
-        else:
-            log.warning('unhandled event from %s: %s', channel, data)
-
-    def _on_ping(self):
-        log.info('received ping request')
+    def _on_register_command(self, event: RegisterCommand):
+        log.info('received registration command')
         self._register_host()
 
-    def _on_info(self):
+    def _on_info(self, event: InfoCommand):
         log.info('received info request')
         for service_name, service_rt in self.rt_index.items():
-            self.rds.publish('exp/info/%s/%s/clients' % (self.host_name, service_name), len(service_rt.clients))
+            clients = len(service_rt.clients)
             rps = service_rt.request_generator.rps if service_rt.request_generator else 0
-            self.rds.publish('exp/info/%s/%s/rps' % (self.host_name, service_name), rps)
-            self.rds.publish('exp/info/%s/%s/queue' % (self.host_name, service_name), service_rt.request_queue.qsize())
+            queue = service_rt.request_queue.qsize()
 
-    def _on_spawn_client(self, service, num: int):
+            eventbus.publish(RuntimeMetric(self.host_name, service_name, 'clients', clients))
+            eventbus.publish(RuntimeMetric(self.host_name, service_name, 'rps', rps))
+            eventbus.publish(RuntimeMetric(self.host_name, service_name, 'queue', queue))
+
+    def _on_spawn_client(self, event: SpawnClientsCommand):
+        service = event.service
+        num = event.num
+
         log.info('received spawn client event %s %s', service, num)
 
         try:
@@ -439,20 +410,24 @@ class ExperimentHost:
         except ValueError as e:
             log.error('Error getting service runtime %s: %s', service, e)
 
-    def _on_set_rps(self, service, val: float):
+    def _on_set_rps(self, event: SetRpsCommand):
+        service = event.service
+        val = event.rps
+
         try:
             self._require_runtime(service).set_rps(val)
         except ValueError as e:
             log.error('Error getting service runtime %s: %s', service, e)
 
-    def _on_close_runtime(self, service):
+    def _on_close_runtime(self, event: CloseRuntimeCommand):
+        service = event.service
         log.info('attempting to close %s', service)
         self.close_runtime(service)
 
     def _register_host(self):
         log.info('registering host %s', self.host_name)
-        self.rds.publish('exp/register/host', self.host_name)
+        eventbus.publish(RegisterEvent(self.host_name))
 
     def _unregister_host(self):
         log.info('unregistering host %s', self.host_name)
-        self.rds.publish('exp/unregister/host', self.host_name)
+        eventbus.publish(UnregisterEvent(self.host_name))

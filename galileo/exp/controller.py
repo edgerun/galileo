@@ -5,6 +5,9 @@ import time
 
 import redis
 
+import symmetry.eventbus as eventbus
+from galileo.exp import RegisterCommand, InfoCommand, RegisterEvent, UnregisterEvent, SpawnClientsCommand, \
+    RuntimeMetric, CloseRuntimeCommand, SetRpsCommand
 from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 
 
@@ -15,13 +18,18 @@ class ExperimentController:
         self.rds = rds or redis.Redis(decode_responses=True)
         self.pubsub = None
         self.infos = list()
+        self._closed = threading.Event()
+
+        eventbus.listener(self._on_register_host)
+        eventbus.listener(self._on_unregister_host)
+        eventbus.listener(self._on_info)
 
     def ping(self):
-        self.rds.publish('exp/ping', 1)
+        eventbus.publish(RegisterCommand())
 
     def info(self):
         self.infos.clear()
-        self.rds.publish('exp/info', 1)
+        eventbus.publish(InfoCommand())
 
     def get_infos(self):
         return self.infos
@@ -41,72 +49,26 @@ class ExperimentController:
         return self.rds.smembers('exp:clients:%s' % host)
 
     def spawn_client(self, host, service, num):
-        return self.rds.publish('exp/spawn/%s/%s' % (host, service), num)
+        return eventbus.publish(SpawnClientsCommand(host, service, num), SpawnClientsCommand.channel(host))
 
     def set_rps(self, host, service, rps):
-        return self.rds.publish('exp/rps/%s/%s' % (host, service), rps)
+        return eventbus.publish(SetRpsCommand(host, service, rps), SetRpsCommand.channel(host))
 
     def close_runtime(self, host, service):
-        return self.rds.publish('exp/close/%s' % host, service)
+        return eventbus.publish(CloseRuntimeCommand(host, service), CloseRuntimeCommand.channel(host))
 
-    def run(self):
-        self.pubsub = self.rds.pubsub()
+    def _on_register_host(self, event: RegisterEvent):
+        self.rds.sadd('exp:hosts', event.host)
 
-        try:
-            self.pubsub.subscribe(['exp/register/host', 'exp/unregister/host'])
-            self.pubsub.psubscribe(['exp/register/client/*', 'exp/unregister/client/*', 'exp/info/*'])
-
-            self.ping()  # request all running clients to register themselves
-
-            for event in self.pubsub.listen():
-                if event['type'] not in ['message', 'pmessage']:
-                    continue
-
-                self._on_event(event['channel'], event['data'])
-        except Exception as e:
-            print('caught exception', type(e), e)
-        finally:
-            self.pubsub.close()
-
-    def _on_event(self, channel, data):
-        if channel == 'exp/register/host':
-            self._on_register_host(data)
-        elif channel == 'exp/unregister/host':
-            self._on_unregister_host(data)
-        elif channel.startswith('exp/register/client/'):
-            host = channel.split('/')[3]
-            self._on_register_client(host, data)
-        elif channel.startswith('exp/unregister/client/'):
-            host = channel.split('/')[3]
-            self._on_unregister_client(host, data)
-        elif channel.startswith('exp/info/'):
-            _, _, host, service, metric = channel.split('/')
-            self._on_info(host, service, metric, data)
-
-    def _on_register_host(self, host):
-        self.rds.sadd('exp:hosts', host)
-
-    def _on_unregister_host(self, host):
-        self.rds.srem('exp:hosts', host)
-        self.rds.delete('exp:clients:%s' % host)
-
-    def _on_register_client(self, host, client):
-        self.rds.sadd('exp:clients:%s' % host, client)
+    def _on_unregister_host(self, event: UnregisterEvent):
+        self.rds.srem('exp:hosts', event.host)
+        self.rds.delete('exp:clients:%s' % event.host)
 
     def _on_unregister_client(self, host, client):
         self.rds.srem('exp:clients:%s' % host, client)
 
-    def _on_info(self, host, service, metric, data):
-        self.infos.append({
-            'host': host,
-            'service': service,
-            'metric': metric,
-            'value': data
-        })
-
-    def close(self):
-        self.pubsub.unsubscribe()
-        self.pubsub.punsubscribe()
+    def _on_info(self, event: RuntimeMetric):
+        self.infos.append(event._asdict())
 
 
 class ControllerShell(Shell):
@@ -124,19 +86,8 @@ class ControllerShell(Shell):
         if not self.controller:
             raise RuntimeError('Controller not set')
 
-        self.controller_thread = threading.Thread(target=self.controller.run)
-        self.controller_thread.start()
-
-    def _close(self):
-        if self.controller:
-            self.controller.close()
-            self.controller_thread.join()
-
     def preloop(self):
         self._start()
-
-    def postloop(self):
-        self._close()
 
     @parsed
     def do_hosts(self, pattern: str = ''):
