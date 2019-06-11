@@ -13,10 +13,10 @@ import redis
 
 import symmetry.eventbus as eventbus
 from galileo import util
-from galileo.exp import RegisterEvent, RegisterCommand, UnregisterEvent, SpawnClientsCommand, InfoCommand, \
+from galileo.event import RegisterEvent, RegisterCommand, UnregisterEvent, SpawnClientsCommand, InfoCommand, \
     SetRpsCommand, RuntimeMetric, CloseRuntimeCommand
-from galileo.exp.client import ExperimentService
-from galileo.exp.router import Router, ServiceRequestTrace
+from galileo.node.client import ExperimentService
+from galileo.node.router import Router, ServiceRequestTrace
 
 POISON = "__POISON__"
 

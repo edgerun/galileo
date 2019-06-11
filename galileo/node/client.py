@@ -4,10 +4,11 @@ import os
 
 import requests
 
-from galileo.exp.router import Service, ServiceRequest
+from galileo.node.router import Service, ServiceRequest
 from galileo.util import read_file
 
 logger = logging.getLogger(__name__)
+
 
 class RequestFactory(abc.ABC):
     def create_request(self) -> ServiceRequest:

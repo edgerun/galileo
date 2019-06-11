@@ -3,7 +3,7 @@ import os
 import redis
 
 import symmetry.eventbus as eventbus
-from galileo.exp.controller import ExperimentController, ControllerShell
+from galileo.controller import ExperimentController, ControllerShell
 from symmetry.eventbus.redis import RedisConfig
 
 

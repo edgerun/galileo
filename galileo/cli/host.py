@@ -4,9 +4,9 @@ import logging
 import redis
 
 import symmetry.eventbus as eventbus
-from galileo.exp.client import ExperimentService, ImageClassificationRequestFactory, MXNetImageClassifierService
-from galileo.exp.host import ExperimentHost
-from galileo.exp.router import ServiceRegistry, Router
+from galileo.node.client import ExperimentService, ImageClassificationRequestFactory, MXNetImageClassifierService
+from galileo.node.host import ExperimentHost
+from galileo.node.router import ServiceRegistry, Router
 from symmetry.eventbus.redis import RedisConfig
 from symmetry.service.routing import RedisConnectedBalancer
 

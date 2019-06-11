@@ -1,13 +1,11 @@
 import abc
 import logging
-import random
 import time
 from typing import NamedTuple
 
-import redis
 import requests
 
-from symmetry.service.routing import RedisRoutingTable, Balancer, StaticLocalhostBalancer
+from symmetry.service.routing import Balancer, StaticLocalhostBalancer
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +56,6 @@ class ServiceRegistry:
 
     def service(self, name) -> Service:
         return self.registry[name]
-
 
 
 class ServiceRequestException(Exception):

@@ -1,12 +1,11 @@
 import re
 import sre_constants
-import threading
 import time
 
 import redis
 
 import symmetry.eventbus as eventbus
-from galileo.exp import RegisterCommand, InfoCommand, RegisterEvent, UnregisterEvent, SpawnClientsCommand, \
+from galileo.event import RegisterCommand, InfoCommand, RegisterEvent, UnregisterEvent, SpawnClientsCommand, \
     RuntimeMetric, CloseRuntimeCommand, SetRpsCommand
 from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 
@@ -18,7 +17,6 @@ class ExperimentController:
         self.rds = rds or redis.Redis(decode_responses=True)
         self.pubsub = None
         self.infos = list()
-        self._closed = threading.Event()
 
         eventbus.listener(self._on_register_host)
         eventbus.listener(self._on_unregister_host)
@@ -82,12 +80,9 @@ class ControllerShell(Shell):
         super().__init__(*args, **kwargs)
         self.controller = controller
 
-    def _start(self):
+    def preloop(self):
         if not self.controller:
             raise RuntimeError('Controller not set')
-
-    def preloop(self):
-        self._start()
 
     @parsed
     def do_hosts(self, pattern: str = ''):
