@@ -1,9 +1,4 @@
-#############
-### build ###
-#############
-
-# base image
-FROM node:12.2.0 as build
+FROM node:12.2.0
 
 # set working directory
 WORKDIR /app
@@ -19,21 +14,5 @@ RUN npm install -g @angular/cli@8.1.0
 # add app
 COPY . /app
 
-# generate build
-RUN ng build --output-path=dist
-
-############
-### prod ###
-############
-
-# base image
-FROM nginx:1.16.0-alpine
-
-# copy artifact build from the 'build environment'
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# expose port 80
-EXPOSE 80
-
-# run nginx
-CMD ["nginx", "-g", "daemon off;"]
+# start app
+CMD ng serve --host 0.0.0.0
