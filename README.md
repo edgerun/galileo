@@ -149,6 +149,11 @@ Or run the script, which exports the mariadb setup from the docker container (ad
 
 Run the Galileo Dashboard
 -------------------------
+#### Run Dashboard with npm and ng
+Take a look at the README in `galileo-dashboard`. 
+
+
+#### Run Dashboard with Docker 
 Run in `galileo-dashboard`:
 
     docker build -t galileo/galileo-dashboard-dev .
