@@ -146,4 +146,34 @@ Or run the script, which exports the mariadb setup from the docker container (ad
 
     ./bin/experimentd-mysql.sh
 
+
+Run the Galileo Dashboard
+-------------------------
+Run in `galileo-dashboard`:
+
+    docker build -t galileo/galileo-dashboard-dev .
+        
+After building run the container with:
+
+    docker run -v ${PWD}:/app -v /app/node_modules -p 4201:4200 --name galileo-dashboard galileo/galileo-dashboard-dev
+        
+Making changes in the app will hot-reload the app.
+
+If you are done developing, stop the container with
     
+    docker stop galileo-dashboard-dev
+    
+You can restart the container later with
+
+    docker start galileo-dashboard-dev
+    
+and attach your terminal to see the build output with
+
+    docker attach galileo-dashboard-dev
+    
+ 
+
+To make a production build and serve the app with nginx execute:
+
+    docker build -f Dockerfile-prod -t galileo/galileo-dashboard  .
+  
