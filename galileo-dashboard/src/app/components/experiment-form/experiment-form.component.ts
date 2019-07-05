@@ -23,9 +23,9 @@ export class ExperimentFormComponent implements OnInit {
     creator: ['', [Validators.required, noWhitespaceValidator]],
     interval:[10, Validators.required],
     intervalUnit: [timeUnits[0], Validators.required],
-    duration:[10, Validators.required],
+    duration:[100, Validators.required],
     durationUnit: [timeUnits[0], Validators.required],
-    service:[]
+    service:[undefined, Validators.required]
   });
 
   constructor(private fb: FormBuilder) { }
