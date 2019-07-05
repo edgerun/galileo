@@ -1,32 +1,42 @@
-<form [formGroup]="form">
-  <app-text-input
-    [form]="form"
-    controlName="name"
-    name="Name"
-    placeholder="Lazy-Exp"
-  ></app-text-input>
-  <app-text-input
-    [form]="form"
-    controlName="creator"
-    name="Creator"
-    placeholder="User"
-  ></app-text-input>
-  <app-time-input
-    [form]="form"
-    timeFormControl="interval"
-    unitFormControl="intervalUnit"
-    name="Interval"
-  ></app-time-input>
-  <app-time-input
-    [form]="form"
-    timeFormControl="duration"
-    unitFormControl="durationUnit"
-    name="Duration"
-  ></app-time-input>
-  <app-service-selection
-  [form]="form"
-  [services]="services"
+<div class="row">
+  <div class="col-9">
+    <app-curve-editor
+      [duration]="form.get('duration').value"
+      maxRps="1000"
+    ></app-curve-editor>
+  </div>
+  <div class="col-3">
+    <form [formGroup]="form">
+      <app-text-input
+        [form]="form"
+        controlName="name"
+        name="Name"
+        placeholder="Lazy-Exp"
+      ></app-text-input>
+      <app-text-input
+        [form]="form"
+        controlName="creator"
+        name="Creator"
+        placeholder="User"
+      ></app-text-input>
+      <app-time-input
+        [form]="form"
+        timeFormControl="interval"
+        unitFormControl="intervalUnit"
+        name="Interval"
+      ></app-time-input>
+      <app-time-input
+        [form]="form"
+        timeFormControl="duration"
+        unitFormControl="durationUnit"
+        name="Duration"
+      ></app-time-input>
+      <app-service-selection
+        [form]="form"
+        [services]="services"
 
-  ></app-service-selection>
-  <button (click)="submit()" type="submit" class="btn btn-primary">Submit</button>
-</form>
+      ></app-service-selection>
+      <button (click)="submit()" type="submit" class="btn btn-primary">Submit</button>
+    </form>
+  </div>
+</div>

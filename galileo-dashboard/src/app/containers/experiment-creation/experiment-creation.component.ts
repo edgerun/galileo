@@ -1,9 +1,8 @@
-import {Component, EventEmitter, OnInit, Output} from '@angular/core';
-import {CurveForm, ExperimentForm} from "../../models/ExperimentForm";
+import {Component, OnInit} from '@angular/core';
 import {ServiceService} from "../../services/service.service";
 import {Observable} from "rxjs";
 import {Service} from "../../models/Service";
-
+import {ExperimentForm} from "../../models/ExperimentForm";
 @Component({
   selector: 'app-experiment-creation',
   templateUrl: './experiment-creation.component.html',
@@ -19,8 +18,11 @@ export class ExperimentCreationComponent implements OnInit {
 
 
   ngOnInit() {
-    console.info(this.serviceService)
+    console.info(this.serviceService);
     this.services = this.serviceService.findAll();
   }
 
+  submitExperiment($event: ExperimentForm) {
+
+  }
 }
