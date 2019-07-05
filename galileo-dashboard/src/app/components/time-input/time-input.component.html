@@ -1,0 +1,13 @@
+<div class="form-group" [formGroup]="form">
+  <div class="input-group mb-3">
+    <div class="input-group-prepend">
+      <label class="input-group-text" [for]="name">{{name}}</label>
+    </div>
+    <input [formControlName]="timeFormControl" [id]="name" class="form-control" placeholder="10">
+    <select [formControlName]="unitFormControl" class="custom-select">
+      <option [value]="timeUnit" *ngFor="let timeUnit of timeUnits">
+        {{timeUnit.text}}
+      </option>
+    </select>
+  </div>
+</div>

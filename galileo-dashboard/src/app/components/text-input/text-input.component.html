@@ -1,0 +1,6 @@
+<div class="input-group mb-3" [formGroup]="form">
+  <div class="input-group-prepend">
+    <span class="input-group-text" id="basic-addon1">{{name}}</span>
+  </div>
+  <input [formControlName]="controlName"   type="text" class="form-control" [placeholder]="placeholder" aria-label="Username" aria-describedby="basic-addon1">
+</div>

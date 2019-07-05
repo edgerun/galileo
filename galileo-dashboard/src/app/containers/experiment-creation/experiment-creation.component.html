@@ -1,0 +1,12 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-9">
+      <app-curve-editor></app-curve-editor>
+    </div>
+    <div class="col-3">
+      <app-experiment-form
+      [services]="services | async"
+      ></app-experiment-form>
+    </div>
+  </div>
+</div>
