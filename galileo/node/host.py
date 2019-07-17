@@ -7,14 +7,15 @@ from multiprocessing import Process, Queue
 from queue import Full, Empty
 from socket import gethostname
 from threading import Event, Lock
-from typing import Iterable, Dict
+from typing import Iterable, Dict, List
 
 import redis
-
 import symmetry.eventbus as eventbus
+
 from galileo import util
 from galileo.event import RegisterEvent, RegisterCommand, UnregisterEvent, SpawnClientsCommand, InfoCommand, \
     SetRpsCommand, RuntimeMetric, CloseRuntimeCommand
+from galileo.experiment.db import ExperimentDatabase
 from galileo.node.client import ExperimentService
 from galileo.node.router import Router, ServiceRequestTrace
 
@@ -236,7 +237,7 @@ class TraceLogger(Process):
                 log.debug('queue is empty, exitting')
                 return
 
-    def _do_flush(self, buffer: Iterable[ServiceRequestTrace]):
+    def _do_flush(self, buffer: List[ServiceRequestTrace]):
         pass
 
 
@@ -256,6 +257,16 @@ class TraceRedisLogger(TraceLogger):
             rds.zadd(self.key, {value: score})
 
         rds.execute()
+
+
+class TraceDatabaseLogger(TraceLogger):
+
+    def __init__(self, trace_queue: Queue, experiment_db: ExperimentDatabase) -> None:
+        super().__init__(trace_queue)
+        self.experiment_db = experiment_db
+
+    def _do_flush(self, buffer: Iterable[ServiceRequestTrace]):
+        self.experiment_db.save_traces(list(buffer))
 
 
 class TraceFileLogger(TraceLogger):
@@ -292,9 +303,10 @@ class ExperimentHost:
     """
 
     def __init__(self, rds: redis.Redis, services: Iterable[ExperimentService], router: Router, trace_logging='file',
-                 host_name=None) -> None:
+                 host_name=None, experiment_db: ExperimentDatabase = None) -> None:
         super().__init__()
         self.rds = rds
+        self.experiment_db = experiment_db
         self.services = {service.name: service for service in services}
         self.router = router
         self.host_name = host_name or gethostname()
@@ -322,6 +334,8 @@ class ExperimentHost:
             return TraceFileLogger(self.trace_queue, self.host_name)
         elif trace_logging == 'redis':
             return TraceRedisLogger(self.trace_queue, rds=self.rds)
+        elif trace_logging == 'mysql':
+            return TraceDatabaseLogger(self.trace_queue, self.experiment_db)
         else:
             raise ValueError('Unknown trace logging type %s' % trace_logging)
 

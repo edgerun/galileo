@@ -3,3 +3,4 @@ git+ssh://git@git.dsg.tuwien.ac.at/mc2/symmetry.git#egg=mc2-symmetry
 
 requests==2.20.1
 redis==3.2.1
+mysql-connector-python==8.0.16

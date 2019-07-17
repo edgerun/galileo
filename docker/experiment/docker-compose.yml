@@ -1,0 +1,17 @@
+version: '3.4'
+
+services:
+
+  db:
+    image: mariadb
+    restart: always
+    volumes:
+      - ./mysql:/var/lib/mysql
+      -  ../../etc:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: galileo
+      MYSQL_PASSWORD: galileo
+      MYSQL_DATABASE: galileo
+    ports:
+      - "3307:3306"

@@ -115,3 +115,35 @@ exp> help rps
 
 Usage: rps host_pattern service rps
 ```
+
+Run the Experiment Daemon
+-------------------------
+
+The experiment daemon continuously reads from the blocking redis queue `exp:experiments:instructions`.
+After receiving instructions, the controller will execute the commands and record the telemetry data
+published via Redis. At the end the status of the experiment will be set to 'FINISHED' and the traces,
+that were saved in the db by the clients, will be updated to reference the experiment.
+
+Example Redis command to inject a new experiment (where `exphost` is the hostname of the experiment host):
+
+    LPUSH exp:experiments:instructions '{"instructions": "spawn exphost squeezenet 1\nsleep 2\nrps exphost squeezenet 1\nsleep 5\nrps exphost squeezenet 0\nsleep 2\nclose exphost squeezenet"}'
+
+you can also specify `exp_id`, `creator`, and `name`, otherwise some generated/standard values will be used.
+
+You can change the database used to store the experiment data via the env `DB_TYPE` (`sqlite` or `mysql`).
+To write the changes into MySQL (or MariaDB), set the following environment variables:
+`MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DB`
+
+You can create a mariadb docker instance with:
+
+    ./bin/run-db.sh
+
+Then execute the daemon with:
+
+    python -m galileo.cli.experimentd
+
+Or run the script, which exports the mariadb setup from the docker container (add `--logging DEBUG` for output)
+
+    ./bin/experimentd-mysql.sh
+
+    

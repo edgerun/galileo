@@ -102,7 +102,8 @@ class Router:
                 request.host, request.time_sent, request.time_done = host, time_sent, time.time()
                 return response
             except Exception as e:
-                logger.info('Exception while sending request %s, %s', request, e)
+                logger.info('Exception while sending request %s, %s: %s', request, type(e), e)
+                print(e)
                 attempt += 1
                 if attempt >= self.retry:
                     raise ServiceRequestException(request, e, 'Gave up sending request after %d retries' % attempt)

@@ -74,7 +74,6 @@ class ControllerShell(Shell):
     prompt = 'exp> '
 
     controller = None
-    controller_thread = None
 
     def __init__(self, controller: ExperimentController, *args, **kwargs):
         super().__init__(*args, **kwargs)
