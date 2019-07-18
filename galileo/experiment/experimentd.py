@@ -13,8 +13,10 @@ import redis
 from symmetry.telemetry.recorder import TelemetryRecorder
 
 from galileo.controller import ExperimentController, ControllerShell
+from galileo.experiment.model import Experiment, Instructions
 from galileo.experiment.service.experiment import ExperimentService
 from galileo.experiment.service.instructions import InstructionService
+from galileo.util import subdict
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,7 @@ class ExperimentBatchShell(ControllerShell):
 
 
 class ExperimentDaemon:
+    queue_key = 'exp:experiments:instructions'
 
     def __init__(self, rds: redis.Redis, create_recorder: Callable[[str], TelemetryRecorder],
                  exp_controller: ExperimentController, exp_service: ExperimentService,
@@ -60,66 +63,94 @@ class ExperimentDaemon:
         self.exp_controller = exp_controller
         self.exp_service = exp_service
         self.ins_service = ins_service
+        self.cancelled = False
+
+    def cancel(self):
+        self.cancelled = True
 
     def run(self) -> None:
         rds = self.rds
         logger.info('Listening for incoming experiment instructions...')
         try:
-            while True:
-                message = rds.blpop('exp:experiments:instructions')
-                if message:
+            while self.cancelled is False:
+                message = rds.blpop(self.queue_key)
+                if not message or not message[1]:
+                    print('empty message, skipping')
+                    continue
+
+                try:
                     body = self._get_json_body(message)
 
                     if body is None:
                         logger.warning('Error parsing message to JSON. Message was: %s', message)
-                        continue
+                        return
 
                     logger.debug('experiment payload: %s', body)
-                    if 'id' not in body:
-                        body['id'] = generate_experiment_id()
 
-                    if 'name' not in body:
-                        body['name'] = body['id']
+                    exp, ins = self.load_experiment(body)
+                except Exception as e:
+                    # TODO: set experiment status to failed
+                    logger.error('Error while loading experiment from queue: %s', e)
+                    continue
 
-                    if 'creator' not in body:
-                        body['creator'] = 'galileo-' + str(os.getpid())
-
-                    body['status'] = 'IN_PROGRESS'
-                    (exp, saved) = self.exp_service.save_json(body)
-
-                    exp.start = time.time()
-                    exp.status = 'IN_PROGRESS'
-                    self.exp_service.save(exp)
-
-                    if saved:
-                        ins = self.ins_service.save_json(exp.id, body)
-                        lines = ins.instructions.splitlines()
-                    else:
-                        lines = self.ins_service.find(exp.id).instructions.splitlines()
-
-                    with managed_recorder(self.create_recorder, exp.id):
-                        logger.info("start experiment %s", exp.id)
-
-                        shell = ExperimentBatchShell(self.exp_controller)
-                        shell.run_batch(lines)
-                        # shell.stdout.getvalue() will return whatever the shell would have written to sysout
-                        # may be useful for logging the result
-
-                        logger.info("finalizing experiment %s", exp.id)
-                        end = time.time()
-                        exp.end = end
-                        self.exp_service.finish_experiment(exp)
-
+                status = exp.status
+                try:
+                    self.run_experiment(exp, ins)
+                    status = 'FINISHED'
+                except Exception as e:
+                    logger.error('Error while running experiment: %s', e)
+                    status = 'FAILED'
+                finally:
+                    logger.info("finalizing experiment %s", exp.id)
+                    self.exp_service.finalize_experiment(exp, status)
 
         except KeyboardInterrupt:
-            logger.info("Interrupted while listening, bye...")
+            logger.info("Interrupted while listening")
+
+        logger.info('exiting experiment daemon loop')
+
+    def run_experiment(self, exp: Experiment, ins: Instructions):
+        exp.status = 'IN_PROGRESS'
+        exp.start = time.time()
+        self.exp_service.save(exp)
+        self.ins_service.save(ins)
+
+        lines = ins.instructions.splitlines()
+
+        with managed_recorder(self.create_recorder, exp.id):
+            logger.info("start experiment %s", exp.id)
+
+            shell = ExperimentBatchShell(self.exp_controller)
+            shell.run_batch(lines)
+            # shell.stdout.getvalue() will return whatever the shell would have written to sysout
+            # may be useful for logging the result
+
+    def load_experiment(self, body) -> (Experiment, Instructions):
+        exp = self.exp_service.find(body['id'])
+
+        if exp:
+            return exp, self.ins_service.find(exp.id)
+
+        exp = Experiment(**subdict(body, ['id', 'name', 'creator', 'status']))
+
+        if not exp.id:
+            exp.id = generate_experiment_id()
+        if not exp.name:
+            exp.name = exp.id
+        if not exp.creator:
+            exp.creator = 'galileo-' + str(os.getpid())
+
+        ins = Instructions(exp.id, body['instructions'])
+
+        return exp, ins
 
     @staticmethod
     def _get_json_body(message):
         # parse JSON, mandatory attributes: id, name, creator, instructions
         try:
             return json.loads(message[1])
-        except JSONDecodeError:
+        except JSONDecodeError as e:
+            logger.warning("JSON Decoding error while parsing message body", e)
             return None
 
 

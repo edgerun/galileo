@@ -1,3 +1,4 @@
+import time
 from abc import ABC
 
 from galileo.experiment.db import ExperimentDatabase
@@ -9,10 +10,10 @@ class ExperimentService(ABC):
     def save(self, exp: Experiment) -> bool:
         raise NotImplementedError
 
-    def save_json(self, json) -> (Experiment, bool):
+    def find(self, exp_id: str):
         raise NotImplementedError
 
-    def finish_experiment(self, exp: Experiment):
+    def finalize_experiment(self, exp: Experiment, status):
         raise NotImplementedError
 
     def exists(self, exp_id: str) -> bool:
@@ -32,22 +33,12 @@ class SimpleExperimentService(ExperimentService):
             self.repository.update_experiment(exp)
             return False
 
-    def save_json(self, json_body) -> (Experiment, bool):
-        if not self.exists(json_body['id']):
-            exp = Experiment(
-                id=json_body['id'],
-                creator=json_body['creator'],
-                name=json_body['name'],
-                status=json_body['status'],
-            )
+    def find(self, exp_id: str):
+        return self.repository.get_experiment(exp_id)
 
-            saved = self.save(exp)
-            return exp, saved
-        else:
-            return self.repository.get_experiment(json_body['id']), False
-
-    def finish_experiment(self, exp: Experiment):
-        exp.status = 'FINISHED'
+    def finalize_experiment(self, exp: Experiment, status):
+        exp.status = status
+        exp.end = time.time()
         self.repository.update_experiment(exp)
         self.repository.touch_traces(exp)
 

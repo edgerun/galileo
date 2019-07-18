@@ -144,7 +144,7 @@ class ControllerShell(Shell):
             raise ArgumentError(e)
 
 
-def create_instructions(cfg: 'LoadConfiguration', hosts: List[str]):
+def create_instructions(cfg: 'LoadConfiguration', hosts: List[str]) -> List[str]:
     commands = list()
 
     for host in hosts:

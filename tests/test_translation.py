@@ -36,6 +36,6 @@ class TestTranslation(unittest.TestCase):
 
         try:
             cmd = next(commands)
-            self.fail('there should be more commands, but next returned: %s' % cmd)
+            self.fail('there should be no more commands, but next returned: %s' % cmd)
         except StopIteration:
             pass
