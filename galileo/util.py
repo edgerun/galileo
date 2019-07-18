@@ -46,3 +46,7 @@ def namedtuples_from_strings(cls, ls: List[str]):
         trace = cls(*typed)
         tuples.append(trace)
     return tuples
+
+
+def subdict(data: dict, keys: list):
+    return {k: data[k] for k in keys if k in data}

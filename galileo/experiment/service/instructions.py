@@ -13,9 +13,6 @@ class InstructionService(ABC):
     def find(self, exp_id: str) -> Instructions:
         raise NotImplementedError
 
-    def save_json(self, exp_id, json_body) -> Instructions:
-        raise NotImplementedError
-
 
 class SimpleInstructionService(InstructionService):
 
@@ -24,13 +21,6 @@ class SimpleInstructionService(InstructionService):
 
     def save(self, ins: Instructions) -> None:
         self.repository.save_instructions(ins)
-
-    def save_json(self, exp_id, json_body) -> Instructions:
-        ins = Instructions()
-        ins.exp_id = exp_id
-        ins.instructions = json_body['instructions']
-        self.save(ins)
-        return ins
 
     def find(self, exp_id: str) -> Optional[Instructions]:
         return self.repository.get_instructions(exp_id)
