@@ -1,3 +1,5 @@
+import json
+import logging
 import re
 import sre_constants
 import time
@@ -9,9 +11,13 @@ from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 
 from galileo.event import RegisterCommand, InfoCommand, RegisterEvent, UnregisterEvent, SpawnClientsCommand, \
     RuntimeMetric, CloseRuntimeCommand, SetRpsCommand
+from galileo.experiment.model import Experiment, LoadConfiguration
+
+logger = logging.getLogger(__name__)
 
 
 class ExperimentController:
+    queue_key = 'galileo:experiments:queue'
 
     def __init__(self, rds: redis.Redis = None) -> None:
         super().__init__()
@@ -22,6 +28,18 @@ class ExperimentController:
         eventbus.listener(self._on_register_host)
         eventbus.listener(self._on_unregister_host)
         eventbus.listener(self._on_info)
+
+    def queue(self, load: LoadConfiguration, exp: Experiment = None):
+        """
+        Queues an experiment for the experiment daemon to load.
+        :param load:
+        :param exp: the experiment data (optional, as all parameters could be generated)
+        :return:
+        """
+        message = exp.__dict__ if exp else dict()
+        message['instructions'] = '\n'.join(create_instructions(load, list(self.list_hosts())))
+        logger.debug('queuing experiment data: %s', message)
+        self.rds.lpush(ExperimentController.queue_key, json.dumps(message))
 
     def ping(self):
         eventbus.publish(RegisterCommand())

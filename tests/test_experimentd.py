@@ -54,11 +54,9 @@ class TestExperimentDaemon(unittest.TestCase):
             }
             time.sleep(0.5)
 
-            self.rds.lpush(ExperimentDaemon.queue_key, json.dumps(message))
+            self.rds.lpush(ExperimentController.queue_key, json.dumps(message))
             time.sleep(0.5)
             daemon.cancel()
-            time.sleep(0.5)
-            self.rds.lpush(ExperimentDaemon.queue_key, '')
 
         threading.Thread(target=inject_experiment).start()
         daemon.run()

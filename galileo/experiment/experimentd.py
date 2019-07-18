@@ -53,7 +53,6 @@ class ExperimentBatchShell(ControllerShell):
 
 
 class ExperimentDaemon:
-    queue_key = 'exp:experiments:instructions'
 
     def __init__(self, rds: redis.Redis, create_recorder: Callable[[str], TelemetryRecorder],
                  exp_controller: ExperimentController, exp_service: ExperimentService,
@@ -67,13 +66,14 @@ class ExperimentDaemon:
 
     def cancel(self):
         self.cancelled = True
+        self.rds.lpush(ExperimentController.queue_key, '')
 
     def run(self) -> None:
         rds = self.rds
         logger.info('Listening for incoming experiment instructions...')
         try:
             while self.cancelled is False:
-                message = rds.blpop(self.queue_key)
+                message = rds.blpop(ExperimentController.queue_key)
                 if not message or not message[1]:
                     print('empty message, skipping')
                     continue
