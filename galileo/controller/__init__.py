@@ -1,13 +1,14 @@
 import re
 import sre_constants
 import time
+from typing import List
 
 import redis
-
 import symmetry.eventbus as eventbus
+from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
+
 from galileo.event import RegisterCommand, InfoCommand, RegisterEvent, UnregisterEvent, SpawnClientsCommand, \
     RuntimeMetric, CloseRuntimeCommand, SetRpsCommand
-from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 
 
 class ExperimentController:
@@ -141,3 +142,29 @@ class ControllerShell(Shell):
                 self.controller.close_runtime(host, service)
         except ValueError as e:
             raise ArgumentError(e)
+
+
+def create_instructions(cfg: 'LoadConfiguration', hosts: List[str]):
+    commands = list()
+
+    for host in hosts:
+        commands.append(f'spawn {host} {cfg.service} {cfg.clients_per_host}')
+
+    for rps in cfg.ticks:
+        host_rps = [0] * len(hosts)
+
+        # distribute rps across hosts
+        for i in range(rps):
+            host_rps[i % len(hosts)] += 1
+
+        for i in range(len(hosts)):
+            commands.append(f'rps {hosts[i]} {cfg.service} {host_rps[i]}')
+
+        commands.append('sleep %d' % cfg.interval)
+
+    for host in hosts:
+        commands.append(f'rps {host} {cfg.service} 0')
+    for host in hosts:
+        commands.append(f'close {host} {cfg.service}')
+
+    return commands

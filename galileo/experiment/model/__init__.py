@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import NamedTuple, List
 
 
 class Experiment:
@@ -40,3 +40,11 @@ class Telemetry(NamedTuple):
     node: str
     value: float
     exp_id: str
+
+
+class LoadConfiguration(NamedTuple):
+    interval: int
+    duration: int
+    service: str
+    ticks: List[int]
+    clients_per_host: int
