@@ -7,7 +7,7 @@ from symmetry import eventbus
 from symmetry.eventbus.redis import RedisConfig
 
 from galileo.controller import ExperimentController
-from galileo.experiment.model import LoadConfiguration
+from galileo.experiment.model import ExperimentConfiguration, WorkloadConfiguration
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -29,7 +29,7 @@ class TestExperimentDaemon(unittest.TestCase):
     def test_submit(self):
         self.rds.sadd('exp:hosts', 'host1')
 
-        load = LoadConfiguration(1, 2, 'aservice', [1, 2], 2)
+        load = ExperimentConfiguration(2, 1, [WorkloadConfiguration('aservice', [1, 2], 2)])
         self.ectl.queue(load)
 
         message = self.rds.lpop(ExperimentController.queue_key)

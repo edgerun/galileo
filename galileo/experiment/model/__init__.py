@@ -42,9 +42,13 @@ class Telemetry(NamedTuple):
     exp_id: str
 
 
-class LoadConfiguration(NamedTuple):
-    interval: int
-    duration: int
+class WorkloadConfiguration(NamedTuple):
     service: str
     ticks: List[int]
     clients_per_host: int
+
+
+class ExperimentConfiguration(NamedTuple):
+    duration: int
+    interval: int
+    workloads: List[WorkloadConfiguration]

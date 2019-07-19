@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import re
 import sre_constants
 import time
@@ -11,7 +12,7 @@ from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 
 from galileo.event import RegisterCommand, InfoCommand, RegisterEvent, UnregisterEvent, SpawnClientsCommand, \
     RuntimeMetric, CloseRuntimeCommand, SetRpsCommand
-from galileo.experiment.model import Experiment, LoadConfiguration
+from galileo.experiment.model import Experiment, ExperimentConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -29,15 +30,15 @@ class ExperimentController:
         eventbus.listener(self._on_unregister_host)
         eventbus.listener(self._on_info)
 
-    def queue(self, load: LoadConfiguration, exp: Experiment = None):
+    def queue(self, config: ExperimentConfiguration, exp: Experiment = None):
         """
         Queues an experiment for the experiment daemon to load.
-        :param load:
-        :param exp: the experiment data (optional, as all parameters could be generated)
+        :param config: experiment configuration
+        :param exp: the experiment metadata (optional, as all parameters could be generated)
         :return:
         """
         message = exp.__dict__ if exp else dict()
-        message['instructions'] = '\n'.join(create_instructions(load, list(self.list_hosts())))
+        message['instructions'] = '\n'.join(create_instructions(config, list(self.list_hosts())))
         logger.debug('queuing experiment data: %s', message)
         self.rds.lpush(ExperimentController.queue_key, json.dumps(message))
 
@@ -162,27 +163,34 @@ class ControllerShell(Shell):
             raise ArgumentError(e)
 
 
-def create_instructions(cfg: 'LoadConfiguration', hosts: List[str]) -> List[str]:
+def create_instructions(cfg: ExperimentConfiguration, hosts: List[str]) -> List[str]:
     commands = list()
 
-    for host in hosts:
-        commands.append(f'spawn {host} {cfg.service} {cfg.clients_per_host}')
+    for workload in cfg.workloads:
+        for host in hosts:
+            commands.append(f'spawn {host} {workload.service} {workload.clients_per_host}')
 
-    for rps in cfg.ticks:
-        host_rps = [0] * len(hosts)
+    ticks = int(math.ceil(cfg.duration / cfg.interval))
 
-        # distribute rps across hosts
-        for i in range(rps):
-            host_rps[i % len(hosts)] += 1
+    for t in range(ticks):
+        for workload in cfg.workloads:
+            service_rps = workload.ticks[t]
+            host_rps = [0] * len(hosts)
 
-        for i in range(len(hosts)):
-            commands.append(f'rps {hosts[i]} {cfg.service} {host_rps[i]}')
+            # distribute service rps across hosts
+            for i in range(service_rps):
+                host_rps[i % len(hosts)] += 1
+
+            for i in range(len(hosts)):
+                commands.append(f'rps {hosts[i]} {workload.service} {host_rps[i]}')
 
         commands.append('sleep %d' % cfg.interval)
 
-    for host in hosts:
-        commands.append(f'rps {host} {cfg.service} 0')
-    for host in hosts:
-        commands.append(f'close {host} {cfg.service}')
+    for workload in cfg.workloads:
+        for host in hosts:
+            commands.append(f'rps {host} {workload.service} 0')
+    for workload in cfg.workloads:
+        for host in hosts:
+            commands.append(f'close {host} {workload.service}')
 
     return commands

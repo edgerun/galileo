@@ -1,41 +1,66 @@
 import unittest
 
 from galileo.controller import create_instructions
-from galileo.experiment.model import LoadConfiguration
+from galileo.experiment.model import ExperimentConfiguration, WorkloadConfiguration
 
 
 class TestTranslation(unittest.TestCase):
-    def test_translation(self):
-        cfg = LoadConfiguration(10, 20, 'aservice', [2, 6], 3)
+    def test_translation_single_service(self):
+        cfg = ExperimentConfiguration(20, 10, [WorkloadConfiguration('aservice', [2, 6], 3)])
 
-        commands = iter(create_instructions(cfg, ['h1', 'h2', 'h3']))
+        commands = create_instructions(cfg, ['h1', 'h2', 'h3'])
 
-        self.assertEqual('spawn h1 aservice 3', next(commands))
-        self.assertEqual('spawn h2 aservice 3', next(commands))
-        self.assertEqual('spawn h3 aservice 3', next(commands))
+        actual = '\n'.join(commands)
 
-        self.assertEqual('rps h1 aservice 1', next(commands))
-        self.assertEqual('rps h2 aservice 1', next(commands))
-        self.assertEqual('rps h3 aservice 0', next(commands))
+        expected = 'spawn h1 aservice 3\n' + \
+                   'spawn h2 aservice 3\n' + \
+                   'spawn h3 aservice 3\n' + \
+                   'rps h1 aservice 1\n' + \
+                   'rps h2 aservice 1\n' + \
+                   'rps h3 aservice 0\n' + \
+                   'sleep 10\n' + \
+                   'rps h1 aservice 2\n' + \
+                   'rps h2 aservice 2\n' + \
+                   'rps h3 aservice 2\n' + \
+                   'sleep 10\n' + \
+                   'rps h1 aservice 0\n' + \
+                   'rps h2 aservice 0\n' + \
+                   'rps h3 aservice 0\n' + \
+                   'close h1 aservice\n' + \
+                   'close h2 aservice\n' + \
+                   'close h3 aservice'
 
-        self.assertEqual('sleep 10', next(commands))
+        self.assertEquals(expected, actual)
 
-        self.assertEqual('rps h1 aservice 2', next(commands))
-        self.assertEqual('rps h2 aservice 2', next(commands))
-        self.assertEqual('rps h3 aservice 2', next(commands))
+    def test_translation_multiple_services(self):
+        cfg = ExperimentConfiguration(20, 10, [WorkloadConfiguration('aservice', [2, 6], 3),
+                                               WorkloadConfiguration('bservice', [4, 8], 3)])
 
-        self.assertEqual('sleep 10', next(commands))
+        commands = create_instructions(cfg, ['h1', 'h2'])
 
-        self.assertEqual('rps h1 aservice 0', next(commands))
-        self.assertEqual('rps h2 aservice 0', next(commands))
-        self.assertEqual('rps h3 aservice 0', next(commands))
+        actual = '\n'.join(commands)
 
-        self.assertEqual('close h1 aservice', next(commands))
-        self.assertEqual('close h2 aservice', next(commands))
-        self.assertEqual('close h3 aservice', next(commands))
+        expected = 'spawn h1 aservice 3\n' + \
+                   'spawn h2 aservice 3\n' + \
+                   'spawn h1 bservice 3\n' + \
+                   'spawn h2 bservice 3\n' + \
+                   'rps h1 aservice 1\n' + \
+                   'rps h2 aservice 1\n' + \
+                   'rps h1 bservice 2\n' + \
+                   'rps h2 bservice 2\n' + \
+                   'sleep 10\n' + \
+                   'rps h1 aservice 3\n' + \
+                   'rps h2 aservice 3\n' + \
+                   'rps h1 bservice 4\n' + \
+                   'rps h2 bservice 4\n' + \
+                   'sleep 10\n' + \
+                   'rps h1 aservice 0\n' + \
+                   'rps h2 aservice 0\n' + \
+                   'rps h1 bservice 0\n' + \
+                   'rps h2 bservice 0\n' + \
+                   'close h1 aservice\n' + \
+                   'close h2 aservice\n' + \
+                   'close h1 bservice\n' + \
+                   'close h2 bservice'
 
-        try:
-            cmd = next(commands)
-            self.fail('there should be no more commands, but next returned: %s' % cmd)
-        except StopIteration:
-            pass
+        self.assertEqual(expected, actual)
