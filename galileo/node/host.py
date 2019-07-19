@@ -16,6 +16,7 @@ from galileo import util
 from galileo.event import RegisterEvent, RegisterCommand, UnregisterEvent, SpawnClientsCommand, InfoCommand, \
     SetRpsCommand, RuntimeMetric, CloseRuntimeCommand
 from galileo.experiment.db import ExperimentDatabase
+from galileo.experiment.db.sql import ExperimentSQLDatabase
 from galileo.node.client import ExperimentService
 from galileo.node.router import Router, ServiceRequestTrace
 
@@ -265,6 +266,15 @@ class TraceDatabaseLogger(TraceLogger):
         super().__init__(trace_queue)
         self.experiment_db = experiment_db
 
+    def run(self):
+        if isinstance(self.experiment_db, ExperimentSQLDatabase):
+            # this is a terrible hack due to multiprocessing issues:
+            # close() will delete the threadlocal (which is not actually accessible from the process) and create a new
+            # connection. The SqlAdapter adapter design may be broken. or python multiprocessing...
+            self.experiment_db.db.close()
+            self.experiment_db.db.open()
+        super().run()
+
     def _do_flush(self, buffer: Iterable[ServiceRequestTrace]):
         self.experiment_db.save_traces(list(buffer))
 
@@ -328,6 +338,7 @@ class ExperimentHost:
     def _create_trace_logger(self, trace_logging) -> TraceLogger:
         log.debug('trace logging: %s', trace_logging)
 
+        # careful when passing state to the TraceLogger: it's a new process
         if not trace_logging:
             return TraceLogger(self.trace_queue)
         elif trace_logging == 'file':

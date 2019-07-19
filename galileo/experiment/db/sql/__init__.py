@@ -1,5 +1,6 @@
 import abc
 import logging
+import threading
 from typing import Tuple, List, Dict
 
 from galileo.experiment.db import ExperimentDatabase
@@ -12,11 +13,24 @@ logger = logging.getLogger(__name__)
 class SqlAdapter(abc.ABC):
     placeholder = '?'
 
+    _thread_local = threading.local()
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__()
-        self.db = None
+        self._thread_local.connection = None
         self.connect_args = args
         self.connect_kwargs = kwargs
+
+    @property
+    def connection(self):
+        if 'connection' not in self._thread_local.__dict__ or self._thread_local.connection is None:
+            logger.info('%s connecting to database', threading.current_thread().name)
+            self._thread_local.connection = self._connect(*self.connect_args, **self.connect_kwargs)
+        return self._thread_local.connection
+
+    @property
+    def db(self):
+        return self.connection
 
     def cursor(self):
         return self.db.cursor()
@@ -71,15 +85,14 @@ class SqlAdapter(abc.ABC):
             cur.close()
 
     def open(self):
-        if not self.db:
-            self.db = self._connect(*self.connect_args, **self.connect_kwargs)
+        assert self.connection is not None
 
     def close(self):
-        if self.db:
+        if self._thread_local.connection:
             try:
-                self.db.close()
+                self._thread_local.connection.close()
             finally:
-                self.db = None
+                self._thread_local.connection = None
 
     def insert_one(self, table: str, data: Dict[str, object]):
         columns, values = list(), list()
