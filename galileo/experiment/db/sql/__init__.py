@@ -155,7 +155,7 @@ class ExperimentSQLDatabase(ExperimentDatabase):
     (
         EXP_ID  VARCHAR(255) NOT NULL,
         NAME    VARCHAR(255),
-        CREATOR VARCHAR(255) NOT NULL,
+        CREATOR VARCHAR(255),
         START   DOUBLE,
         END     DOUBLE,
         CREATED DOUBLE,
@@ -168,10 +168,10 @@ class ExperimentSQLDatabase(ExperimentDatabase):
         EXP_ID  VARCHAR(255),
         CLIENT  VARCHAR(255) NOT NULL,
         SERVICE VARCHAR(255) NOT NULL,
-        HOST    VARCHAR(255) NOT NULL,
-        CREATED DOUBLE       NOT NULL,
-        SENT    DOUBLE       NOT NULL,
-        DONE    DOUBLE       NOT NULL
+        HOST    VARCHAR(255),
+        CREATED DOUBLE,
+        SENT    DOUBLE,
+        DONE    DOUBLE
     );
 
     CREATE TABLE IF NOT EXISTS telemetry
