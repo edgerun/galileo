@@ -90,7 +90,7 @@ class ExperimentDaemon:
                     exp, ins = self.load_experiment(body)
                 except Exception as e:
                     # TODO: set experiment status to failed
-                    logger.error('Error while loading experiment from queue: %s', e)
+                    logger.exception('Error while loading experiment from queue')
                     continue
 
                 status = exp.status
@@ -126,7 +126,7 @@ class ExperimentDaemon:
             # may be useful for logging the result
 
     def load_experiment(self, body) -> (Experiment, Instructions):
-        exp = self.exp_service.find(body['id'])
+        exp = self.exp_service.find(body['id']) if 'id' in body else None
 
         if exp:
             return exp, self.ins_service.find(exp.id)
