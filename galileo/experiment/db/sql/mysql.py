@@ -14,6 +14,14 @@ class MysqlAdapter(SqlAdapter):
         logger.info('connecting to mysql db with args %s', kwargs)
         return mysql.connect(**kwargs)
 
+    def cursor(self):
+        try:
+            return self.db.cursor()
+        except:
+            logger.warning('tyring to reconnect...')
+            self.reconnect()
+            return self.db.cursor()
+
     def executescript(self, *args, **kwargs):
         script = args[0]
         # FIXME: pretty hacky

@@ -271,8 +271,7 @@ class TraceDatabaseLogger(TraceLogger):
             # this is a terrible hack due to multiprocessing issues:
             # close() will delete the threadlocal (which is not actually accessible from the process) and create a new
             # connection. The SqlAdapter adapter design may be broken. or python multiprocessing...
-            self.experiment_db.db.close()
-            self.experiment_db.db.open()
+            self.experiment_db.db.reconnect()
         super().run()
 
     def _do_flush(self, buffer: Iterable[ServiceRequestTrace]):

@@ -28,6 +28,10 @@ class SqlAdapter(abc.ABC):
             self._thread_local.connection = self._connect(*self.connect_args, **self.connect_kwargs)
         return self._thread_local.connection
 
+    def reconnect(self):
+        self.close()
+        self.open()
+
     @property
     def db(self):
         return self.connection
@@ -36,7 +40,7 @@ class SqlAdapter(abc.ABC):
         return self.db.cursor()
 
     def execute(self, *args, **kwargs):
-        cur = self.db.cursor()
+        cur = self.cursor()
         try:
             logger.debug('executing SQL %s %s', args, kwargs)
             cur.execute(*args, **kwargs)
@@ -45,7 +49,7 @@ class SqlAdapter(abc.ABC):
             cur.close()
 
     def executemany(self, *args, **kwargs):
-        cur = self.db.cursor()
+        cur = self.cursor()
         try:
             cur.executemany(*args, **kwargs)
             self.db.commit()
@@ -53,7 +57,7 @@ class SqlAdapter(abc.ABC):
             cur.close()
 
     def executescript(self, *args, **kwargs):
-        cur = self.db.cursor()
+        cur = self.cursor()
         try:
             cur.executescript(*args, **kwargs)
             self.db.commit()
@@ -61,7 +65,7 @@ class SqlAdapter(abc.ABC):
             cur.close()
 
     def fetchone(self, *args, **kwargs):
-        cur = self.db.cursor()
+        cur = self.cursor()
         try:
             cur.execute(*args, **kwargs)
             return cur.fetchone()
@@ -69,7 +73,7 @@ class SqlAdapter(abc.ABC):
             cur.close()
 
     def fetchmany(self, *args, **kwargs):
-        cur = self.db.cursor()
+        cur = self.cursor()
         try:
             cur.execute(*args, **kwargs)
             return cur.fetchmany()
@@ -77,7 +81,7 @@ class SqlAdapter(abc.ABC):
             cur.close()
 
     def fetchall(self, *args, **kwargs):
-        cur = self.db.cursor()
+        cur = self.cursor()
         try:
             cur.execute(*args, **kwargs)
             return cur.fetchall()
@@ -88,7 +92,7 @@ class SqlAdapter(abc.ABC):
         assert self.connection is not None
 
     def close(self):
-        if self._thread_local.connection:
+        if 'connection' in self._thread_local.__dict__ and self._thread_local.connection is not None:
             try:
                 self._thread_local.connection.close()
             finally:
