@@ -147,6 +147,17 @@ Or run the script, which exports the mariadb setup from the docker container (ad
     ./bin/experimentd-mysql.sh
 
 
+Run the Galileo REST API
+------------------------
+
+
+Serve the app with gunicorn
+
+    gunicorn -w 4 --preload -b 0.0.0.0:5001 \
+        -c galileo/webapp/gunicorn.conf.py \
+        galileo.webapp.app:api
+
+
 Run the Galileo Dashboard
 -------------------------
 #### Run Dashboard with npm and ng

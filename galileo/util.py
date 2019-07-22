@@ -1,4 +1,6 @@
 import os
+import re
+from datetime import timedelta
 from inspect import signature
 from typing import List
 from uuid import uuid4
@@ -50,3 +52,23 @@ def namedtuples_from_strings(cls, ls: List[str]):
 
 def subdict(data: dict, keys: list):
     return {k: data[k] for k in keys if k in data}
+
+
+_time_units = {
+    's': 'seconds',
+    'm': 'minutes',
+    'h': 'hours'
+}
+_time_pattern = re.compile('([0-9]+)([smh]?)')
+
+
+def to_seconds(time_str: str) -> int:
+    groups = _time_pattern.findall(time_str)
+
+    kwargs = dict()
+    for value, unit in groups:
+        if not unit:
+            unit = 's'
+        kwargs[_time_units[unit]] = int(value)
+
+    return round(timedelta(**kwargs).total_seconds())

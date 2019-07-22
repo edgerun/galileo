@@ -38,7 +38,12 @@ class ExperimentController:
         :return:
         """
         message = exp.__dict__ if exp else dict()
-        message['instructions'] = '\n'.join(create_instructions(config, list(self.list_hosts())))
+
+        hosts = list(self.list_hosts())
+        if not hosts:
+            raise ValueError('No hosts to execute the experiment on')
+
+        message['instructions'] = '\n'.join(create_instructions(config, hosts))
         logger.debug('queuing experiment data: %s', message)
         self.rds.lpush(ExperimentController.queue_key, json.dumps(message))
 
