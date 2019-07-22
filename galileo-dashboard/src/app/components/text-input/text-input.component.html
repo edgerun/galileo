@@ -1,6 +1,7 @@
-<div class="input-group mb-3" [formGroup]="form">
+<div  class="input-group mb-3" [formGroup]="form">
   <div class="input-group-prepend">
     <span class="input-group-text" id="basic-addon1">{{name}}</span>
   </div>
-  <input [formControlName]="controlName"   type="text" class="form-control" [placeholder]="placeholder" aria-label="Username" aria-describedby="basic-addon1">
+  <input *ngIf="!isNumber" [ngClass]="{'is-invalid': !form.get(controlName).pristine && form.get(controlName).errors}" [formControlName]="controlName"   type="text" class="form-control" [placeholder]="placeholder">
+  <input numeric numericType="number" *ngIf="isNumber" [ngClass]="{'is-invalid': !form.get(controlName).pristine && form.get(controlName).errors}" [formControlName]="controlName"   type="text" class="form-control">
 </div>

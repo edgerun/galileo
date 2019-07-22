@@ -16,6 +16,7 @@ import {ServiceSelectionComponent} from './components/service-selection/service-
 import {TimeInputComponent} from './components/time-input/time-input.component';
 import {TextInputComponent} from './components/text-input/text-input.component';
 import {MockServiceService, ServiceService} from "./services/service.service";
+import { NumericDirective } from './directives/numeric.directive';
 
 @NgModule({
   declarations: [
@@ -28,7 +29,8 @@ import {MockServiceService, ServiceService} from "./services/service.service";
     PageNotFoundComponent,
     ServiceSelectionComponent,
     TimeInputComponent,
-    TextInputComponent
+    TextInputComponent,
+    NumericDirective,
   ],
   imports: [
     BrowserModule,

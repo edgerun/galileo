@@ -18,6 +18,9 @@ export class TextInputComponent implements OnInit {
   name: string;
 
   @Input()
+  isNumber: boolean = false;
+
+  @Input()
   placeholder: string;
 
   constructor() { }

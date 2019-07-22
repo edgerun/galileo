@@ -2,7 +2,10 @@
   <div class="col-9">
     <app-curve-editor
       [duration]="form.get('duration').value"
-      maxRps="1000"
+      [maxRps]="form.get('maxRps').value"
+      [form]="curveForm"
+      [interval]="form.get('interval').value"
+      (values)="handleValues($event)"
     ></app-curve-editor>
   </div>
   <div class="col-3">
@@ -31,6 +34,12 @@
         unitFormControl="durationUnit"
         name="Duration"
       ></app-time-input>
+      <app-text-input
+        [form]="form"
+        controlName="maxRps"
+        isNumber="true"
+        name="Max RPS">
+      </app-text-input>
       <app-service-selection
         [form]="form"
         [services]="services"
