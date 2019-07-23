@@ -137,7 +137,7 @@ export class CurveEditorComponent implements AfterContentInit {
     };
     const unsorted: Set<number> = new Set();
 
-    const divider = this.duration / this.interval;
+    const divider = Math.ceil(this.duration / this.interval);
     const max = points[points.length - 1];
     const interval = max.x / divider;
     const min = points[0];
@@ -165,7 +165,7 @@ export class CurveEditorComponent implements AfterContentInit {
         .attr('class', 'value-line')
         .attr('stroke', 'red')
         .attr('stroke-width', '5');
-      y = Math.round(this.maxRps * (1 - (y / min.y)));
+      y = Math.ceil(this.maxRps * (1 - (y / min.y)));
       ys.push(y)
     }
 
