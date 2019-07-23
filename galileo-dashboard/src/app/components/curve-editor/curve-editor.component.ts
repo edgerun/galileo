@@ -19,7 +19,7 @@ export class CurveEditorComponent implements AfterContentInit {
   set duration(value: number) {
     if (value > 0) {
       this._duration = value;
-      this.refreshValues();
+      this.debouncedRefresh();
     }
   }
 
@@ -27,7 +27,7 @@ export class CurveEditorComponent implements AfterContentInit {
   set interval(value: number) {
     if (value > 0) {
       this._interval = value;
-      this.refreshValues();
+      this.debouncedRefresh();
     }
   }
 
@@ -35,7 +35,7 @@ export class CurveEditorComponent implements AfterContentInit {
   set maxRps(value: number) {
     if (value > 0) {
       this._maxRps = value;
-      this.refreshValues();
+      this.debouncedRefresh();
     }
   }
 
@@ -50,6 +50,7 @@ export class CurveEditorComponent implements AfterContentInit {
     return this._duration;
   }
 
+  private debouncedRefresh = debounce(this.refreshValues, 500);
 
   private refreshValues() {
     if (this.editor) {
@@ -116,6 +117,7 @@ export class CurveEditorComponent implements AfterContentInit {
     this.editor.eventListener.on('add change', function (_) {
       debounced();
     });
+    this.emitCalculatedPoints(this.form.points);
 
   }
 
@@ -136,7 +138,7 @@ export class CurveEditorComponent implements AfterContentInit {
     const interval = Math.ceil(max.x / divider);
     const min = points[0];
 
-    for (let i = 0; i <= max.x; i += interval) {
+    for (let i = 0; i < max.x; i += interval) {
       unsorted.add(i);
     }
 
@@ -149,6 +151,9 @@ export class CurveEditorComponent implements AfterContentInit {
       let y = this.findYForX(x, path, 0);
       this.drawTick(min.x + x, y, min.y);
       y = Math.ceil(this.maxRps * (1 - (y / min.y)));
+      if (y === -Infinity) {
+        y = 0;
+      }
       ys.push(y);
     }
 
