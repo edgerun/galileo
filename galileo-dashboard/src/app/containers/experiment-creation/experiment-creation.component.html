@@ -2,5 +2,7 @@
   <app-experiment-form
     (add)="submitExperiment($event)"
     [services]="services$ | async"
+    [successMessage]="_success | async"
+    [errorMessage]="_error | async"
   ></app-experiment-form>
 </div>

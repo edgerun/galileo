@@ -18,6 +18,12 @@ export class ExperimentFormComponent implements OnInit {
   @Input()
   services: Service[];
 
+  @Input()
+  successMessage: string;
+
+  @Input()
+  errorMessage: string;
+
   @Output()
   add = new EventEmitter<Submission>();
 

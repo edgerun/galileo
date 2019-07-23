@@ -52,5 +52,7 @@
       ></app-service-selection>
       <button (click)="submit()" type="submit" class="btn btn-primary">Submit</button>
     </form>
+    <ngb-alert *ngIf="successMessage" type="success" (close)="successMessage = null">{{ successMessage }}</ngb-alert>
+    <ngb-alert *ngIf="errorMessage" type="danger" (close)="errorMessage = null">{{ errorMessage }}</ngb-alert>
   </div>
 </div>
