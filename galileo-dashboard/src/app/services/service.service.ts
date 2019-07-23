@@ -1,6 +1,7 @@
-import {Injectable} from '@angular/core';
+import {Inject, Injectable} from '@angular/core';
 import {Observable, of} from "rxjs";
 import {Service} from "../models/Service";
+import {HttpClient} from "@angular/common/http";
 
 @Injectable({
   providedIn: 'root'
@@ -20,11 +21,9 @@ export class MockServiceService implements ServiceService {
 
   readonly services: Service[] = [
     {
-      id: 'asdf',
       name: 'MXNet'
     },
     {
-      id: 'bdgjk',
       name: 'AlexNet'
     }
   ];
@@ -35,4 +34,22 @@ export class MockServiceService implements ServiceService {
   findAll(): Observable<Service[]> {
     return of(this.services);
   }
+}
+
+@Injectable(
+  {
+    providedIn: 'root'
+  }
+)
+export class HttpServiceService implements ServiceService {
+
+  constructor(
+    @Inject('BASE_API_URL') private baseUrl: string,
+    private httpClient: HttpClient) {
+  }
+
+  findAll(): Observable<Service[]> {
+    return this.httpClient.get<Service[]>(this.baseUrl + "/services")
+  }
+
 }

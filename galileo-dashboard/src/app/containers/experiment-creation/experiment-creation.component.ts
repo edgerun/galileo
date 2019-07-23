@@ -12,7 +12,7 @@ import {Submission} from "../../models/Submission";
 })
 export class ExperimentCreationComponent implements OnInit {
 
-  services: Observable<Service[]>;
+  services$: Observable<Service[]>;
 
   constructor(private serviceService: ServiceService, private experimentService: ExperimentService) { }
 
@@ -20,7 +20,7 @@ export class ExperimentCreationComponent implements OnInit {
 
 
   ngOnInit() {
-    this.services = this.serviceService.findAll();
+    this.services$ = this.serviceService.findAll();
   }
 
   submitExperiment($event: Submission) {

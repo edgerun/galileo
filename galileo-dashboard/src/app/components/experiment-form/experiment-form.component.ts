@@ -35,7 +35,7 @@ export class ExperimentFormComponent implements OnInit {
       intervalUnit: [timeUnits[0], Validators.required],
       duration: [100, [Validators.required, Validators.pattern('[0-9]*')]],
       durationUnit: [timeUnits[0], Validators.required],
-      service: [this.services[0], Validators.required],
+      service: [undefined, Validators.required],
       maxRps: [1000, [Validators.required, Validators.pattern('[0-9]*')]],
       numberOfClients: [3, [Validators.required, Validators.pattern('[0-9]*')]]
     });

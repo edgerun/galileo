@@ -15,9 +15,12 @@ import {PageNotFoundComponent} from './views/page-not-found/page-not-found.compo
 import {ServiceSelectionComponent} from './components/service-selection/service-selection.component';
 import {TimeInputComponent} from './components/time-input/time-input.component';
 import {TextInputComponent} from './components/text-input/text-input.component';
-import {MockServiceService, ServiceService} from "./services/service.service";
+import {HttpServiceService, MockServiceService, ServiceService} from "./services/service.service";
 import {NumericDirective} from './directives/numeric.directive';
-import {ExperimentService, MockExperimentService} from "./services/experiment.service";
+import {ExperimentService, HttpExperimentService, MockExperimentService} from "./services/experiment.service";
+import {environment} from "../environments/environment";
+import {HttpClientModule} from '@angular/common/http';
+
 
 @NgModule({
   declarations: [
@@ -35,14 +38,16 @@ import {ExperimentService, MockExperimentService} from "./services/experiment.se
   ],
   imports: [
     BrowserModule,
+    HttpClientModule,
     AppRoutingModule,
     NgbModule,
     FormsModule,
     ReactiveFormsModule
   ],
   providers: [
-    {provide: ServiceService, useClass: MockServiceService},
-    {provide: ExperimentService, useClass: MockExperimentService}
+    {provide: ServiceService, useClass: HttpServiceService},
+    {provide: ExperimentService, useClass: HttpExperimentService},
+    {provide: 'BASE_API_URL', useValue: environment.apiUrl}
   ],
   bootstrap: [AppComponent]
 })

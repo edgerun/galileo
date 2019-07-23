@@ -1,6 +1,6 @@
 <div class="container-fluid">
   <app-experiment-form
     (add)="submitExperiment($event)"
-    [services]="services | async"
+    [services]="services$ | async"
   ></app-experiment-form>
 </div>
