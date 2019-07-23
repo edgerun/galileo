@@ -49,7 +49,7 @@ export class ExperimentFormComponent implements OnInit {
   }
 
   submit() {
-    if (!this.form.errors) {
+    if (!this.form.invalid) {
       const configuration = this.getConfiguration();
 
       let submission: Submission = {
