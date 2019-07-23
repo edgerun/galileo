@@ -2,13 +2,15 @@ import {AfterContentInit, Component, EventEmitter, Inject, Input, OnInit, Output
 import * as D3CE from 'd3-curve-editor';
 import {DOCUMENT} from "@angular/common";
 import {CurveForm} from "../../models/ExperimentForm";
+import * as d3 from 'd3';
+import {debounce} from "ts-debounce";
 
 @Component({
   selector: 'app-curve-editor',
   templateUrl: './curve-editor.component.html',
   styleUrls: ['./curve-editor.component.css']
 })
-export class CurveEditorComponent implements OnInit, AfterContentInit {
+export class CurveEditorComponent implements AfterContentInit {
 
   @Input()
   form: CurveForm;
@@ -105,11 +107,14 @@ export class CurveEditorComponent implements OnInit, AfterContentInit {
       point
     };
 
-    const instance = this;
-    this.editor.eventListener.on('add change', function (_) {
+    const debounced = debounce(() => {
       instance.editor.view.update();
       const points = instance.getCircles();
       instance.emitCalculatedPoints(points);
+    }, 250);
+    const instance = this;
+    this.editor.eventListener.on('add change', function (_) {
+      debounced();
     });
 
   }
@@ -144,9 +149,22 @@ export class CurveEditorComponent implements OnInit, AfterContentInit {
 
     const xs = [...unsorted].sort((n1, n2) => n1 - n2);
     const ys = [];
+    d3.selectAll('.value-line').remove();
 
     for (let x of xs) {
       let y = this.findYForX(x, this.document.querySelector('path'));
+      console.info(x)
+      console.info(y)
+      const container = d3.select('g');
+
+      container.append('line')
+        .attr('x1', min.x + x)
+        .attr('y1', y)
+        .attr('x2', min.x + x)
+        .attr('y2', min.y)
+        .attr('class', 'value-line')
+        .attr('stroke', 'red')
+        .attr('stroke-width', '5');
       y = Math.round(this.maxRps * (1 - (y / min.y)));
       ys.push(y)
     }
@@ -180,19 +198,13 @@ export class CurveEditorComponent implements OnInit, AfterContentInit {
     return point.y
   }
 
-
-  ngOnInit(): void {
-  }
-
   reset() {
     if (this.editor) {
       this.initEditor();
     }
   }
 
-  private calculatePoints() {
 
-  }
 }
 
 function getProps(duration, maxRps, curve) {
@@ -204,6 +216,7 @@ function getProps(duration, maxRps, curve) {
     },
     margin: 50,
     curve: curve,
-    stretch: true
+    stretch: true,
+    fixedAxis: D3CE.Axes.list[1]
   };
 }
