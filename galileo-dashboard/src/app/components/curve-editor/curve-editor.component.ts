@@ -39,9 +39,8 @@ export class CurveEditorComponent implements AfterContentInit {
     }
   }
 
-
   @Output()
-  values: EventEmitter<number[]> = new EventEmitter();
+  private formEmitter: EventEmitter<CurveForm> = new EventEmitter();
 
   private _duration: number;
   private _interval: number;
@@ -80,7 +79,8 @@ export class CurveEditorComponent implements AfterContentInit {
   ngAfterContentInit() {
     this._initForm = {
       points: [...this.form.points],
-      curve: this.form.curve
+      curve: this.form.curve,
+      ticks: [...this.form.ticks]
     };
     this.initEditor();
   }
@@ -111,7 +111,7 @@ export class CurveEditorComponent implements AfterContentInit {
       instance.editor.view.update();
       const points = instance.getCircles();
       instance.emitCalculatedPoints(points);
-    }, 250);
+    }, 500);
     const instance = this;
     this.editor.eventListener.on('add change', function (_) {
       debounced();
@@ -130,48 +130,54 @@ export class CurveEditorComponent implements AfterContentInit {
   }
 
   private emitCalculatedPoints(points: { x: number, y: number }[]) {
-
-    this.form = {
-      ...this.form,
-      points
-    };
     const unsorted: Set<number> = new Set();
-
-    const divider = Math.ceil(this.duration / this.interval);
+    const divider = this.duration / this.interval;
     const max = points[points.length - 1];
-    const interval = max.x / divider;
+    const interval = Math.ceil(max.x / divider);
     const min = points[0];
-    console.info(points[0].y);
+
     for (let i = 0; i <= max.x; i += interval) {
       unsorted.add(i);
     }
-    unsorted.add(max.x);
 
     const xs = [...unsorted].sort((n1, n2) => n1 - n2);
-    const ys = [];
-    d3.selectAll('.value-line').remove();
+    const ys: number[] = [];
 
+    this.removeTicks();
+    const path = this.document.querySelector('path');
     for (let x of xs) {
-      let y = this.findYForX(x, this.document.querySelector('path'));
-      console.info(x)
-      console.info(y)
-      const container = d3.select('g');
-
-      container.append('line')
-        .attr('x1', min.x + x)
-        .attr('y1', y)
-        .attr('x2', min.x + x)
-        .attr('y2', min.y)
-        .attr('class', 'value-line')
-        .attr('stroke', 'red')
-        .attr('stroke-width', '5');
+      let y = this.findYForX(x, path, 0);
+      this.drawTick(min.x + x, y, min.y);
       y = Math.ceil(this.maxRps * (1 - (y / min.y)));
-      ys.push(y)
+      ys.push(y);
     }
 
-    this.values.emit(ys)
+    this.form = {
+      ...this.form,
+      points: points,
+      ticks: ys
+    };
+
+    this.formEmitter.emit(this.form);
   }
 
+
+  private removeTicks() {
+    d3.selectAll('.value-line').remove();
+  }
+
+  private drawTick(x, y1, y2) {
+    const container = d3.select('g');
+
+    container.append('line')
+      .attr('x1', x)
+      .attr('y1', y1)
+      .attr('x2', x)
+      .attr('y2', y2)
+      .attr('class', 'value-line')
+      .attr('stroke', 'red')
+      .attr('stroke-width', '5');
+  }
 
   private findYForX(x, path, error = 0.01): number {
     var length_end = path.getTotalLength()
@@ -181,7 +187,7 @@ export class CurveEditorComponent implements AfterContentInit {
       , bisection_iterations = 0;
 
 
-    while (x < point.x - error || x > point.x + error) {
+    while (x < point.x - error || x > point.x) {
       // get the middle point
       point = path.getPointAtLength((length_end + length_start) / 2);
 
@@ -214,7 +220,6 @@ function getProps(duration, maxRps, curve) {
       y: new D3CE.Range(0, 100),
       z: new D3CE.Range(0, 1),
     },
-    margin: 50,
     curve: curve,
     stretch: true,
     fixedAxis: D3CE.Axes.list[1]

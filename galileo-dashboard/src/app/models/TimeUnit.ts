@@ -18,3 +18,12 @@ export const timeUnits: TimeUnit[] = [
     text: 'min'
   }
 ];
+
+export function convertToSeconds(value: number, unit: TimeUnit): number {
+  switch (unit.id) {
+    case TimeUnitKind.Minute:
+      return value * 60;
+    case TimeUnitKind.Second:
+      return value;
+  }
+}

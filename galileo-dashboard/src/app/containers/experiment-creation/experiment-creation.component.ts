@@ -3,6 +3,8 @@ import {ServiceService} from "../../services/service.service";
 import {Observable} from "rxjs";
 import {Service} from "../../models/Service";
 import {ExperimentForm} from "../../models/ExperimentForm";
+import {ExperimentService} from "../../services/experiment.service";
+import {Submission} from "../../models/Submission";
 @Component({
   selector: 'app-experiment-creation',
   templateUrl: './experiment-creation.component.html',
@@ -12,17 +14,16 @@ export class ExperimentCreationComponent implements OnInit {
 
   services: Observable<Service[]>;
 
-  constructor(private serviceService: ServiceService) { }
+  constructor(private serviceService: ServiceService, private experimentService: ExperimentService) { }
 
 
 
 
   ngOnInit() {
-    console.info(this.serviceService);
     this.services = this.serviceService.findAll();
   }
 
-  submitExperiment($event: ExperimentForm) {
-
+  submitExperiment($event: Submission) {
+    this.experimentService.submit($event);
   }
 }

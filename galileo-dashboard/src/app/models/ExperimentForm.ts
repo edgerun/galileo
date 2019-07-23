@@ -21,7 +21,8 @@ export interface UnvalidatedExperimentForm {
 
 export interface CurveForm {
   points: Point[],
-  curve: CurveKind
+  curve: CurveKind,
+  ticks: number[]
 }
 
 export enum CurveKind {

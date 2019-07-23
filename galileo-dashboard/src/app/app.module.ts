@@ -16,7 +16,8 @@ import {ServiceSelectionComponent} from './components/service-selection/service-
 import {TimeInputComponent} from './components/time-input/time-input.component';
 import {TextInputComponent} from './components/text-input/text-input.component';
 import {MockServiceService, ServiceService} from "./services/service.service";
-import { NumericDirective } from './directives/numeric.directive';
+import {NumericDirective} from './directives/numeric.directive';
+import {ExperimentService, MockExperimentService} from "./services/experiment.service";
 
 @NgModule({
   declarations: [
@@ -39,7 +40,10 @@ import { NumericDirective } from './directives/numeric.directive';
     FormsModule,
     ReactiveFormsModule
   ],
-  providers: [{provide: ServiceService, useClass: MockServiceService}],
+  providers: [
+    {provide: ServiceService, useClass: MockServiceService},
+    {provide: ExperimentService, useClass: MockExperimentService}
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {

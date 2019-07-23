@@ -5,7 +5,7 @@
       [maxRps]="form.get('maxRps').value"
       [form]="curveForm"
       [interval]="form.get('interval').value"
-      (values)="handleValues($event)"
+      (formEmitter)="handleCurveForm($event)"
     ></app-curve-editor>
   </div>
   <div class="col-3">
