@@ -47,7 +47,6 @@ def main():
         logging.basicConfig(level=logging._nameToLevel[args.logging])
 
     rds = redis.Redis(host=os.getenv('REDIS_HOST', 'localhost'), decode_responses=True)
-    rds_undec = redis.Redis(host=os.getenv('REDIS_HOST', 'localhost'))
 
     eventbus.init(RedisConfig(rds))
 
@@ -55,7 +54,7 @@ def main():
     exp_db.open()
 
     def recorder_factory(exp_id: str):
-        return ExperimentTelemetryRecorder(rds_undec, exp_db, exp_id)
+        return ExperimentTelemetryRecorder(rds, exp_db, exp_id)
 
     try:
         exp_controller = ExperimentController(rds)
