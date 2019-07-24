@@ -14,8 +14,8 @@ import {debounceTime} from "rxjs/operators";
 export class ExperimentCreationComponent implements OnInit {
 
   services$: Observable<Service[]>;
-  private _success = new Subject<string>();
-  private _error = new Subject<string>();
+  _success = new Subject<string>();
+  _error = new Subject<string>();
 
   constructor(private serviceService: ServiceService, private experimentService: ExperimentService) {
   }
