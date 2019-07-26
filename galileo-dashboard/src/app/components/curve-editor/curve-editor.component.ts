@@ -1,4 +1,4 @@
-import {AfterContentInit, Component, EventEmitter, Inject, Input, OnInit, Output} from '@angular/core';
+import {AfterContentInit, Component, EventEmitter, Inject, Input, Output} from '@angular/core';
 import * as D3CE from 'd3-curve-editor';
 import {DOCUMENT} from "@angular/common";
 import {CurveForm} from "../../models/ExperimentForm";
@@ -132,35 +132,35 @@ export class CurveEditorComponent implements AfterContentInit {
   }
 
   private emitCalculatedPoints(points: { x: number, y: number }[]) {
-    const unsorted: Set<number> = new Set();
-    const divider = this.duration / this.interval;
     const max = points[points.length - 1];
-    const interval = Math.ceil(max.x / divider);
-    const min = points[0];
+    const min = points[0]; // we assume min.x = 0
 
-    for (let i = 0; i < max.x; i += interval) {
-      unsorted.add(i);
-    }
+    // TODO: translate duration and interval into seconds
+    const n = Math.ceil(this.duration / this.interval);
+    const interval_screen = max.x / n; // distance between ticks in screen space
+    const fn: Array<number> = new Array<number>(n); // y values in function space
 
-    const xs = [...unsorted].sort((n1, n2) => n1 - n2);
-    const ys: number[] = [];
-
-    this.removeTicks();
     const path = this.document.querySelector('path');
-    for (let x of xs) {
-      let y = this.findYForX(x, path, 0);
-      this.drawTick(min.x + x, y, min.y);
-      y = Math.ceil(this.maxRps * (1 - (y / min.y)));
-      if (y === -Infinity) {
-        y = 0;
+    this.removeTicks();
+
+    for (let i = 0; i < n; i++) {
+      let xs = i * interval_screen; // x in screen space
+      let ys = this.findYForX(xs, path, 0); // y in screen space
+
+      // calculate y in function space
+      let yf = Math.ceil(this.maxRps * (1 - (ys / min.y)));
+      if (yf === -Infinity) {
+        yf = 0
       }
-      ys.push(y);
+      fn[i] = yf;
+
+      this.drawTick(xs, ys, min.y);
     }
 
     this.form = {
       ...this.form,
       points: points,
-      ticks: ys
+      ticks: fn
     };
 
     this.formEmitter.emit(this.form);
