@@ -29,6 +29,7 @@ export class ExperimentFormComponent implements OnInit {
 
   form: FormGroup;
   curveForm: CurveForm;
+  calculatedForm: CurveForm;
 
   constructor(private fb: FormBuilder) {
   }
@@ -46,12 +47,16 @@ export class ExperimentFormComponent implements OnInit {
       numberOfClients: [3, [Validators.required, Validators.pattern('[0-9]*')]]
     });
 
-    this.curveForm = {
+    this.curveForm = this.initCurveForm();
+
+  }
+
+  private initCurveForm() {
+    return {
       points: [{x: 0, y: 0}, {x: this.form.get('duration').value, y: 0}],
       curve: d3.curveBasis,
       ticks: []
     };
-
   }
 
   submit() {
@@ -105,7 +110,7 @@ export class ExperimentFormComponent implements OnInit {
     const intervalInSeconds: number = convertToSeconds(intervalValue, intervalUnit);
     const workload: WorkloadConfiguration = {
       service: this.form.get('service').value.name,
-      ticks: this.curveForm.ticks,
+      ticks: this.calculatedForm.ticks,
       clients_per_host: this.form.get('numberOfClients').value
     };
 
@@ -118,6 +123,10 @@ export class ExperimentFormComponent implements OnInit {
   }
 
   handleCurveForm(form: CurveForm) {
-    this.curveForm = form;
+    this.calculatedForm = form;
+  }
+
+  reset() {
+    this.curveForm = this.initCurveForm();
   }
 }

@@ -4,6 +4,7 @@ import {DOCUMENT} from "@angular/common";
 import {CurveForm} from "../../models/ExperimentForm";
 import * as d3 from 'd3';
 import {debounce} from "ts-debounce";
+import {deepEqual} from "assert";
 
 @Component({
   selector: 'app-curve-editor',
@@ -13,7 +14,22 @@ import {debounce} from "ts-debounce";
 export class CurveEditorComponent implements AfterContentInit {
 
   @Input()
-  form: CurveForm;
+  set form(value: CurveForm) {
+    if (!this.form) {
+      this._form = value;
+    }
+
+    if (this.editor && this.form != value) {
+      this._form = value;
+      this.initEditor();
+      this.refreshValues();
+    }
+
+  }
+
+  get form() {
+    return this._form;
+  }
 
   @Input()
   set duration(value: number) {
@@ -44,7 +60,9 @@ export class CurveEditorComponent implements AfterContentInit {
 
   private _duration: number;
   private _interval: number;
-  private _initForm: CurveForm;
+  private _form: CurveForm;
+  private _maxRps: number;
+  editor;
 
   get duration() {
     return this._duration;
@@ -68,9 +86,6 @@ export class CurveEditorComponent implements AfterContentInit {
     return this._interval;
   }
 
-  _maxRps: number;
-
-  editor;
 
   constructor(@Inject(DOCUMENT) private document) {
   }
@@ -78,17 +93,12 @@ export class CurveEditorComponent implements AfterContentInit {
   lines: D3CE.Line[] = [];
 
   ngAfterContentInit() {
-    this._initForm = {
-      points: [...this.form.points],
-      curve: this.form.curve,
-      ticks: [...this.form.ticks]
-    };
     this.initEditor();
   }
 
   private initEditor() {
-    const firstPoint = this._initForm.points[0];
-    const endPoint = this._initForm.points[1];
+    const firstPoint = this.form.points[0];
+    const endPoint = this.form.points[1];
     const curve = this.form.curve;
     const point = new D3CE.CurvePoint(firstPoint.x, firstPoint.y).isFixed(true);
     const line = new D3CE.Line("#47a", [
@@ -107,13 +117,14 @@ export class CurveEditorComponent implements AfterContentInit {
       line,
       point
     };
+    const instance = this;
 
     const debounced = debounce(() => {
       instance.editor.view.update();
       const points = instance.getCircles();
       instance.emitCalculatedPoints(points);
     }, 500);
-    const instance = this;
+
     this.editor.eventListener.on('add change', function (_) {
       debounced();
     });
@@ -157,7 +168,7 @@ export class CurveEditorComponent implements AfterContentInit {
       this.drawTick(xs, ys, min.y);
     }
 
-    this.form = {
+    this._form = {
       ...this.form,
       points: points,
       ticks: fn
@@ -207,12 +218,6 @@ export class CurveEditorComponent implements AfterContentInit {
         break;
     }
     return point.y
-  }
-
-  reset() {
-    if (this.editor) {
-      this.initEditor();
-    }
   }
 
 

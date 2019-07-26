@@ -45,8 +45,8 @@ import {HttpClientModule} from '@angular/common/http';
     ReactiveFormsModule
   ],
   providers: [
-    {provide: ServiceService, useClass: HttpServiceService},
-    {provide: ExperimentService, useClass: HttpExperimentService},
+    {provide: ServiceService, useClass: MockServiceService},
+    {provide: ExperimentService, useClass: MockExperimentService},
     {provide: 'BASE_API_URL', useValue: environment.apiUrl}
   ],
   bootstrap: [AppComponent]

@@ -1,3 +1,22 @@
+<form class="form-inline" [formGroup]="form">
+  <div class="form-group mb-2">
+    <app-text-input
+      [form]="form"
+      controlName="name"
+      name="Name"
+      placeholder="Lazy-Exp"
+    ></app-text-input>
+  </div>
+  <div class="form-group mx-sm-3">
+    <app-text-input
+      [form]="form"
+      controlName="creator"
+      name="Creator"
+      placeholder="User"
+    ></app-text-input>
+  </div>
+  <button (click)="submit()" type="submit" class="btn btn-primary  mb-2">Submit</button>
+</form>
 <div class="row">
   <div class="col-9">
     <app-curve-editor
@@ -10,18 +29,6 @@
   </div>
   <div class="col-3">
     <form [formGroup]="form">
-      <app-text-input
-        [form]="form"
-        controlName="name"
-        name="Name"
-        placeholder="Lazy-Exp"
-      ></app-text-input>
-      <app-text-input
-        [form]="form"
-        controlName="creator"
-        name="Creator"
-        placeholder="User"
-      ></app-text-input>
       <app-time-input
         [form]="form"
         timeFormControl="interval"
@@ -50,8 +57,13 @@
         [form]="form"
         [services]="services"
       ></app-service-selection>
-      <button (click)="submit()" type="submit" class="btn btn-primary">Submit</button>
+      <div class="row">
+      </div>
+
+
     </form>
+    <button (click)="reset()" type="submit" class="btn btn-primary">Reset</button>
+
     <ngb-alert *ngIf="successMessage" type="success" (close)="successMessage = null">{{ successMessage }}</ngb-alert>
     <ngb-alert *ngIf="errorMessage" type="danger" (close)="errorMessage = null">{{ errorMessage }}</ngb-alert>
   </div>
