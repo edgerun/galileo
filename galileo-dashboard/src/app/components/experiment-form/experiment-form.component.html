@@ -1,13 +1,11 @@
 <form class="form-inline" [formGroup]="form">
-  <div class="form-group mb-2">
+  <div class="col-4">
     <app-text-input
       [form]="form"
       controlName="name"
       name="Name"
       placeholder="Lazy-Exp"
     ></app-text-input>
-  </div>
-  <div class="form-group mx-sm-3">
     <app-text-input
       [form]="form"
       controlName="creator"
@@ -15,56 +13,38 @@
       placeholder="User"
     ></app-text-input>
   </div>
-  <button (click)="submit()" type="submit" class="btn btn-primary  mb-2">Submit</button>
+  <div class="col-4">
+    <app-time-input
+      [form]="form"
+      timeFormControl="interval"
+      unitFormControl="intervalUnit"
+      name="Interval"
+    ></app-time-input>
+    <app-time-input
+      [form]="form"
+      timeFormControl="duration"
+      unitFormControl="durationUnit"
+      name="Duration"
+    ></app-time-input>
+  </div>
+  <div class="col-4">
+    <app-text-input
+      [form]="form"
+      controlName="maxRps"
+      isNumber="true"
+      name="Max RPS">
+    </app-text-input>
+    <button (click)="submit()" type="submit" class="btn btn-primary  mb-2">Submit</button>
+  </div>
 </form>
+<ngb-alert *ngIf="successMessage" type="success" (close)="successMessage = null">{{ successMessage }}</ngb-alert>
+<ngb-alert *ngIf="errorMessage" type="danger" (close)="errorMessage = null">{{ errorMessage }}</ngb-alert>
 <div class="row">
-  <div class="col-9">
-    <app-curve-editor
-      [duration]="form.get('duration').value"
-      [maxRps]="form.get('maxRps').value"
-      [form]="curveForm"
-      [interval]="form.get('interval').value"
-      (formEmitter)="handleCurveForm($event)"
-    ></app-curve-editor>
-  </div>
-  <div class="col-3">
-    <form [formGroup]="form">
-      <app-time-input
-        [form]="form"
-        timeFormControl="interval"
-        unitFormControl="intervalUnit"
-        name="Interval"
-      ></app-time-input>
-      <app-time-input
-        [form]="form"
-        timeFormControl="duration"
-        unitFormControl="durationUnit"
-        name="Duration"
-      ></app-time-input>
-      <app-text-input
-        [form]="form"
-        controlName="maxRps"
-        isNumber="true"
-        name="Max RPS">
-      </app-text-input>
-      <app-text-input
-        [form]="form"
-        controlName="numberOfClients"
-        isNumber="true"
-        name="Number of clients">
-      </app-text-input>
-      <app-service-selection
-        [form]="form"
-        [services]="services"
-      ></app-service-selection>
-      <div class="row">
-      </div>
-
-
-    </form>
-    <button (click)="reset()" type="submit" class="btn btn-primary">Reset</button>
-
-    <ngb-alert *ngIf="successMessage" type="success" (close)="successMessage = null">{{ successMessage }}</ngb-alert>
-    <ngb-alert *ngIf="errorMessage" type="danger" (close)="errorMessage = null">{{ errorMessage }}</ngb-alert>
-  </div>
+  <app-workload-form
+    [curveForm]="curveForm"
+    [services]="services"
+    [duration]="form.get('duration').value"
+    [interval]="form.get('interval').value"
+    [maxRps]="form.get('maxRps').value"
+  ></app-workload-form>
 </div>

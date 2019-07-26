@@ -20,6 +20,7 @@ import {NumericDirective} from './directives/numeric.directive';
 import {ExperimentService, HttpExperimentService, MockExperimentService} from "./services/experiment.service";
 import {environment} from "../environments/environment";
 import {HttpClientModule} from '@angular/common/http';
+import { WorkloadFormComponent } from './components/workload-form/workload-form.component';
 
 
 @NgModule({
@@ -35,6 +36,7 @@ import {HttpClientModule} from '@angular/common/http';
     TimeInputComponent,
     TextInputComponent,
     NumericDirective,
+    WorkloadFormComponent,
   ],
   imports: [
     BrowserModule,

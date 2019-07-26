@@ -1,0 +1,27 @@
+<div class="row">
+  <div class="editor col-9">
+    <app-curve-editor
+      [duration]="duration"
+      [maxRps]="maxRps"
+      [form]="curveForm"
+      [interval]="interval"
+      (formEmitter)="handleCurveForm($event)"
+    ></app-curve-editor>
+  </div>
+  <div class="col-3">
+    <form [formGroup]="form">
+      <app-text-input
+        [form]="form"
+        controlName="numberOfClients"
+        [isNumber]="true"
+        name="Number of clients">
+      </app-text-input>
+      <app-service-selection
+        [form]="form"
+        [services]="services"
+      ></app-service-selection>
+      <button (click)="reset()" type="submit" class="btn btn-primary">Reset</button>
+    </form>
+  </div>
+
+</div>
