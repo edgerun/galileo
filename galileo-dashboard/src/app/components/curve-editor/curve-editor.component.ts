@@ -66,6 +66,7 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit {
   set maxRps(value: number) {
     if (value > 0 && this.maxRps != value) {
       this._maxRps = value;
+      this.fixRpsTicks();
       this.debouncedRefresh();
     }
   }
@@ -106,9 +107,56 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit {
   }
 
   lines: D3CE.Line[] = [];
+  oldRpsPoints: number[] = [];
+  oldDurationPoints: number[] = [];
 
   ngAfterContentInit() {
     this.initEditor();
+    setInterval(() => {
+      const textNodes = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="end"] g text`)];
+      let equals = true;
+      if (textNodes.length > 0) {
+        for (let i = 0; i < textNodes.length; i++) {
+          if (i < this.oldRpsPoints.length) {
+            equals = equals && (this.oldRpsPoints[i] === +textNodes[i].innerHTML);
+          } else {
+            equals = false;
+          }
+        }
+        if (equals) return;
+        const fn = (val: number) => Math.ceil(val * (this.maxRps / 100));
+        textNodes.forEach(node => {
+          node.innerHTML = fn(+node.innerHTML);
+          console.log(`Original: ${node.innerHTML}, new value: ${Math.ceil(fn(+node.innerHTML))}`);
+        });
+
+
+        this.oldRpsPoints = textNodes.map(t => +t.innerHTML);
+      }
+    }, 50);
+
+    setInterval(() => {
+      const textNodes = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="middle"] g text`)];
+      let equals = true;
+      if (textNodes.length > 0) {
+        for (let i = 0; i < textNodes.length; i++) {
+          if (i < this.oldDurationPoints.length) {
+            equals = equals && (this.oldDurationPoints[i] === +textNodes[i].innerHTML);
+          } else {
+            equals = false;
+          }
+        }
+        if (equals) return;
+        const fn = (val: number) => Math.ceil(val * (this.duration / 100));
+        textNodes.forEach(node => {
+          node.innerHTML = fn(+node.innerHTML);
+          console.log(`Original: ${node.innerHTML}, new value: ${Math.ceil(fn(+node.innerHTML))}`);
+        });
+
+
+        this.oldDurationPoints = textNodes.map(t => +t.innerHTML);
+      }
+    }, 50);
   }
 
   private initEditor() {
@@ -238,6 +286,23 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit {
   }
 
 
+  private fixRpsTicks() {
+
+    // const container = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="end"] g`)];
+    // console.info(container);
+    // const size = container.length;
+    // const interval = this.maxRps / size;
+    // this.document.querySelector(`[id="${this.id}"] g[text-anchor="end"]`).innerHTML = "";
+    // for (let i = 0; i <= this.maxRps; i += interval) {
+    //   if (container[i]) {
+    //     container[i].innerHTML = i;
+    //     console.info(container[i]);
+    //     this.document.querySelector(`[id="${this.id}"] g[text-anchor="end"]`).appendChild(container[i]);
+    //   }
+    // }
+    //
+    // console.log(container);
+  }
 }
 
 function getProps(duration, maxRps, curve) {
@@ -249,6 +314,7 @@ function getProps(duration, maxRps, curve) {
     },
     curve: curve,
     stretch: true,
-    fixedAxis: D3CE.Axes.list[1]
+    fixedAxis: D3CE.Axes.list[1],
+    margin: 40
   };
 }
