@@ -30,9 +30,6 @@ export class WorkloadFormComponent implements OnInit {
   id: string;
 
   @Input()
-  maxRps: number;
-
-  @Input()
   interval: number;
 
   @Input()
@@ -45,6 +42,7 @@ export class WorkloadFormComponent implements OnInit {
 
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
+      maxRps: [1000, [Validators.required, Validators.pattern('[0-9]*')]],
       service: [undefined, Validators.required],
       numberOfClients: [3, [Validators.required, Validators.pattern('[0-9]*')]]
     });

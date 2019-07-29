@@ -28,12 +28,6 @@
     ></app-time-input>
   </div>
   <div class="col-4">
-    <app-text-input
-      [form]="form"
-      controlName="maxRps"
-      isNumber="true"
-      name="Max RPS">
-    </app-text-input>
     <div class="input-group mb-3 buttons">
       <button (click)="submit()" type="submit" class="btn btn-primary">Submit</button>
       <button (click)="addWorkload()" type="submit" class="btn btn-success">Add workload</button>
@@ -51,7 +45,6 @@
     [services]="services"
     [duration]="form.get('duration').value"
     [interval]="form.get('interval').value"
-    [maxRps]="form.get('maxRps').value"
     (workloadSubmission)="handleWorkloadSubmission(entry[0],$event)"
     (removeWorkload)="removeWorkload(entry[0])"
   ></app-workload-form>

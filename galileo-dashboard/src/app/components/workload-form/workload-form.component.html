@@ -2,7 +2,7 @@
   <div class="editor col-9">
     <app-curve-editor
       [duration]="duration"
-      [maxRps]="maxRps"
+      [maxRps]="form.get('maxRps').value"
       [form]="curveForm"
       [interval]="interval"
       (formEmitter)="handleCurveForm($event)"
@@ -21,6 +21,12 @@
         [form]="form"
         [services]="services"
       ></app-service-selection>
+      <app-text-input
+        [form]="form"
+        controlName="maxRps"
+        isNumber="true"
+        name="Max RPS">
+      </app-text-input>
       <div class="buttons">
         <button (click)="reset()" type="submit" class="btn btn-primary">Reset</button>
         <button (click)="remove()" type="submit" class="btn btn-danger">Remove</button>
