@@ -202,7 +202,6 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit {
 
   private drawTick(x, y1, y2) {
     const container = d3.select(`[id="${this.id}"] g`);
-    console.info(container)
     container.append('line')
       .attr('x1', x)
       .attr('y1', y1)

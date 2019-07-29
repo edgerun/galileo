@@ -47,6 +47,14 @@ export class WorkloadFormComponent implements OnInit {
       service: [{name: ""}, Validators.required],
       numberOfClients: [3, [Validators.required, Validators.pattern('[0-9]*')]]
     });
+
+    this.form.get('service').valueChanges.subscribe(val => {
+      this.handleCurveForm(this.calculatedForm);
+    });
+
+    this.form.get('numberOfClients').valueChanges.subscribe(val => {
+      this.handleCurveForm(this.calculatedForm);
+    });
   }
 
   ngOnInit(): void {
