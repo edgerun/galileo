@@ -34,7 +34,7 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit {
       this._form = value;
     }
 
-    if (this.editor && !equals(this.form, value)) {
+    if (this.editor) {
       this._form = value;
       this.initEditor();
       this.debouncedRefresh();
@@ -251,8 +251,4 @@ function getProps(duration, maxRps, curve) {
     stretch: true,
     fixedAxis: D3CE.Axes.list[1]
   };
-}
-
-function equals(a: CurveForm, b: CurveForm): boolean {
-  return true;
 }
