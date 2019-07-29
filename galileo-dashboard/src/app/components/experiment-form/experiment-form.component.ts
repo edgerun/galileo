@@ -7,6 +7,7 @@ import * as d3 from 'd3';
 import {Submission} from "../../models/Submission";
 import {ExperimentConfiguration, WorkloadConfiguration} from "../../models/ExperimentConfiguration";
 import * as uuid from 'uuid/v4';
+import {tick} from "@angular/core/testing";
 
 @Component({
   selector: 'app-experiment-form',
@@ -60,7 +61,8 @@ export class ExperimentFormComponent implements OnInit {
 
 
   submit() {
-    if (!this.form.invalid) {
+    const configValidation: [boolean, string[]] = this.configurationsAreValid();
+    if (!this.form.invalid && configValidation[0]) {
       const configuration = this.getConfiguration();
 
       let submission: Submission = {
@@ -75,9 +77,49 @@ export class ExperimentFormComponent implements OnInit {
       };
 
       this.add.emit(submission);
+    } else {
+      this.errorMessage = configValidation[1][0];
+      setTimeout(() => {
+        this.errorMessage = '';
+      }, 2000)
     }
 
 
+  }
+
+  private configurationsAreValid(): [boolean, string[]] {
+    console.log('validate configurations');
+    console.log(this.calculatedWorkloads);
+    if (this.calculatedWorkloads.size == 0) {
+      const a: [boolean, string[]] = [false, ["No workloads defined"]];
+      return a;
+    }
+    const errors = [...this.calculatedWorkloads.values()].map(workload => {
+      const clients = workload.clients_per_host && workload.clients_per_host != 0;
+      if (!clients) {
+        const a: [boolean, string[]] = [false, ["Number of clients is empty/0."]];
+        return a;
+      }
+
+      const service = workload.service && workload.service !== '';
+      if (!service) {
+        const a: [boolean, string[]] = [false, ["No service chosen."]]
+        return a;
+      }
+
+      const ticks = workload.ticks.length != 0;
+      if (ticks) {
+        const onlyZeros = workload.ticks.every(val => val === 0);
+        if (onlyZeros) {
+          const a: [boolean, string []] = [false, ["Workload is empty."]];
+          return a;
+        }
+      }
+
+      const a: [boolean, string[]] = [true, []];
+      return a;
+    }).reduce((a, b) => [a[0] && b[0], a[1].concat(b[1])], [true, []]);
+    return errors;
   }
 
 

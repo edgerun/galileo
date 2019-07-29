@@ -1,4 +1,6 @@
-<div [formGroup]="form" *ngFor="let service of services" class="form-check form-check-inline">
-  <input class="form-check-input" type="radio" name="service" id="inlineRadio1" [value]="service" formControlName="service">
-  <label class="form-check-label" for="inlineRadio1">{{service.name}}</label>
-</div>
+<form class="form-group " [formGroup]="form">
+  <select [ngClass]="{'is-invalid': !form.get('service').value || form.get('service').value == ''}" id="serviceSelect" class="custom-select" required formControlName="service">
+    <option value="" disabled>Choose a service</option>
+    <option *ngFor="let service of services" [ngValue]="service">{{service.name}}</option>
+  </select>
+</form>

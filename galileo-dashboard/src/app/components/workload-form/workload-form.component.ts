@@ -40,11 +40,12 @@ export class WorkloadFormComponent implements OnInit {
 
   @Input()
   services: Service[];
+  errorMessage: string;
 
 
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
-      service: [{name: ""}, Validators.required],
+      service: [undefined, Validators.required],
       numberOfClients: [3, [Validators.required, Validators.pattern('[0-9]*')]]
     });
 
@@ -67,10 +68,21 @@ export class WorkloadFormComponent implements OnInit {
 
   handleCurveForm(form: CurveForm) {
     this.calculatedForm = form;
+
+
+
+    function getService(value: Service) {
+      if (value) {
+        return value.name;
+      } else {
+        return "";
+      }
+    }
+
     const workload: WorkloadConfiguration = {
-      service: this.form.get('service').value.name,
+      service: getService(this.form.get('service').value),
       ticks: this.calculatedForm.ticks,
-      clients_per_host: this.form.get('numberOfClients').value
+      clients_per_host: this.form.get('numberOfClients').value || 0
     };
 
     this.workloadSubmission.emit(workload);
