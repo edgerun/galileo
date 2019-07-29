@@ -34,17 +34,24 @@
       isNumber="true"
       name="Max RPS">
     </app-text-input>
-    <button (click)="submit()" type="submit" class="btn btn-primary  mb-2">Submit</button>
+    <div class="row">
+      <button (click)="submit()" type="submit" class="btn btn-primary  mb-2">Submit</button>
+      <button (click)="addWorkload()" type="submit" class="btn btn-success  mb-2">Add workload</button>
+    </div>
   </div>
 </form>
 <ngb-alert *ngIf="successMessage" type="success" (close)="successMessage = null">{{ successMessage }}</ngb-alert>
 <ngb-alert *ngIf="errorMessage" type="danger" (close)="errorMessage = null">{{ errorMessage }}</ngb-alert>
-<div class="row">
+<div class="row" *ngFor="let entry of workloads | keyvalue; trackBy: trackElement"
+>
   <app-workload-form
+    [id]="entry.key"
     [curveForm]="curveForm"
     [services]="services"
     [duration]="form.get('duration').value"
     [interval]="form.get('interval').value"
     [maxRps]="form.get('maxRps').value"
+    (workloadSubmission)="handleWorkloadSubmission(entry.key,$event)"
+    (removeWorkload)="removeWorkload(entry.key)"
   ></app-workload-form>
 </div>

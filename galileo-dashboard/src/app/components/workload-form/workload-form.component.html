@@ -6,6 +6,7 @@
       [form]="curveForm"
       [interval]="interval"
       (formEmitter)="handleCurveForm($event)"
+      [id]="id"
     ></app-curve-editor>
   </div>
   <div class="col-3">
@@ -20,7 +21,10 @@
         [form]="form"
         [services]="services"
       ></app-service-selection>
-      <button (click)="reset()" type="submit" class="btn btn-primary">Reset</button>
+      <div class="buttons">
+        <button (click)="reset()" type="submit" class="btn btn-primary">Reset</button>
+        <button (click)="remove()" type="submit" class="btn btn-danger">Remove</button>
+      </div>
     </form>
   </div>
 

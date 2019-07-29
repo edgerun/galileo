@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnInit} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {CurveForm} from "../../models/ExperimentForm";
 import {convertToSeconds, TimeUnit, timeUnits} from "../../models/TimeUnit";
@@ -17,10 +17,17 @@ export class WorkloadFormComponent implements OnInit {
   private _initCurveForm: CurveForm;
   form: FormGroup;
   calculatedForm: CurveForm;
+
+  @Output()
   workloadSubmission: EventEmitter<WorkloadConfiguration> = new EventEmitter<WorkloadConfiguration>();
 
+  @Output()
+  removeWorkload = new EventEmitter<void>();
   @Input()
   duration: number;
+
+  @Input()
+  id: string;
 
   @Input()
   maxRps: number;
@@ -65,4 +72,7 @@ export class WorkloadFormComponent implements OnInit {
     this.curveForm = this._initCurveForm;
   }
 
+  remove() {
+    this.removeWorkload.emit()
+  }
 }

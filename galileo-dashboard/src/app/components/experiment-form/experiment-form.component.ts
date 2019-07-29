@@ -6,6 +6,7 @@ import {Service} from "../../models/Service";
 import * as d3 from 'd3';
 import {Submission} from "../../models/Submission";
 import {ExperimentConfiguration, WorkloadConfiguration} from "../../models/ExperimentConfiguration";
+import * as uuid from 'uuid/v4';
 
 @Component({
   selector: 'app-experiment-form',
@@ -32,10 +33,15 @@ export class ExperimentFormComponent implements OnInit {
     points: [{x: 0, y: 0}, {x: 100, y: 0}],
     curve: d3.curveBasis
   };
-  workloads: Map<number, WorkloadConfiguration>;
+  workloads: Map<string, WorkloadConfiguration>;
+  calculatedWorkloads: Map<string, WorkloadConfiguration>;
 
   constructor(private fb: FormBuilder) {
-    this.curveForm
+    this.workloads = new Map<string, WorkloadConfiguration>();
+    this.calculatedWorkloads = new Map<string, WorkloadConfiguration>();
+    this.workloads.set(uuid(), {
+      clients_per_host: 3, service: "", ticks: []
+    })
   }
 
   ngOnInit() {
@@ -103,8 +109,10 @@ export class ExperimentFormComponent implements OnInit {
     return experiment;
   }
 
-  handleWorkloadSubmission(i: number, workload: WorkloadConfiguration) {
-    this.workloads.set(i, workload);
+  handleWorkloadSubmission(i: string, workload: WorkloadConfiguration) {
+    console.info('handleWorkloadSubmission');
+    console.info(workload);
+    this.calculatedWorkloads.set(i, workload);
   }
 
   private getConfiguration() {
@@ -119,8 +127,25 @@ export class ExperimentFormComponent implements OnInit {
     const configuration: ExperimentConfiguration = {
       duration: `${durationInSeconds}s`,
       interval: `${intervalInSeconds}s`,
-      workloads: [...this.workloads.values()]
+      workloads: [...this.calculatedWorkloads.values()]
     };
     return configuration;
+  }
+
+  removeWorkload(key: string) {
+    this.workloads.delete(key);
+  }
+
+  addWorkload() {
+    const id = uuid();
+    console.log(id);
+    this.workloads.set(uuid(), {
+      clients_per_host: 3, service: "", ticks: []
+    });
+
+  }
+
+  trackElement(index: number, element: any) {
+    return element ? element.key : null
   }
 }
