@@ -42,16 +42,16 @@
 </form>
 <ngb-alert *ngIf="successMessage" type="success" (close)="successMessage = null">{{ successMessage }}</ngb-alert>
 <ngb-alert *ngIf="errorMessage" type="danger" (close)="errorMessage = null">{{ errorMessage }}</ngb-alert>
-<div class="row" *ngFor="let entry of workloads | keyvalue; trackBy: trackElement"
+<div class="row" *ngFor="let entry of workloads"
 >
   <app-workload-form
-    [id]="entry.key"
+    [id]="entry[0]"
     [curveForm]="curveForm"
     [services]="services"
     [duration]="form.get('duration').value"
     [interval]="form.get('interval').value"
     [maxRps]="form.get('maxRps').value"
-    (workloadSubmission)="handleWorkloadSubmission(entry.key,$event)"
-    (removeWorkload)="removeWorkload(entry.key)"
+    (workloadSubmission)="handleWorkloadSubmission(entry[0],$event)"
+    (removeWorkload)="removeWorkload(entry[0])"
   ></app-workload-form>
 </div>

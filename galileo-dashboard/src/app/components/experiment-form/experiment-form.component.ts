@@ -33,15 +33,15 @@ export class ExperimentFormComponent implements OnInit {
     points: [{x: 0, y: 0}, {x: 100, y: 0}],
     curve: d3.curveBasis
   };
-  workloads: Map<string, WorkloadConfiguration>;
+  workloads: [string, WorkloadConfiguration][];
   calculatedWorkloads: Map<string, WorkloadConfiguration>;
 
   constructor(private fb: FormBuilder) {
-    this.workloads = new Map<string, WorkloadConfiguration>();
+    this.workloads = [];
     this.calculatedWorkloads = new Map<string, WorkloadConfiguration>();
-    this.workloads.set(uuid(), {
+    this.workloads.push([uuid(), {
       clients_per_host: 3, service: "", ticks: []
-    })
+    }])
   }
 
   ngOnInit() {
@@ -133,19 +133,18 @@ export class ExperimentFormComponent implements OnInit {
   }
 
   removeWorkload(key: string) {
-    this.workloads.delete(key);
+    this.workloads = this.workloads.filter(val => val[0] !== key);
+    this.calculatedWorkloads.delete(key);
   }
 
   addWorkload() {
     const id = uuid();
     console.log(id);
-    this.workloads.set(uuid(), {
+    this.workloads.push([uuid(), {
       clients_per_host: 3, service: "", ticks: []
-    });
+    }]);
 
   }
 
-  trackElement(index: number, element: any) {
-    return element ? element.key : null
-  }
+
 }
