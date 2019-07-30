@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
+import {ActivatedRoute} from "@angular/router";
 
 @Component({
   selector: 'app-header',
@@ -7,9 +8,25 @@ import { Component, OnInit } from '@angular/core';
 })
 export class HeaderComponent implements OnInit {
 
-  constructor() { }
+  links: { text: string, url: string }[];
 
-  ngOnInit() {
+  constructor(private route: ActivatedRoute) {
   }
 
+  ngOnInit() {
+    this.links = [
+      {
+        text: 'Home',
+        url: '/'
+      },
+      {
+        text: 'Create Experiment',
+        url: '/create'
+      }
+    ];
+  }
+
+  isActive(link: { text: string; url: string }) {
+
+  }
 }

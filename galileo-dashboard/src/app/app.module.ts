@@ -21,6 +21,7 @@ import {ExperimentService, HttpExperimentService, MockExperimentService} from ".
 import {environment} from "../environments/environment";
 import {HttpClientModule} from '@angular/common/http';
 import { WorkloadFormComponent } from './components/workload-form/workload-form.component';
+import { SubmissionsComponent } from './views/submissions/submissions.component';
 
 
 @NgModule({
@@ -37,6 +38,7 @@ import { WorkloadFormComponent } from './components/workload-form/workload-form.
     TextInputComponent,
     NumericDirective,
     WorkloadFormComponent,
+    SubmissionsComponent,
   ],
   imports: [
     BrowserModule,
