@@ -135,7 +135,14 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     }
   }
 
-  private tryRenameAxis(anchor: string, oldPoints: number[], max: number): [boolean, number[]] {
+  private renameDurationTicks() {
+    const result = this.tryRenameAxis('middle', this.oldDurationPoints, this.duration.value, this.duration.kind);
+    if (result[0]) {
+      this.oldDurationPoints = result[1];
+    }
+  }
+
+  private tryRenameAxis(anchor: string, oldPoints: number[], max: number, unit: string = ""): [boolean, number[]] {
     const textNodes = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="${anchor}"] g text`)];
     let equals = true;
     if (textNodes.length > 0) {
@@ -148,28 +155,23 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
       }
       if (equals) return [false, []];
     }
-    return this.renameAxis(anchor, max);
+    return this.renameAxis(anchor, max, unit);
   }
 
-  private renameAxis(anchor: string, max: number): [boolean, number[]] {
+  private renameAxis(anchor: string, max: number, unit: string = ""): [boolean, number[]] {
     const textNodes = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="${anchor}"] g text`)];
-    this.renameNodes(max, textNodes);
+    this.renameNodes(max, textNodes, unit);
     return [true, textNodes.map(t => +t.innerHTML)];
   }
 
-  private renameNodes(max: number, textNodes) {
+  private renameNodes(max: number, textNodes, unit: string = "") {
     const fn = (val: number) => val * (max / 100);
     textNodes.forEach(node => {
-      node.innerHTML = fn(+node.innerHTML);
+      const number = +(node.innerHTML.split(" ")[0]);
+      node.innerHTML = fn(number) + " " + unit;
     });
   }
 
-  private renameDurationTicks() {
-    const result = this.tryRenameAxis('middle', this.oldDurationPoints, this.duration.value);
-    if (result[0]) {
-      this.oldDurationPoints = result[1];
-    }
-  }
 
   private initEditor() {
     if (this.document.getElementById(this.id) != null) {
@@ -329,6 +331,6 @@ function getProps(duration, maxRps, curve) {
     curve: curve,
     stretch: true,
     fixedAxis: D3CE.Axes.list[1],
-    margin: 40
+    margin: 60
   };
 }
