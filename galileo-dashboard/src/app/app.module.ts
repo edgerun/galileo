@@ -22,6 +22,8 @@ import {environment} from "../environments/environment";
 import {HttpClientModule} from '@angular/common/http';
 import { WorkloadFormComponent } from './components/workload-form/workload-form.component';
 import { SubmissionsComponent } from './views/submissions/submissions.component';
+import { ExperimentListComponent } from './components/experiment-list/experiment-list.component';
+import { SimpleExperimentListItemComponent } from './components/simple-experiment-list-item/simple-experiment-list-item.component';
 
 
 @NgModule({
@@ -39,6 +41,8 @@ import { SubmissionsComponent } from './views/submissions/submissions.component'
     NumericDirective,
     WorkloadFormComponent,
     SubmissionsComponent,
+    ExperimentListComponent,
+    SimpleExperimentListItemComponent,
   ],
   imports: [
     BrowserModule,
