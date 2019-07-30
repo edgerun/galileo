@@ -1,5 +1,3 @@
-<p>{{form.value.toString()}}</p>
-
 <form class="form-inline" [formGroup]="form">
   <div class="col-4">
     <app-text-input
@@ -45,8 +43,8 @@
     [id]="entry[0]"
     [curveForm]="curveForm"
     [services]="services"
-    [duration]="durationInSeconds"
-    [interval]="intervalInSeconds"
+    [duration]="durationTime"
+    [interval]="intervalTime"
     (workloadSubmission)="handleWorkloadSubmission(entry[0],$event)"
     (removeWorkload)="removeWorkload(entry[0])"
   ></app-workload-form>

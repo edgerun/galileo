@@ -13,6 +13,7 @@ import {DOCUMENT} from "@angular/common";
 import {CurveForm} from "../../models/ExperimentForm";
 import * as d3 from 'd3';
 import {debounce} from "ts-debounce";
+import {convertTimeToSeconds, Time} from "../../models/TimeUnit";
 
 @Component({
   selector: 'app-curve-editor',
@@ -44,17 +45,17 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
   }
 
   @Input()
-  set duration(value: number) {
-    if (value > 0 && this.duration != value) {
-      this._duration = value;
+  set duration(time: Time) {
+    if (!this.duration || (time.value > 0 && !this.duration.equals(time))) {
+      this._duration = time;
       this.debouncedRefresh();
     }
   }
 
   @Input()
-  set interval(value: number) {
-    if (value > 0 && this.interval != value) {
-      this._interval = value;
+  set interval(time: Time) {
+    if (!this.interval || (time.value > 0 && !this.interval.equals(time))) {
+      this._interval = time;
       this.debouncedRefresh();
     }
   }
@@ -70,8 +71,8 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
   @Output()
   private formEmitter: EventEmitter<CurveForm> = new EventEmitter();
 
-  private _duration: number;
-  private _interval: number;
+  private _duration: Time;
+  private _interval: Time;
   private _form: CurveForm;
   private _maxRps: number;
   editor;
@@ -157,14 +158,14 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
   }
 
   private renameNodes(max: number, textNodes) {
-    const fn = (val: number) => Math.ceil(val * (max / 100));
+    const fn = (val: number) => val * (max / 100);
     textNodes.forEach(node => {
       node.innerHTML = fn(+node.innerHTML);
     });
   }
 
   private renameDurationTicks() {
-    const result = this.tryRenameAxis('middle', this.oldDurationPoints, this.duration);
+    const result = this.tryRenameAxis('middle', this.oldDurationPoints, this.duration.value);
     if (result[0]) {
       this.oldDurationPoints = result[1];
     }
@@ -222,8 +223,10 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     const max = points[points.length - 1];
     const min = points[0]; // we assume min.x = 0
 
-    // TODO: translate duration and interval into seconds
-    const n = Math.ceil(this.duration / this.interval);
+    const durationSeconds = convertTimeToSeconds(this.duration);
+    const intervalSeconds = convertTimeToSeconds(this.interval);
+    const n = Math.ceil(durationSeconds / intervalSeconds);
+    console.info(n);
     const interval_screen = max.x / n; // distance between ticks in screen space
     const fn: Array<number> = new Array<number>(n); // y values in function space
 

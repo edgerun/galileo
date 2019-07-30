@@ -3,6 +3,14 @@ export interface TimeUnit {
   text: string
 }
 
+export class Time {
+  constructor(public value: number, public kind: TimeUnitKind) {}
+
+  equals(other: Time): boolean {
+    return other.value == this.value && other.kind == this.kind;
+  }
+}
+
 export enum TimeUnitKind {
   Second = "s",
   Minute = "min"
@@ -27,3 +35,13 @@ export function convertToSeconds(value: number, unit: TimeUnit): number {
       return value;
   }
 }
+
+export function convertTimeToSeconds(time: Time): number {
+    switch (time.kind) {
+    case TimeUnitKind.Minute:
+      return time.value * 60;
+    case TimeUnitKind.Second:
+      return time.value;
+  }
+}
+

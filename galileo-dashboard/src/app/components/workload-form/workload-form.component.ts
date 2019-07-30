@@ -1,7 +1,7 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {CurveForm} from "../../models/ExperimentForm";
-import {convertToSeconds, TimeUnit, timeUnits} from "../../models/TimeUnit";
+import {convertToSeconds, Time, TimeUnit, timeUnits} from "../../models/TimeUnit";
 import * as d3 from 'd3';
 import {ExperimentConfiguration, WorkloadConfiguration} from "../../models/ExperimentConfiguration";
 import {Service} from "../../models/Service";
@@ -23,14 +23,15 @@ export class WorkloadFormComponent implements OnInit {
 
   @Output()
   removeWorkload = new EventEmitter<void>();
+
   @Input()
-  duration: number;
+  duration: Time;
 
   @Input()
   id: string;
 
   @Input()
-  interval: number;
+  interval: Time;
 
   @Input()
   curveForm: CurveForm;

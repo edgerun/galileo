@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
-import {convertToSeconds, TimeUnit, timeUnits} from "../../models/TimeUnit";
+import {convertToSeconds, Time, TimeUnit, timeUnits} from "../../models/TimeUnit";
 import {CurveForm, CurveKind} from "../../models/ExperimentForm";
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {Service} from "../../models/Service";
@@ -34,12 +34,19 @@ export class ExperimentFormComponent implements OnInit {
     points: [{x: 0, y: 0}, {x: 100, y: 0}],
     curve: d3.curveBasis
   };
+
   workloads: [string, WorkloadConfiguration][];
   calculatedWorkloads: Map<string, WorkloadConfiguration>;
 
   constructor(private fb: FormBuilder) {
+  }
+
+  ngOnInit() {
+      this.durationTime = new Time(100, timeUnits[0].id);
+    this.intervalTime = new Time(10, timeUnits[0].id);
     this.workloads = [];
     this.calculatedWorkloads = new Map<string, WorkloadConfiguration>();
+
     this.workloads.push([uuid(), {
       clients_per_host: 3, service: "", ticks: []
     }]);
@@ -54,47 +61,22 @@ export class ExperimentFormComponent implements OnInit {
       maxRps: [1000, [Validators.required, Validators.pattern('[0-9]*')]],
     });
 
-    this.durationInSeconds = convertToSeconds(100, timeUnits[0]);
-    this.intervalInSeconds = convertToSeconds(10, timeUnits[0]);
-
     this.form.get('duration').valueChanges.subscribe(val => {
-      console.info(`duration change, newval: ${val}`);
-      console.log(val);
-
-      this.durationInSeconds = convertToSeconds(val, this.form.get('durationUnit').value);
-      console.info(`durationInSeconds: ${this.durationInSeconds}`)
+      this.durationTime = new Time(+val, this.form.get('durationUnit').value.id);
     });
 
     this.form.get('durationUnit').valueChanges.subscribe(val => {
-      console.info(`duration change, newval: ${JSON.stringify(val)}`);
-      console.table(val.id);
-      console.log(val);
-      console.info('durationUnit change');
-      this.durationInSeconds = convertToSeconds(this.form.get('duration').value, val);
-      console.info(`durationInSeconds: ${this.durationInSeconds}`)
-
+      this.durationTime = new Time(+this.form.get('duration').value, val.id);
     });
 
     this.form.get('interval').valueChanges.subscribe(val => {
-      console.info('interval change');
-      this.intervalInSeconds = convertToSeconds(val, this.form.get('intervalUnit').value);
-      console.info(`intervalInSeconds: ${this.intervalInSeconds}`)
+      this.intervalTime = new Time(+val, this.form.get('intervalUnit').value.id);
     });
 
     this.form.get('intervalUnit').valueChanges.subscribe(val => {
-      console.info('intevalUnit change');
-      this.intervalInSeconds = convertToSeconds(this.form.get('interval').value, val);
-      console.info(`intervalInSeconds: ${this.intervalInSeconds}`)
+      this.intervalTime = new Time(+this.form.get('interval').value, val.id);
     });
   }
-
-  ngOnInit() {
-
-  }
-
-  durationInSeconds: number;
-  intervalInSeconds: number;
-
 
   submit() {
     const configValidation: [boolean, string[]] = this.configurationsAreValid();
@@ -119,8 +101,6 @@ export class ExperimentFormComponent implements OnInit {
         this.errorMessage = '';
       }, 2000)
     }
-
-
   }
 
   private configurationsAreValid(): [boolean, string[]] {
@@ -158,6 +138,8 @@ export class ExperimentFormComponent implements OnInit {
     return errors;
   }
 
+  durationTime: Time;
+  intervalTime: Time;
 
   private initCurveForm() {
     return {
