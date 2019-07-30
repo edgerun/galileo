@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core';
+import {Experiment} from "../../models/Experiment";
 
 @Component({
   selector: 'app-experiment-list',
@@ -6,6 +7,9 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./experiment-list.component.css']
 })
 export class ExperimentListComponent implements OnInit {
+
+  @Input()
+  experiments: Experiment[];
 
   constructor() { }
 

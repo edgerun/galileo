@@ -1,0 +1,18 @@
+<div>
+  <h4>Currently running experiments</h4>
+  <app-experiment-list
+    [experiments]="runningExperiments()"
+  ></app-experiment-list>
+</div>
+<div>
+  <h4>Queued experiments</h4>
+  <app-experiment-list
+    [experiments]="queuedExperiments()"
+  ></app-experiment-list>
+</div>
+<div>
+  <h4>Finished experiments</h4>
+  <app-experiment-list
+    [experiments]="finishedExperiments()">
+  </app-experiment-list>
+</div>

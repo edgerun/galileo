@@ -16,8 +16,8 @@ export class HeaderComponent implements OnInit {
   ngOnInit() {
     this.links = [
       {
-        text: 'Submissions',
-        url: '/submissions'
+        text: 'Experiments',
+        url: '/experiments'
       },
       {
         text: 'Submit Experiment',

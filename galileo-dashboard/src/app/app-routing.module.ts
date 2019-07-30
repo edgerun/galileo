@@ -2,7 +2,7 @@ import {NgModule} from '@angular/core';
 import {Routes, RouterModule} from '@angular/router';
 import {ExperimentComponent} from "./views/experiment/experiment.component";
 import {PageNotFoundComponent} from "./views/page-not-found/page-not-found.component";
-import {SubmissionsComponent} from "./views/submissions/submissions.component";
+import {ExperimentsOverviewComponent} from "./views/experiments-overview/experiments-overview.component";
 
 
 const routes: Routes = [
@@ -10,10 +10,10 @@ const routes: Routes = [
     path: 'create', component: ExperimentComponent
   },
   {
-    path: 'submissions', component: SubmissionsComponent
+    path: 'experiments', component: ExperimentsOverviewComponent
   },
   {
-    path: '', redirectTo: 'submissions', pathMatch: 'full'
+    path: '', redirectTo: 'experiments', pathMatch: 'full'
   },
   {
     path: '**', component: PageNotFoundComponent
