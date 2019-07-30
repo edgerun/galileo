@@ -69,7 +69,6 @@ export class WorkloadFormComponent implements OnInit {
     this.calculatedForm = form;
 
 
-
     function getService(value: Service) {
       if (value) {
         return value.name;
@@ -88,7 +87,11 @@ export class WorkloadFormComponent implements OnInit {
   }
 
   reset() {
-    this.curveForm = this._initCurveForm;
+    this.curveForm = {
+      curve: this._initCurveForm.curve,
+      ticks: this._initCurveForm.ticks.map(t => t),
+      points: this._initCurveForm.points.map(p => p)
+    }
   }
 
   remove() {
