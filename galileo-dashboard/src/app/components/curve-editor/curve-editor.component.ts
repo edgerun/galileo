@@ -5,7 +5,7 @@ import {
   Component,
   EventEmitter,
   Inject,
-  Input, OnDestroy,
+  Input, OnDestroy, OnInit,
   Output
 } from '@angular/core';
 import * as D3CE from 'd3-curve-editor';
@@ -23,11 +23,21 @@ import {convertTimeToSeconds, Time} from "../../models/TimeUnit";
 })
 export class CurveEditorComponent implements AfterContentInit, AfterViewInit, OnDestroy {
 
+  private oldRpsMax: number;
+  private oldDuration: number;
+  private observer: MutationObserver;
+  private _duration: Time;
+  private _interval: Time;
+  private _form: CurveForm;
+  private _maxRps: number;
+  editor;
+
   @Input()
   id: string;
 
   @Input()
   set form(value: CurveForm) {
+    console.info('set form')
     if (!this.form) {
       this._form = value;
     }
@@ -46,8 +56,15 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
 
   @Input()
   set duration(time: Time) {
-    if (!this.duration || (time.value > 0 && !this.duration.equals(time))) {
+    if ((time.value > 0 && (!this.duration || !this.duration.equals(time)))) {
+      if (!this.duration) {
+        this.oldDuration = 100;
+      } else {
+        this.oldDuration = this.duration.value;
+      }
+
       this._duration = time;
+      this.renameDurationTicks();
       this.debouncedRefresh();
     }
   }
@@ -60,10 +77,13 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     }
   }
 
+
   @Input()
   set maxRps(value: number) {
     if (value > 0 && this.maxRps != value) {
+      this.oldRpsMax = this.maxRps;
       this._maxRps = value;
+      this.renameRpsTicks();
       this.debouncedRefresh();
     }
   }
@@ -71,25 +91,10 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
   @Output()
   private formEmitter: EventEmitter<CurveForm> = new EventEmitter();
 
-  private _duration: Time;
-  private _interval: Time;
-  private _form: CurveForm;
-  private _maxRps: number;
-  editor;
 
   get duration() {
     return this._duration;
   }
-
-  private debouncedRefresh = debounce(this.refreshValues, 500);
-
-  private refreshValues() {
-    if (this.editor) {
-      const points = this.getCircles();
-      this.emitCalculatedPoints(points);
-    }
-  }
-
 
   get maxRps(): number {
     return this._maxRps;
@@ -104,131 +109,30 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
   }
 
   lines: D3CE.Line[] = [];
-  private oldRpsPoints: number[] = [];
-  private oldDurationPoints: number[] = [];
-  private timer: number = -1;
+
 
   ngAfterContentInit() {
     this.initEditor();
-    this.timer = setInterval(() => {
-      this.renameRpsTicks();
-      this.renameDurationTicks();
-    }, 50);
-  }
-
-  ngOnDestroy(): void {
-    if (this.timer != -1) {
-      clearInterval(this.timer);
-      this.timer = -1;
-    }
   }
 
   ngAfterViewInit(): void {
     this.initEditor();
   }
 
-
-  private renameRpsTicks() {
-    const result = this.tryRenameAxis('end', this.oldRpsPoints, this.maxRps);
-    if (result[0]) {
-      this.oldRpsPoints = result[1];
+  ngOnDestroy(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = undefined;
     }
   }
 
-  private renameDurationTicks() {
-    const result = this.tryRenameAxis('middle', this.oldDurationPoints, this.duration.value, this.duration.kind);
-    if (result[0]) {
-      this.oldDurationPoints = result[1];
-    }
-  }
-
-  private tryRenameAxis(anchor: string, oldPoints: number[], max: number, unit: string = ""): [boolean, number[]] {
-    const textNodes = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="${anchor}"] g text`)];
-    let equals = true;
-    if (textNodes.length > 0) {
-      for (let i = 0; i < textNodes.length; i++) {
-        if (i < oldPoints.length) {
-          equals = equals && (oldPoints[i] === +textNodes[i].innerHTML);
-        } else {
-          equals = false;
-        }
-      }
-      if (equals) return [false, []];
-    }
-    return this.renameAxis(anchor, max, unit);
-  }
-
-  private renameAxis(anchor: string, max: number, unit: string = ""): [boolean, number[]] {
-    const textNodes = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="${anchor}"] g text`)];
-    this.renameNodes(max, textNodes, unit);
-    return [true, textNodes.map(t => +t.innerHTML)];
-  }
-
-  private renameNodes(max: number, textNodes, unit: string = "") {
-    const fn = (val: number) => val * (max / 100);
-    textNodes.forEach(node => {
-      const number = +(node.innerHTML.split(" ")[0]);
-      node.innerHTML = fn(number) + " " + unit;
-    });
-  }
-
-
-  private initEditor() {
-    if (this.document.getElementById(this.id) != null) {
-      const firstPoint = this.form.points[0];
-      const endPoint = this.form.points[1];
-      const curve = this.form.curve;
-      const point = new D3CE.CurvePoint(firstPoint.x, firstPoint.y).isFixed(true);
-      const line = new D3CE.Line("#47a", [
-        point,
-        new D3CE.CurvePoint(endPoint.x, endPoint.y).isFixed(true)
-      ]);
-      this.lines = [];
-      this.lines.push(line);
-
-      const container = this.document.getElementById(this.id);
-
-      container.innerHTML = '';
-      container.setAttribute('height', "0");
-
-      this.editor = new D3CE.CurveEditor(container, this.lines, getProps(this.duration, this.duration, curve));
-      this.editor.active = {
-        line,
-        point
-      };
-      const instance = this;
-
-      const debounced = debounce(() => {
-        instance.editor.view.update();
-        const points = instance.getCircles();
-        instance.emitCalculatedPoints(points);
-      }, 500);
-
-      this.editor.eventListener.on('add change', function (_) {
-        debounced();
-      });
-      this.emitCalculatedPoints(this.form.points);
-    }
-  }
-
-  private getCircles() {
-    const circles = [...this.document.querySelectorAll('circle')];
-    return circles.map(c => {
-      return {
-        x: c.getAttribute('cx'),
-        y: c.getAttribute('cy')
-      }
-    });
-  }
-
-  private emitCalculatedPoints(points: { x: number, y: number }[]) {
+    private emitCalculatedPoints(points: { x: number, y: number }[]) {
     const max = points[points.length - 1];
     const min = points[0]; // we assume min.x = 0
 
     const durationSeconds = convertTimeToSeconds(this.duration);
     const intervalSeconds = convertTimeToSeconds(this.interval);
     const n = Math.ceil(durationSeconds / intervalSeconds);
-    console.info(n);
     const interval_screen = max.x / n; // distance between ticks in screen space
     const fn: Array<number> = new Array<number>(n); // y values in function space
 
@@ -258,6 +162,99 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
 
     this.formEmitter.emit(this.form);
   }
+
+  private initEditor() {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = undefined;
+    }
+
+    if (this.document.getElementById(this.id) != null) {
+      const firstPoint = this.form.points[0];
+      const endPoint = this.form.points[1];
+      const curve = this.form.curve;
+      const point = new D3CE.CurvePoint(firstPoint.x, firstPoint.y).isFixed(true);
+      const line = new D3CE.Line("#47a", [
+        point,
+        new D3CE.CurvePoint(endPoint.x, endPoint.y).isFixed(true)
+      ]);
+      this.lines = [];
+      this.lines.push(line);
+
+      const container = this.document.getElementById(this.id);
+      container.innerHTML = '';
+      container.setAttribute('height', "0");
+
+      this.editor = new D3CE.CurveEditor(container, this.lines, getProps(this.duration, this.duration, curve));
+
+      this.editor.active = {
+        line,
+        point
+      };
+      const instance = this;
+
+      const debounced = debounce(() => {
+        instance.editor.view.update();
+        const points = instance.getCircles();
+        instance.emitCalculatedPoints(points);
+      }, 500);
+
+      this.editor.eventListener.on('add change', function (_) {
+        debounced();
+      });
+      this.emitCalculatedPoints(this.form.points);
+      this.initMutationObserver();
+    }
+  }
+
+  private initMutationObserver() {
+    const container = this.document.getElementById(this.id);
+    const node = container.querySelector('g');
+    this.observer = new MutationObserver((mutations) => {
+      this.oldRpsMax = 100;
+      this.oldDuration = 100;
+      this.renameRpsTicks();
+      this.renameDurationTicks();
+    });
+
+    this.observer.observe(node, {
+      attributes: true,
+    });
+
+    this.oldRpsMax = 100;
+    this.oldDuration = 100;
+    this.renameRpsTicks();
+    this.renameDurationTicks();
+  }
+
+    private renameRpsTicks() {
+    this.renameAxis('end', this.maxRps, this.oldRpsMax);
+  }
+
+  private renameDurationTicks() {
+    this.renameAxis('middle', this.duration.value, this.oldDuration, this.duration.kind);
+  }
+
+  private renameAxis(anchor: string, max: number, old: number, unit: string = "") {
+    const textNodes = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="${anchor}"] g text`)];
+    const fn = (val: number) => val * (max / old);
+    textNodes.forEach(node => {
+      const number = +(node.innerHTML.split(" ")[0]);
+      node.innerHTML = fn(number) + " " + unit;
+    });
+  }
+
+  private getCircles() {
+    const circles = [...this.document.querySelectorAll('circle')];
+    return circles.map(c => {
+      return {
+        x: c.getAttribute('cx'),
+        y: c.getAttribute('cy')
+      }
+    });
+  }
+
+
 
 
   private removeTicks() {
@@ -300,6 +297,17 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     }
     return point.y
   }
+
+
+  private debouncedRefresh = debounce(this.refreshValues, 500);
+
+  private refreshValues() {
+    if (this.editor) {
+      const points = this.getCircles();
+      this.emitCalculatedPoints(points);
+    }
+  }
+
 
 }
 
