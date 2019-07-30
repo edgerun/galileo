@@ -301,24 +301,6 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     return point.y
   }
 
-
-  private fixRpsTicks() {
-
-    // const container = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="end"] g`)];
-    // console.info(container);
-    // const size = container.length;
-    // const interval = this.maxRps / size;
-    // this.document.querySelector(`[id="${this.id}"] g[text-anchor="end"]`).innerHTML = "";
-    // for (let i = 0; i <= this.maxRps; i += interval) {
-    //   if (container[i]) {
-    //     container[i].innerHTML = i;
-    //     console.info(container[i]);
-    //     this.document.querySelector(`[id="${this.id}"] g[text-anchor="end"]`).appendChild(container[i]);
-    //   }
-    // }
-    //
-    // console.log(container);
-  }
 }
 
 function getProps(duration, maxRps, curve) {
