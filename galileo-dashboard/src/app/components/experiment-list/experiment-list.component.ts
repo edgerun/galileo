@@ -11,9 +11,19 @@ export class ExperimentListComponent implements OnInit {
   @Input()
   experiments: Experiment[];
 
+  collapsed: string = "";
+
   constructor() { }
 
   ngOnInit() {
   }
 
+  toggle(id: string) {
+    console.log(id);
+    if (this.collapsed == id) {
+      this.collapsed = ""
+    } else {
+      this.collapsed = id;
+    }
+  }
 }

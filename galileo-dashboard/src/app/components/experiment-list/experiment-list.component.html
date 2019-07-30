@@ -1,1 +1,15 @@
-<p *ngFor="let exp of experiments">{{exp.id}}</p>
+<div [ngClass]="{ 'accordion': experiments.length > 1}">
+  <div class="card" *ngFor="let exp of experiments">
+    <div class="card-header" [id]="exp.id">
+      <h2 class="mb-0">
+        <button data-toggle="collapse" class="btn btn-link" type="button" (click)="toggle(exp.id)">
+          ID: {{exp.id}}
+        </button>
+      </h2>
+    </div>
+
+    <div  [id]="'collapse' + exp.id" [ngbCollapse]="collapsed !== exp.id">
+          <app-simple-experiment-list-item [experiment]="exp"></app-simple-experiment-list-item>
+    </div>
+  </div>
+</div>

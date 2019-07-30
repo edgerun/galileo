@@ -32,28 +32,29 @@ export class MockExperimentService implements ExperimentService {
   findAll(): Observable<Experiment[]> {
     const experiments = [
       {
-        id: 'asdfklj-r3jkffa',
+        id: '1',
         creator: 'Philipp',
         name: 'Important Experiment',
         start: new Date().getTime(),
         end: new Date().getTime() + 100000,
-        created: new Date().getTime() - 1000,
+        created: new Date().getTime() - 1000000000,
         status: 'finished'
       },
       {
-        id: 'asdfklj-rasdg3jkffa',
-        status: 'queued'
+        id: '2',
+        status: 'queued',
+        created: new Date().getTime() - 100000
       },
       {
-        id: 'asdfklj-r3jkffa',
+        id: '3',
         creator: 'Philipp',
         name: 'Test Peaks',
         start: new Date().getTime(),
-        created: new Date().getTime() - 10000,
+        created: new Date().getTime() - 20000000,
         status: 'running'
       },
       {
-        id: 'asdfklj-r3jkffa',
+        id: '4',
         creator: 'User1',
         name: 'low load',
         start: new Date().getTime(),

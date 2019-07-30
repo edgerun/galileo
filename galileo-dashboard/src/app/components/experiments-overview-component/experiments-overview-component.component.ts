@@ -18,11 +18,15 @@ export class ExperimentsOverviewComponentComponent implements OnInit {
   }
 
   queuedExperiments() {
-    return this.experiments.filter(e => e.status === 'queued');
+    return this.experiments.filter(e => e.status === 'queued').sort((a,b) => -1 *this.sort(a,b));
+  }
+
+  private sort(a: Experiment, b: Experiment): number {
+    return a.created - b.created;
   }
 
   finishedExperiments() {
-    return this.experiments.filter(e => e.status === 'finished');
+    return this.experiments.filter(e => e.status === 'finished').sort((a,b) => this.sort(a,b));
   }
 
   runningExperiments() {
