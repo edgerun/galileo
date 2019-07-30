@@ -42,10 +42,8 @@ export class ExperimentFormComponent implements OnInit {
     this.calculatedWorkloads = new Map<string, WorkloadConfiguration>();
     this.workloads.push([uuid(), {
       clients_per_host: 3, service: "", ticks: []
-    }])
-  }
+    }]);
 
-  ngOnInit() {
     this.form = this.fb.group({
       name: ['', []],
       creator: ['', []],
@@ -56,8 +54,46 @@ export class ExperimentFormComponent implements OnInit {
       maxRps: [1000, [Validators.required, Validators.pattern('[0-9]*')]],
     });
 
+    this.durationInSeconds = convertToSeconds(100, timeUnits[0]);
+    this.intervalInSeconds = convertToSeconds(10, timeUnits[0]);
+
+    this.form.get('duration').valueChanges.subscribe(val => {
+      console.info(`duration change, newval: ${val}`);
+      console.log(val);
+
+      this.durationInSeconds = convertToSeconds(val, this.form.get('durationUnit').value);
+      console.info(`durationInSeconds: ${this.durationInSeconds}`)
+    });
+
+    this.form.get('durationUnit').valueChanges.subscribe(val => {
+      console.info(`duration change, newval: ${JSON.stringify(val)}`);
+      console.table(val.id);
+      console.log(val);
+      console.info('durationUnit change');
+      this.durationInSeconds = convertToSeconds(this.form.get('duration').value, val);
+      console.info(`durationInSeconds: ${this.durationInSeconds}`)
+
+    });
+
+    this.form.get('interval').valueChanges.subscribe(val => {
+      console.info('interval change');
+      this.intervalInSeconds = convertToSeconds(val, this.form.get('intervalUnit').value);
+      console.info(`intervalInSeconds: ${this.intervalInSeconds}`)
+    });
+
+    this.form.get('intervalUnit').valueChanges.subscribe(val => {
+      console.info('intevalUnit change');
+      this.intervalInSeconds = convertToSeconds(this.form.get('interval').value, val);
+      console.info(`intervalInSeconds: ${this.intervalInSeconds}`)
+    });
+  }
+
+  ngOnInit() {
 
   }
+
+  durationInSeconds: number;
+  intervalInSeconds: number;
 
 
   submit() {
