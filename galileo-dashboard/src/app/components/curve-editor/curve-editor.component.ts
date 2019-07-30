@@ -5,7 +5,7 @@ import {
   Component,
   EventEmitter,
   Inject,
-  Input,
+  Input, OnDestroy,
   Output
 } from '@angular/core';
 import * as D3CE from 'd3-curve-editor';
@@ -20,10 +20,7 @@ import {debounce} from "ts-debounce";
   styleUrls: ['./curve-editor.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CurveEditorComponent implements AfterContentInit, AfterViewInit {
-  ngAfterViewInit(): void {
-    this.initEditor();
-  }
+export class CurveEditorComponent implements AfterContentInit, AfterViewInit, OnDestroy {
 
   @Input()
   id: string;
@@ -66,7 +63,6 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit {
   set maxRps(value: number) {
     if (value > 0 && this.maxRps != value) {
       this._maxRps = value;
-      this.fixRpsTicks();
       this.debouncedRefresh();
     }
   }
@@ -107,56 +103,71 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit {
   }
 
   lines: D3CE.Line[] = [];
-  oldRpsPoints: number[] = [];
-  oldDurationPoints: number[] = [];
+  private oldRpsPoints: number[] = [];
+  private oldDurationPoints: number[] = [];
+  private timer: number = -1;
 
   ngAfterContentInit() {
     this.initEditor();
-    setInterval(() => {
-      const textNodes = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="end"] g text`)];
-      let equals = true;
-      if (textNodes.length > 0) {
-        for (let i = 0; i < textNodes.length; i++) {
-          if (i < this.oldRpsPoints.length) {
-            equals = equals && (this.oldRpsPoints[i] === +textNodes[i].innerHTML);
-          } else {
-            equals = false;
-          }
-        }
-        if (equals) return;
-        const fn = (val: number) => Math.ceil(val * (this.maxRps / 100));
-        textNodes.forEach(node => {
-          node.innerHTML = fn(+node.innerHTML);
-          console.log(`Original: ${node.innerHTML}, new value: ${Math.ceil(fn(+node.innerHTML))}`);
-        });
-
-
-        this.oldRpsPoints = textNodes.map(t => +t.innerHTML);
-      }
+    this.timer = setInterval(() => {
+      this.renameRpsTicks();
+      this.renameDurationTicks();
     }, 50);
+  }
 
-    setInterval(() => {
-      const textNodes = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="middle"] g text`)];
-      let equals = true;
-      if (textNodes.length > 0) {
-        for (let i = 0; i < textNodes.length; i++) {
-          if (i < this.oldDurationPoints.length) {
-            equals = equals && (this.oldDurationPoints[i] === +textNodes[i].innerHTML);
-          } else {
-            equals = false;
-          }
+  ngOnDestroy(): void {
+    if (this.timer != -1) {
+      clearInterval(this.timer);
+      this.timer = -1;
+    }
+  }
+
+  ngAfterViewInit(): void {
+    this.initEditor();
+  }
+
+
+  private renameRpsTicks() {
+    const result = this.tryRenameAxis('end', this.oldRpsPoints, this.maxRps);
+    if (result[0]) {
+      this.oldRpsPoints = result[1];
+    }
+  }
+
+  private tryRenameAxis(anchor: string, oldPoints: number[], max: number): [boolean, number[]] {
+    const textNodes = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="${anchor}"] g text`)];
+    let equals = true;
+    if (textNodes.length > 0) {
+      for (let i = 0; i < textNodes.length; i++) {
+        if (i < oldPoints.length) {
+          equals = equals && (oldPoints[i] === +textNodes[i].innerHTML);
+        } else {
+          equals = false;
         }
-        if (equals) return;
-        const fn = (val: number) => Math.ceil(val * (this.duration / 100));
-        textNodes.forEach(node => {
-          node.innerHTML = fn(+node.innerHTML);
-          console.log(`Original: ${node.innerHTML}, new value: ${Math.ceil(fn(+node.innerHTML))}`);
-        });
-
-
-        this.oldDurationPoints = textNodes.map(t => +t.innerHTML);
       }
-    }, 50);
+      if (equals) return [false, []];
+    }
+    return this.renameAxis(anchor, max);
+  }
+
+  private renameAxis(anchor: string, max: number): [boolean, number[]] {
+    const textNodes = [...this.document.querySelectorAll(`[id="${this.id}"] g[text-anchor="${anchor}"] g text`)];
+    this.renameNodes(max, textNodes);
+    return [true, textNodes.map(t => +t.innerHTML)];
+  }
+
+  private renameNodes(max: number, textNodes) {
+    const fn = (val: number) => Math.ceil(val * (max / 100));
+    textNodes.forEach(node => {
+      node.innerHTML = fn(+node.innerHTML);
+    });
+  }
+
+  private renameDurationTicks() {
+    const result = this.tryRenameAxis('middle', this.oldDurationPoints, this.duration);
+    if (result[0]) {
+      this.oldDurationPoints = result[1];
+    }
   }
 
   private initEditor() {
