@@ -10,7 +10,10 @@ const routes: Routes = [
     path: 'create', component: ExperimentComponent
   },
   {
-    path: '', component: SubmissionsComponent
+    path: 'submissions', component: SubmissionsComponent
+  },
+  {
+    path: '', redirectTo: 'submissions', pathMatch: 'full'
   },
   {
     path: '**', component: PageNotFoundComponent

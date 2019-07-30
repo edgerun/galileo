@@ -16,11 +16,11 @@ export class HeaderComponent implements OnInit {
   ngOnInit() {
     this.links = [
       {
-        text: 'Home',
-        url: '/'
+        text: 'Submissions',
+        url: '/submissions'
       },
       {
-        text: 'Create Experiment',
+        text: 'Submit Experiment',
         url: '/create'
       }
     ];
