@@ -15,14 +15,6 @@ from galileo.util import to_seconds
 logger = logging.getLogger(__name__)
 
 
-class ExperimentControllerMixin:
-    ectrl: ExperimentController
-
-    def __init__(self, ectrl) -> None:
-        super().__init__()
-        self.ectrl = ectrl
-
-
 class ServicesResource:
     def on_get(self, req, resp):
         # TODO: load dynamically, currently these are the ones started on the host
@@ -38,12 +30,20 @@ class ServicesResource:
         resp.media = services
 
 
-class HostsResource(ExperimentControllerMixin):
+class HostsResource:
+
+    def __init__(self, ectrl: ExperimentController):
+        self.ectrl = ectrl
+
     def on_get(self, req, resp):
         resp.media = list(self.ectrl.list_hosts())
 
 
-class ExperimentsResource(ExperimentControllerMixin):
+class ExperimentsResource:
+
+    def __init__(self, ectrl: ExperimentController):
+        self.ectrl = ectrl
+
     """
     here's an example request:
 
@@ -120,6 +120,7 @@ class CORSComponent(object):
     """
     CORS preprocessor from the Falcon documentation.
     """
+
     def process_response(self, req, resp, resource, req_succeeded):
         resp.set_header('Access-Control-Allow-Origin', '*')
 
