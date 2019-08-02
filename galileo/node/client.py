@@ -58,7 +58,7 @@ class MXNetImageClassifierService(Service):
         self.model = model
 
     def request(self, host, request: ServiceRequest, timeout=None):
-        url = 'http://' + host + '/predictions/' + self.model
+        url = 'http://' + host + ':8080/predictions/' + self.model
 
         file_name = request.payload['name']
         file_data = request.payload['data']
