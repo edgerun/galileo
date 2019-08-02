@@ -248,3 +248,12 @@ class ExperimentSQLDatabase(ExperimentDatabase):
 
     def save_telemetry(self, telemetry: List[Telemetry]):
         self.db.insert_many('telemetry', Telemetry._fields, telemetry)
+
+    def find_all(self) -> List[Experiment]:
+        sql = 'SELECT * FROM `experiments`'
+
+        entries = self.db.fetchall(sql)
+
+        return list(map(lambda x: Experiment(*(tuple(x))), entries))
+
+

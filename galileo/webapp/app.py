@@ -10,6 +10,7 @@ from symmetry.eventbus.redis import RedisConfig
 from galileo.controller import ExperimentController
 from galileo.experiment.experimentd import generate_experiment_id
 from galileo.experiment.model import WorkloadConfiguration, ExperimentConfiguration, Experiment
+from galileo.experiment.service.experiment import ExperimentService
 from galileo.util import to_seconds
 
 logger = logging.getLogger(__name__)
@@ -41,8 +42,15 @@ class HostsResource:
 
 class ExperimentsResource:
 
-    def __init__(self, ectrl: ExperimentController):
+    def __init__(self, ectrl: ExperimentController, exp_service: ExperimentService):
         self.ectrl = ectrl
+        self.exp_service = exp_service;
+
+    def on_get(self, req: falcon.Request, resp):
+        logger.debug('find all experiments')
+        experiments = self.exp_service.find_all()
+        logger.debug(f"found {len(experiments)} experiments")
+        resp.media = experiments
 
     """
     here's an example request:

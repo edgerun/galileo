@@ -1,5 +1,6 @@
 import time
 from abc import ABC
+from typing import List
 
 from galileo.experiment.db import ExperimentDatabase
 from galileo.experiment.model import Experiment
@@ -17,6 +18,9 @@ class ExperimentService(ABC):
         raise NotImplementedError
 
     def exists(self, exp_id: str) -> bool:
+        raise NotImplementedError
+
+    def find_all(self) -> List[Experiment]:
         raise NotImplementedError
 
 
@@ -44,3 +48,6 @@ class SimpleExperimentService(ExperimentService):
 
     def exists(self, exp_id) -> bool:
         return self.repository.get_experiment(exp_id) is not None
+
+    def find_all(self):
+        return self.repository.find_all()

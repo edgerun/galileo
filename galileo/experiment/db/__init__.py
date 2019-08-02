@@ -43,3 +43,6 @@ class ExperimentDatabase(ABC):
 
     def save_telemetry(self, telemetry: List[Telemetry]):
         raise NotImplementedError
+
+    def find_all(self) -> List[Experiment]:
+        raise NotImplementedError
