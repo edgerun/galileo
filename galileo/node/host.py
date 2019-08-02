@@ -76,6 +76,8 @@ class RequestGenerator:
         if value < 0:
             raise ValueError('cannot set negative requests per second')
 
+        log.info('setting rps to %s, current items in queue: %s', value, self.queue.qsize())
+
         if not self._rps and value > 0:
             # resetting rps to something > 0
             self._rps = value
