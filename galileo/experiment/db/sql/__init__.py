@@ -255,5 +255,3 @@ class ExperimentSQLDatabase(ExperimentDatabase):
         entries = self.db.fetchall(sql)
 
         return list(map(lambda x: Experiment(*(tuple(x))), entries))
-
-

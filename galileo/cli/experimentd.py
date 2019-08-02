@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def init_database() -> ExperimentDatabase:
+    # TODO: accessed by both the web app and experimentd: move somewhere more general.
     db_type = os.getenv('DB_TYPE', 'sqlite')
 
     if db_type == 'sqlite':

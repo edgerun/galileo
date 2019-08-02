@@ -6,11 +6,14 @@ import falcon
 import redis
 from symmetry import eventbus
 from symmetry.eventbus.redis import RedisConfig
+from symmetry.webapp import JSONMiddleware, ApiResource
 
+from galileo.cli.experimentd import init_database
 from galileo.controller import ExperimentController
+from galileo.experiment.db import ExperimentDatabase
 from galileo.experiment.experimentd import generate_experiment_id
 from galileo.experiment.model import WorkloadConfiguration, ExperimentConfiguration, Experiment
-from galileo.experiment.service.experiment import ExperimentService
+from galileo.experiment.service.experiment import ExperimentService, SimpleExperimentService
 from galileo.util import to_seconds
 
 logger = logging.getLogger(__name__)
@@ -37,20 +40,20 @@ class HostsResource:
         self.ectrl = ectrl
 
     def on_get(self, req, resp):
-        resp.media = list(self.ectrl.list_hosts())
+        resp.json = list(self.ectrl.list_hosts())
 
 
 class ExperimentsResource:
 
     def __init__(self, ectrl: ExperimentController, exp_service: ExperimentService):
         self.ectrl = ectrl
-        self.exp_service = exp_service;
+        self.exp_service = exp_service
 
     def on_get(self, req: falcon.Request, resp):
-        logger.debug('find all experiments')
+        logger.debug('fetching all experiments')
         experiments = self.exp_service.find_all()
         logger.debug(f"found {len(experiments)} experiments")
-        resp.media = experiments
+        resp.json = [exp.__dict__ for exp in experiments]
 
     """
     here's an example request:
@@ -92,7 +95,7 @@ class ExperimentsResource:
         duration = to_seconds(doc['configuration']['duration'])
         interval = to_seconds(doc['configuration']['interval'])
         config = ExperimentConfiguration(duration, interval, workloads)
-        logger.debug('deserialized expeciment config %s', config)
+        logger.debug('deserialized experiment config %s', config)
 
         logger.debug('queuing experiment with id %s', exp.id)
         self.ectrl.queue(config, exp)
@@ -103,14 +106,17 @@ class ExperimentsResource:
 def setup(api, context):
     rds = context.rds
 
+    api.add_route('/api', ApiResource(api))
     api.add_route('/api/hosts', HostsResource(context.ectrl))
     api.add_route('/api/services', ServicesResource())
-    api.add_route('/api/experiments', ExperimentsResource(context.ectrl))
+    api.add_route('/api/experiments', ExperimentsResource(context.ectrl, context.exp_service))
 
 
 class AppContext:
     rds: redis.Redis
     ectrl: ExperimentController
+    exp_db: ExperimentDatabase
+    exp_service: ExperimentService
 
 
 def init_context():
@@ -120,6 +126,8 @@ def init_context():
     eventbus.init(RedisConfig(context.rds))
 
     context.ectrl = ExperimentController(context.rds)
+    context.exp_db = init_database()
+    context.exp_service = SimpleExperimentService(context.exp_db)
 
     return context
 
@@ -154,5 +162,5 @@ class CORSComponent(object):
             ))
 
 
-api = falcon.API(middleware=[CORSComponent()])
+api = falcon.API(middleware=[CORSComponent(), JSONMiddleware()])
 setup(api, init_context())
