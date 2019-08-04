@@ -18,7 +18,7 @@ export class ExperimentsOverviewComponentComponent implements OnInit {
   }
 
   queuedExperiments() {
-    return this.experiments.filter(e => e.status === 'queued').sort((a,b) => -1 *this.sort(a,b));
+    return this.experiments.filter(e => e.status.toLowerCase() === 'queued').sort((a,b) => -1 *this.sort(a,b));
   }
 
   private sort(a: Experiment, b: Experiment): number {
@@ -26,10 +26,10 @@ export class ExperimentsOverviewComponentComponent implements OnInit {
   }
 
   finishedExperiments() {
-    return this.experiments.filter(e => e.status === 'finished').sort((a,b) => this.sort(a,b));
+    return this.experiments.filter(e => e.status.toLowerCase() === 'finished').sort((a,b) => this.sort(a,b));
   }
 
   runningExperiments() {
-    return this.experiments.filter(e => e.status === 'running');
+    return this.experiments.filter(e => e.status.toLowerCase() === 'running');
   }
 }
