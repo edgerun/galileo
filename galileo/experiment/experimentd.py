@@ -12,7 +12,7 @@ from typing import Callable
 import redis
 from symmetry.telemetry.recorder import TelemetryRecorder
 
-from galileo.controller import ExperimentController, ControllerShell
+from galileo.controller import ExperimentController, ExperimentShell
 from galileo.experiment.model import Experiment, Instructions
 from galileo.experiment.service.experiment import ExperimentService
 from galileo.experiment.service.instructions import InstructionService
@@ -27,7 +27,7 @@ def generate_experiment_id():
     return prefix + '-' + suffix
 
 
-class ExperimentBatchShell(ControllerShell):
+class ExperimentBatchShell(ExperimentShell):
 
     def __init__(self, controller: ExperimentController):
         super().__init__(controller, completekey=None, stdin=io.StringIO(), stdout=io.StringIO())

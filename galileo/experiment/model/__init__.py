@@ -52,3 +52,21 @@ class ExperimentConfiguration(NamedTuple):
     duration: int
     interval: int
     workloads: List[WorkloadConfiguration]
+
+
+class ServiceRequestTrace(NamedTuple):
+    client: str
+    service: str
+    host: str
+    created: float
+    sent: float
+    done: float
+
+    @property
+    def milliseconds(self):
+        return (self.done - self.created) * 1000
+
+    @staticmethod
+    def from_request(request):
+        return ServiceRequestTrace(request.client_id, request.service, request.host, request.time_created,
+                                   request.time_sent, request.time_done)

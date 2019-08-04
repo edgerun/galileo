@@ -94,7 +94,7 @@ class ExperimentController:
         self.infos.append(event._asdict())
 
 
-class ControllerShell(Shell):
+class ExperimentShell(Shell):
     intro = 'Welcome to the interactive experiment controller Shell.'
     prompt = 'exp> '
 

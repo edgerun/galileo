@@ -4,18 +4,20 @@ import os
 
 import requests
 
-from galileo.node.router import Service, ServiceRequest
 from galileo.util import read_file
+from galileo.worker.router import Service, ServiceRequest
 
 logger = logging.getLogger(__name__)
 
+
+# TODO: should be a plugin mechanism (`galileo register-client ./dir-containing-code/')
 
 class RequestFactory(abc.ABC):
     def create_request(self) -> ServiceRequest:
         raise NotImplementedError()
 
 
-class ExperimentService:
+class ClientEmulator:
 
     def __init__(self, name, request_factory: RequestFactory) -> None:
         super().__init__()

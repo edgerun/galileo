@@ -8,9 +8,9 @@ from symmetry.service.routing import RedisConnectedBalancer
 
 from galileo.experiment.db import ExperimentDatabase
 from galileo.experiment.db.sql import ExperimentSQLDatabase
-from galileo.node.client import ExperimentService, ImageClassificationRequestFactory, MXNetImageClassifierService
-from galileo.node.host import ExperimentHost
-from galileo.node.router import ServiceRegistry, Router
+from galileo.worker import ExperimentWorker
+from galileo.worker.client import ClientEmulator, ImageClassificationRequestFactory, MXNetImageClassifierService
+from galileo.worker.router import ServiceRegistry, Router
 
 log = logging.getLogger(__name__)
 
@@ -48,12 +48,12 @@ def main():
 
     # experiment services (request generators)
     services = [
-        ExperimentService(
+        ClientEmulator(
             'squeezenet',
             # TODO: parameterize path
             ImageClassificationRequestFactory('squeezenet', 'resources/images/small')
         ),
-        ExperimentService(
+        ClientEmulator(
             'alexnet',
             # TODO: parameterize path
             ImageClassificationRequestFactory('alexnet', 'resources/images/small')
@@ -69,7 +69,7 @@ def main():
     router = Router(registry, balancer)
 
     # run host
-    host = ExperimentHost(rds, services, router=router, trace_logging=args.trace_logging, experiment_db=exp_db)
+    host = ExperimentWorker(rds, services, router=router, trace_logging=args.trace_logging, experiment_db=exp_db)
 
     log.info('using balancer: %s', balancer)
     try:

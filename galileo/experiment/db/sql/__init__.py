@@ -4,8 +4,7 @@ import threading
 from typing import Tuple, List, Dict
 
 from galileo.experiment.db import ExperimentDatabase
-from galileo.experiment.model import Experiment, Instructions, Telemetry
-from galileo.node.router import ServiceRequestTrace
+from galileo.experiment.model import Experiment, Instructions, Telemetry, ServiceRequestTrace
 
 logger = logging.getLogger(__name__)
 

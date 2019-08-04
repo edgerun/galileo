@@ -1,27 +1,14 @@
 import abc
 import logging
 import time
-from typing import NamedTuple
 
 import requests
-
 from symmetry.service.routing import Balancer, StaticLocalhostBalancer
 
 logger = logging.getLogger(__name__)
 
 
-class ServiceRequestTrace(NamedTuple):
-    client: str
-    service: str
-    host: str
-    created: float
-    sent: float
-    done: float
-
-    @property
-    def milliseconds(self):
-        return (self.done - self.created) * 1000
-
+# TODO: probably belongs into symmetry
 
 class ServiceRequest:
 
@@ -34,10 +21,6 @@ class ServiceRequest:
         self.time_sent = None
         self.time_done = None
         self.client_id = None
-
-    def to_trace(self):
-        return ServiceRequestTrace(self.client_id, self.service, self.host, self.time_created, self.time_sent,
-                                   self.time_done)
 
 
 class Service(abc.ABC):

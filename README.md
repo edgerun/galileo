@@ -37,12 +37,12 @@ For example, to start mxnet-model-server with models squeezenet and alexnet, run
     --models squeezenet=https://s3.amazonaws.com/model-server/models/squeezenet_v1.1/squeezenet_v1.1.model,alexnet=https://s3.amazonaws.com/model-server/model_archive_1.0/alexnet.mar
 
 
-Prepare the Experiment Client Hosts
+Prepare the Experiment Worker Hosts
 -----------------------------------
 
-The devices hosting the clients that generate load need to run the experiment controller host application.
+The devices hosting the workers that generate load need to run the experiment controller host application.
 
-    python -m galileo.cli.host --redis redis://graviton --trace-logging 'redis'
+    python -m galileo.cli.worker --redis redis://graviton --trace-logging 'redis'
 
 The `--redis` option takes as argument the URL to the Redis instance used for communication and data storage.
 

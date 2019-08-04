@@ -3,7 +3,7 @@ import os
 import redis
 
 import symmetry.eventbus as eventbus
-from galileo.controller import ExperimentController, ControllerShell
+from galileo.controller import ExperimentController, ExperimentShell
 from symmetry.eventbus.redis import RedisConfig
 
 
@@ -12,7 +12,7 @@ def main():
     eventbus.init(RedisConfig(rds))
 
     ctrl = ExperimentController(rds)
-    ControllerShell(ctrl).run()
+    ExperimentShell(ctrl).run()
 
 
 if __name__ == '__main__':
