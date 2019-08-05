@@ -55,8 +55,8 @@ import { ExperimentsOverviewComponentComponent } from './components/experiments-
     ReactiveFormsModule
   ],
   providers: [
-    {provide: ServiceService, useClass: MockServiceService},
-    {provide: ExperimentService, useClass: MockExperimentService},
+    {provide: ServiceService, useClass: HttpServiceService},
+    {provide: ExperimentService, useClass: HttpExperimentService},
     {provide: 'BASE_API_URL', useValue: environment.apiUrl}
   ],
   bootstrap: [AppComponent]

@@ -8,8 +8,19 @@ import {Experiment} from "../../models/Experiment";
 })
 export class ExperimentsOverviewComponentComponent implements OnInit {
 
+  private _experiments: Experiment[];
   @Input()
-  experiments: Experiment[];
+  set experiments(value: Experiment[]) {
+    if (value) {
+      this._experiments = value;
+    } else {
+      this._experiments = [];
+    }
+  }
+
+  get experiments() {
+    return this._experiments || [];
+  }
 
   constructor() {
   }
@@ -18,7 +29,7 @@ export class ExperimentsOverviewComponentComponent implements OnInit {
   }
 
   queuedExperiments() {
-    return this.experiments.filter(e => e.status.toLowerCase() === 'queued').sort((a,b) => -1 *this.sort(a,b));
+    return this.experiments.filter(e => e.status.toLowerCase() === 'queued').sort((a, b) => -1 * this.sort(a, b));
   }
 
   private sort(a: Experiment, b: Experiment): number {
@@ -26,7 +37,7 @@ export class ExperimentsOverviewComponentComponent implements OnInit {
   }
 
   finishedExperiments() {
-    return this.experiments.filter(e => e.status.toLowerCase() === 'finished').sort((a,b) => this.sort(a,b));
+    return this.experiments.filter(e => e.status.toLowerCase() === 'finished').sort((a, b) => this.sort(a, b));
   }
 
   runningExperiments() {

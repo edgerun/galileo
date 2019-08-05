@@ -10,9 +10,10 @@ import {Experiment} from "../../models/Experiment";
 })
 export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
 
-  private interval: number = -1;
+  private interval;
 
   experiments$: Observable<Experiment[]>;
+  experiments: Experiment[] = [];
   loading: boolean;
 
   constructor(private experimentsService: ExperimentService) { }
@@ -25,7 +26,7 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.interval != -1) {
+    if (this.interval && this.interval != -1) {
       clearInterval(this.interval);
       this.interval = -1;
     }
@@ -38,8 +39,9 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
   private findAll() {
     this.loading = true;
     this.experiments$ = this.experimentsService.findAll();
-    this.experiments$.subscribe(() => {
+    this.experiments$.subscribe(data => {
       this.loading = false;
+      this.experiments = data;
     })
   }
 }
