@@ -38,7 +38,7 @@ export class ExperimentsOverviewComponentComponent implements OnInit {
   }
 
   finishedExperiments() {
-    return this.experiments.filter(e => e.status.toLowerCase() === 'finished').sort((a, b) => this.sort(a, b));
+    return this.experiments.filter(e => e.status.toLowerCase() === 'finished').sort((a, b) => a.end - b.end).reverse();
   }
 
   runningExperiments() {
