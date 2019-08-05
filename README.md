@@ -3,10 +3,11 @@ Galileo: MC2 Experimentation Environment
 
 This project allows users to define operational experiments for the MC2 (Mini Compute Cluster),
 and interact with the experimentation environment during runtime.
-The experimentation environment consists of two major components a user can interact with:
-the experiment controller and the routing table.
-The experiment controller can spawn clients that generate load on client hosts, and controll the amount of load they generate.
-The routing table defines to which cluster node a service request is sent to.
+Galileo consists of two major components a user can interact with:
+the experiment controller shell and the galileo dashboard.
+The experiment controller can spawn emulated clients on workers, and control the amount of load they generate.
+Furthermore, a user can interact with Symmetry's routing table shell to control to which cluster node a service request
+is sent to.
 
 Build
 -----
@@ -84,11 +85,12 @@ rtbl>
 ```
 
 
-Run the Experiment Controller
------------------------------
+Run the Experiment Controller Shell
+-----------------------------------
 
 ```
-exp> hel(.venv) pi@graviton:~/mc2/galileo $ python -m galileo.cli.controller
+(.venv) pi@graviton:~/mc2/galileo $ python -m galileo.cli.shell
+
 Welcome to the interactive experiment controller Shell.
 exp> help
 
@@ -104,7 +106,7 @@ exp> help spawn
 
 Usage: spawn host_pattern service [num]
   
-  Spawn a new client for the given service on the given host.
+  Spawn a new client for the given service on the given worker host.
   
 parameters:
   host_pattern: the host name or pattern (e.g., 'pico1' or 'pico[0-9]')
@@ -149,7 +151,6 @@ Or run the script, which exports the mariadb setup from the docker container (ad
 
 Run the Galileo REST API
 ------------------------
-
 
 Serve the app with gunicorn
 
