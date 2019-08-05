@@ -1,10 +1,11 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, Input, OnInit} from '@angular/core';
 import {Experiment} from "../../models/Experiment";
 
 @Component({
   selector: 'app-experiments-overview-component',
   templateUrl: './experiments-overview-component.component.html',
-  styleUrls: ['./experiments-overview-component.component.css']
+  styleUrls: ['./experiments-overview-component.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ExperimentsOverviewComponentComponent implements OnInit {
 
