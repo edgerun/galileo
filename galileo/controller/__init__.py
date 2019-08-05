@@ -58,7 +58,7 @@ class ExperimentController:
         return self.infos
 
     def list_hosts(self, pattern: str = ''):
-        hosts = self.rds.smembers('exp:hosts')
+        hosts = self.rds.smembers('galileo:workers')
 
         if not pattern:
             return hosts
@@ -69,7 +69,7 @@ class ExperimentController:
             raise ValueError('Invalid pattern %s: %s' % (pattern, e))
 
     def list_clients(self, host):
-        return self.rds.smembers('exp:clients:%s' % host)
+        return self.rds.smembers('galileo:clients:%s' % host)
 
     def spawn_client(self, host, service, num):
         return eventbus.publish(SpawnClientsCommand(host, service, num), SpawnClientsCommand.channel(host))
@@ -81,14 +81,14 @@ class ExperimentController:
         return eventbus.publish(CloseRuntimeCommand(host, service), CloseRuntimeCommand.channel(host))
 
     def _on_register_host(self, event: RegisterEvent):
-        self.rds.sadd('exp:hosts', event.host)
+        self.rds.sadd('galileo:workers', event.host)
 
     def _on_unregister_host(self, event: UnregisterEvent):
-        self.rds.srem('exp:hosts', event.host)
-        self.rds.delete('exp:clients:%s' % event.host)
+        self.rds.srem('galileo:workers', event.host)
+        self.rds.delete('galileo:clients:%s' % event.host)
 
     def _on_unregister_client(self, host, client):
-        self.rds.srem('exp:clients:%s' % host, client)
+        self.rds.srem('galileo:clients:%s' % host, client)
 
     def _on_info(self, event: RuntimeMetric):
         self.infos.append(event._asdict())

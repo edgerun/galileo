@@ -87,7 +87,7 @@ class TraceLogger(Process):
 
 
 class TraceRedisLogger(TraceLogger):
-    key = 'exp:results:traces'
+    key = 'galileo:results:traces'
 
     def __init__(self, trace_queue: Queue, rds: redis.Redis) -> None:
         super().__init__(trace_queue)

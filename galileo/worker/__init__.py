@@ -14,7 +14,6 @@ from galileo import util
 from galileo.event import RegisterEvent, RegisterCommand, UnregisterEvent, SpawnClientsCommand, InfoCommand, \
     SetRpsCommand, RuntimeMetric, CloseRuntimeCommand
 from galileo.experiment.db import ExperimentDatabase
-from galileo.worker import TraceLogger
 from galileo.worker.client import ClientEmulator
 from galileo.worker.router import Router
 from galileo.worker.trace import TraceLogger, TraceRedisLogger, TraceDatabaseLogger, TraceFileLogger
