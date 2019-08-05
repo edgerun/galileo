@@ -82,7 +82,7 @@ class ExperimentsResource:
         if not self.ectrl.list_hosts():
             raise falcon.HTTPServiceUnavailable('no available hosts to execute the experiment')
 
-        doc = json.load(req.stream)
+        doc = req.json
 
         exp = doc['experiment'] if 'experiment' in doc else dict()
         if 'id' not in exp:
