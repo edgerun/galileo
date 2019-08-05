@@ -2,19 +2,19 @@
   <div class="card-body">
     <h5 *ngIf="experiment.creator" class="card-title">{{experiment.creator}} - {{experiment.name}}</h5>
     <p *ngIf="experiment.status.toLowerCase() === 'finished'" class="card-text">
-      <b>Created: </b> {{experiment.created | date: 'medium'}}
+      <b>Created: </b> {{experiment.created * 1000 | date: 'medium'}}
       <br/>
-      <b>Start: </b> {{experiment.start | date: 'medium'}}
+      <b>Start: </b> {{experiment.start * 1000 | date: 'medium'}}
       <br/>
-      <b>End: </b> {{experiment.end | date: 'medium'}}
+      <b>End: </b> {{experiment.end * 1000 | date: 'medium'}}
     </p>
 
     <p *ngIf="experiment.status.toLowerCase() === 'queued'" class="card-text">
-      <b>Created: </b> {{experiment.created | date: 'medium'}}
+      <b>Created: </b> {{experiment.created * 1000 | date: 'medium'}}
     </p>
 
     <p *ngIf="experiment.status.toLowerCase() === 'running'" class="card-text">
-      <b>Created: </b> {{experiment.created | date: 'medium'}}
+      <b>Created: </b> {{experiment.created * 1000 | date: 'medium'}}
     </p>
 
   </div>
