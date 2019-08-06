@@ -27,6 +27,11 @@
         isNumber="true"
         name="Max RPS">
       </app-text-input>
+      <label class="input-group-text" for="arrivalPatternSelect">Inter-arrival Distribution</label>
+      <select [ngClass]="{'is-invalid': !form.get('arrivalPattern').value || form.get('arrivalPattern').value == ''}"
+              id="arrivalPatternSelect" class="custom-select" required formControlName="arrivalPattern">
+        <option *ngFor="let pattern of arrivalPatterns" [ngValue]="pattern">{{pattern}}</option>
+      </select>
       <div class="buttons">
         <button (click)="reset()" type="submit" class="btn btn-primary">Reset</button>
         <button (click)="remove()" type="submit" class="btn btn-danger">Remove</button>

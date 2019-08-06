@@ -40,12 +40,18 @@ export class WorkloadFormComponent implements OnInit {
   services: Service[];
   errorMessage: string;
 
+  arrivalPatterns: string[] = [
+    'Constant',
+    'Exponential'
+  ];
+
 
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
       maxRps: [1000, [Validators.required, Validators.pattern('[0-9]*')]],
       service: [undefined, Validators.required],
-      numberOfClients: [3, [Validators.required, Validators.pattern('[0-9]*')]]
+      numberOfClients: [3, [Validators.required, Validators.pattern('[0-9]*')]],
+      arrivalPattern: [undefined, Validators.required]
     });
 
     this.form.get('service').valueChanges.subscribe(val => {
@@ -80,7 +86,8 @@ export class WorkloadFormComponent implements OnInit {
     const workload: WorkloadConfiguration = {
       service: getService(this.form.get('service').value),
       ticks: this.calculatedForm.ticks,
-      clients_per_host: this.form.get('numberOfClients').value || 0
+      clients_per_host: this.form.get('numberOfClients').value || 0,
+      arrival_pattern: getService(this.form.get('arrivalPattern').value)
     };
 
     this.workloadSubmission.emit(workload);

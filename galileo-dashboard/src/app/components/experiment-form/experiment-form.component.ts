@@ -48,7 +48,7 @@ export class ExperimentFormComponent implements OnInit {
     this.calculatedWorkloads = new Map<string, WorkloadConfiguration>();
 
     this.workloads.push([uuid(), {
-      clients_per_host: 3, service: "", ticks: []
+      clients_per_host: 3, service: "", ticks: [], arrival_pattern: ""
     }]);
 
     this.form = this.fb.group({
@@ -201,7 +201,7 @@ export class ExperimentFormComponent implements OnInit {
     const id = uuid();
     console.log(id);
     this.workloads.push([uuid(), {
-      clients_per_host: 3, service: "", ticks: []
+      clients_per_host: 3, service: "", ticks: [], arrival_pattern: ""
     }]);
 
   }
