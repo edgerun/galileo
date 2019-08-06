@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, Input, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {Experiment} from "../../models/Experiment";
 
 @Component({
@@ -10,6 +10,7 @@ import {Experiment} from "../../models/Experiment";
 export class ExperimentsOverviewComponentComponent implements OnInit {
 
   private _experiments: Experiment[];
+
   @Input()
   set experiments(value: Experiment[]) {
     if (value) {

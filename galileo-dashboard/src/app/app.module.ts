@@ -26,6 +26,7 @@ import { ExperimentListComponent } from './components/experiment-list/experiment
 import { SimpleExperimentListItemComponent } from './components/simple-experiment-list-item/simple-experiment-list-item.component';
 import { ExperimentsOverviewComponentComponent } from './components/experiments-overview-component/experiments-overview-component.component';
 import { MinuteSecondsPipe } from './pipes/minute-seconds.pipe';
+import { PaginatedExperimentListComponent } from './components/paginated-experiment-list/paginated-experiment-list.component';
 
 
 @NgModule({
@@ -47,6 +48,7 @@ import { MinuteSecondsPipe } from './pipes/minute-seconds.pipe';
     SimpleExperimentListItemComponent,
     ExperimentsOverviewComponentComponent,
     MinuteSecondsPipe,
+    PaginatedExperimentListComponent,
   ],
   imports: [
     BrowserModule,

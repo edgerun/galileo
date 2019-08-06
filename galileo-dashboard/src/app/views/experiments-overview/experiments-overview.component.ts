@@ -11,12 +11,15 @@ import {Experiment} from "../../models/Experiment";
 export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
 
   private interval;
+  collectionSize: number;
+  page: number;
 
   experiments$: Observable<Experiment[]>;
   experiments: Experiment[] = [];
   loading: boolean;
 
-  constructor(private experimentsService: ExperimentService) { }
+  constructor(private experimentsService: ExperimentService) {
+  }
 
   ngOnInit() {
     this.findAll();
@@ -42,6 +45,7 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
     this.experiments$.subscribe(data => {
       this.loading = false;
       this.experiments = data;
+      this.collectionSize = data.length;
     })
   }
 }

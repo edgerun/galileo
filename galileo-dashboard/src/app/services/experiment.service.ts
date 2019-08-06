@@ -30,7 +30,24 @@ export class MockExperimentService implements ExperimentService {
   }
 
   findAll(): Observable<Experiment[]> {
+    const finishedExperiments: Experiment[] = [];
+
+    for (let i = 0; i < 60; i++) {
+      finishedExperiments.push(
+        {
+          id: `${i}`,
+          creator: 'Philipp',
+          name: 'Important Experiment',
+          start: new Date().getTime(),
+          end: new Date().getTime() + 100000,
+          created: new Date().getTime() - 1000000000,
+          status: 'finished'
+        }
+      );
+    }
+
     const experiments = [
+      ...finishedExperiments,
       {
         id: '1',
         creator: 'Philipp',
