@@ -27,6 +27,7 @@ import { SimpleExperimentListItemComponent } from './components/simple-experimen
 import { ExperimentsOverviewComponentComponent } from './components/experiments-overview-component/experiments-overview-component.component';
 import { MinuteSecondsPipe } from './pipes/minute-seconds.pipe';
 import { PaginatedExperimentListComponent } from './components/paginated-experiment-list/paginated-experiment-list.component';
+import {Bootstrap4FrameworkModule} from "angular6-json-schema-form";
 
 
 @NgModule({
@@ -56,7 +57,8 @@ import { PaginatedExperimentListComponent } from './components/paginated-experim
     AppRoutingModule,
     NgbModule,
     FormsModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    Bootstrap4FrameworkModule
   ],
   providers: [
     {provide: ServiceService, useClass: HttpServiceService},
