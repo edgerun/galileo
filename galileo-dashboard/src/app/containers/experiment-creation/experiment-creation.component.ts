@@ -6,7 +6,7 @@ import {ExperimentService} from "../../services/experiment.service";
 import {Submission} from "../../models/Submission";
 import {debounceTime} from "rxjs/operators";
 import {LoadBalancingPolicyService} from "../../services/load-balancing-policy.service";
-import {LoadBalancingPolicy} from "../../models/LoadBalancingPolicy";
+import {LoadBalancingPolicy, LoadBalancingPolicySchema} from "../../models/LoadBalancingPolicy";
 
 @Component({
   selector: 'app-experiment-creation',
@@ -16,7 +16,7 @@ import {LoadBalancingPolicy} from "../../models/LoadBalancingPolicy";
 export class ExperimentCreationComponent implements OnInit {
 
   services$: Observable<Service[]>;
-  lbPolicies$: Observable<LoadBalancingPolicy[]>;
+  lbPolicies$: Observable<LoadBalancingPolicySchema[]>;
   _success = new Subject<string>();
   _error = new Subject<string>();
 

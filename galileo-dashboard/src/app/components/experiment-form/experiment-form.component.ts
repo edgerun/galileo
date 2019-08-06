@@ -8,7 +8,7 @@ import {Submission} from "../../models/Submission";
 import {ExperimentConfiguration, WorkloadConfiguration} from "../../models/ExperimentConfiguration";
 import * as uuid from 'uuid/v4';
 import {tick} from "@angular/core/testing";
-import {LoadBalancingPolicy} from "../../models/LoadBalancingPolicy";
+import {LoadBalancingPolicy, LoadBalancingPolicySchema} from "../../models/LoadBalancingPolicy";
 
 @Component({
   selector: 'app-experiment-form',
@@ -21,7 +21,7 @@ export class ExperimentFormComponent implements OnInit {
   services: Service[];
 
   @Input()
-  lbPolicies: LoadBalancingPolicy[];
+  lbPolicies: LoadBalancingPolicySchema[];
 
   @Input()
   successMessage: string;
@@ -41,6 +41,7 @@ export class ExperimentFormComponent implements OnInit {
 
   workloads: [string, WorkloadConfiguration][];
   calculatedWorkloads: Map<string, WorkloadConfiguration>;
+  private lbPolicy: LoadBalancingPolicy;
 
   constructor(private fb: FormBuilder) {
   }
@@ -63,6 +64,7 @@ export class ExperimentFormComponent implements OnInit {
       duration: [100, [Validators.required, Validators.pattern('[0-9]*')]],
       durationUnit: [timeUnits[0], Validators.required],
       maxRps: [1000, [Validators.required, Validators.pattern('[0-9]*')]],
+      lbPolicy: [undefined, Validators.required]
     });
 
     this.form.get('duration').valueChanges.subscribe(val => {
@@ -220,11 +222,8 @@ export class ExperimentFormComponent implements OnInit {
   }
 
 
-  yourOnSubmitFn($event: any) {
-    console.info($event)
-  }
-
-  yourOnChangesFn($event: any) {
-    console.info($event);
+  handlePolicyUpdate(policy: LoadBalancingPolicy) {
+    console.info(policy);
+    this.lbPolicy = policy;
   }
 }

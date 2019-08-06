@@ -1,13 +1,15 @@
 <div class="form-group" [formGroup]="form">
-  <div class="input-group mb-3">
-    <div class="input-group-prepend">
-      <label class="input-group-text" [for]="name">{{name}}</label>
+  <label [for]="name">{{name}}</label>
+  <div class="row">
+    <div class="col-6">
+      <input [formControlName]="timeFormControl" [id]="name" class="form-control" placeholder="10">
     </div>
-    <input [formControlName]="timeFormControl" [id]="name" class="form-control" placeholder="10">
-    <select [formControlName]="unitFormControl" class="custom-select">
-      <option [ngValue]="timeUnit" *ngFor="let timeUnit of timeUnits">
-        {{timeUnit.text}}
-      </option>
-    </select>
+    <div class="col-6">
+      <select [formControlName]="unitFormControl" class="custom-select">
+        <option [ngValue]="timeUnit" *ngFor="let timeUnit of timeUnits">
+          {{timeUnit.text}}
+        </option>
+      </select>
+    </div>
   </div>
 </div>

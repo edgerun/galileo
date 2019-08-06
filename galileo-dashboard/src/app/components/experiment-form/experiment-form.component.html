@@ -1,6 +1,6 @@
 <div class="row">
   <div class="col-2">
-    <form class="form-inline" [formGroup]="form">
+    <form [formGroup]="form">
       <app-text-input
         [form]="form"
         controlName="name"
@@ -26,18 +26,16 @@
         name="Duration"
       ></app-time-input>
     </form>
+    <app-load-balancing-policy-form
+      (update)="handlePolicyUpdate($event)"
+      [policies]="lbPolicies"></app-load-balancing-policy-form>
 
-    <json-schema-form
-      [(ngModel)]="weighted"
-      framework="bootstrap-4"
-      (onSubmit)="submit()"
-    >
-    </json-schema-form>
+    <button (click)="submit()" type="submit" class="btn btn-primary">Submit</button>
   </div>
   <div class="col-2 add-workload">
     <button (click)="addWorkload()" type="submit" class="btn btn-success">Add workload</button>
   </div>
-  <div class="col-8">
+  <div class="col-6">
     <div style="padding-bottom: 40px" *ngFor="let entry of workloads"
     >
       <app-workload-form

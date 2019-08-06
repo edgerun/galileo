@@ -29,6 +29,7 @@ import { MinuteSecondsPipe } from './pipes/minute-seconds.pipe';
 import { PaginatedExperimentListComponent } from './components/paginated-experiment-list/paginated-experiment-list.component';
 import {Bootstrap4FrameworkModule} from "angular6-json-schema-form";
 import {LoadBalancingPolicyService, MockLoadBalancingPolicyService} from "./services/load-balancing-policy.service";
+import { LoadBalancingPolicyFormComponent } from './components/load-balancing-policy-form/load-balancing-policy-form.component';
 
 
 @NgModule({
@@ -51,6 +52,7 @@ import {LoadBalancingPolicyService, MockLoadBalancingPolicyService} from "./serv
     ExperimentsOverviewComponentComponent,
     MinuteSecondsPipe,
     PaginatedExperimentListComponent,
+    LoadBalancingPolicyFormComponent,
   ],
   imports: [
     BrowserModule,

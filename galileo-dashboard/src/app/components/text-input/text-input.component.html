@@ -1,7 +1,8 @@
-<div  class="input-group mb-3" [formGroup]="form">
-  <div class="input-group-prepend">
-    <span class="input-group-text" id="basic-addon1">{{name}}</span>
-  </div>
-  <input *ngIf="!isNumber" [ngClass]="{'is-invalid': !form.get(controlName).pristine && form.get(controlName).errors}" [formControlName]="controlName"   type="text" class="form-control" [placeholder]="placeholder">
-  <input numeric numericType="number" *ngIf="isNumber" [ngClass]="{'is-invalid': !form.get(controlName).pristine && form.get(controlName).errors}" [formControlName]="controlName"   type="text" class="form-control">
+<div class="form-group" [formGroup]="form">
+  <label id="basic-addon1">{{name}}</label>
+  <input *ngIf="!isNumber" [ngClass]="{'is-invalid': !form.get(controlName).pristine && form.get(controlName).errors}"
+         [formControlName]="controlName" type="text" class="form-control" [placeholder]="placeholder">
+  <input numeric numericType="number" *ngIf="isNumber"
+         [ngClass]="{'is-invalid': !form.get(controlName).pristine && form.get(controlName).errors}"
+         [formControlName]="controlName" type="text" class="form-control">
 </div>
