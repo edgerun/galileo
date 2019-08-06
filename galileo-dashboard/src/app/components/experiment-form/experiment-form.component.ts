@@ -8,6 +8,7 @@ import {Submission} from "../../models/Submission";
 import {ExperimentConfiguration, WorkloadConfiguration} from "../../models/ExperimentConfiguration";
 import * as uuid from 'uuid/v4';
 import {tick} from "@angular/core/testing";
+import {LoadBalancingPolicy} from "../../models/LoadBalancingPolicy";
 
 @Component({
   selector: 'app-experiment-form',
@@ -18,6 +19,9 @@ export class ExperimentFormComponent implements OnInit {
 
   @Input()
   services: Service[];
+
+  @Input()
+  lbPolicies: LoadBalancingPolicy[];
 
   @Input()
   successMessage: string;
@@ -140,6 +144,15 @@ export class ExperimentFormComponent implements OnInit {
 
   durationTime: Time;
   intervalTime: Time;
+  weighted: any = {
+    "round_robin": false,
+    "weights": {
+      "heisenberg": 2,
+      "einstein": 2,
+      "planck": 2,
+      "testla": 2
+    }
+  };
 
   private initCurveForm() {
     return {
@@ -207,4 +220,11 @@ export class ExperimentFormComponent implements OnInit {
   }
 
 
+  yourOnSubmitFn($event: any) {
+    console.info($event)
+  }
+
+  yourOnChangesFn($event: any) {
+    console.info($event);
+  }
 }

@@ -6,3 +6,11 @@
   margin-right: 5px;
   margin-top: 10px;
 }
+
+.top-row {
+  margin-bottom: 10px;
+}
+
+.top-row > *{
+  margin-right: 20px;
+}

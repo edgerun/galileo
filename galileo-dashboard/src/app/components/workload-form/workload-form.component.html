@@ -1,4 +1,20 @@
 <div class="row">
+  <form [formGroup]="form" class="form-inline top-row">
+    <app-service-selection
+      [form]="form"
+      [services]="services"
+    ></app-service-selection>
+    <div class="input-group">
+      <label class="input-group-text" for="arrivalPatternSelect">Inter-arrival Distribution</label>
+      <select
+        [ngClass]="{'is-invalid': !form.get('arrivalPattern').value || form.get('arrivalPattern').value == ''}"
+        id="arrivalPatternSelect" class="custom-select" required formControlName="arrivalPattern">
+        <option *ngFor="let pattern of arrivalPatterns" [ngValue]="pattern">{{pattern}}</option>
+      </select>
+    </div>
+  </form>
+</div>
+<div class="row">
   <div class="editor col-9">
     <app-curve-editor
       [duration]="duration"
@@ -17,21 +33,13 @@
         [isNumber]="true"
         name="Number of clients">
       </app-text-input>
-      <app-service-selection
-        [form]="form"
-        [services]="services"
-      ></app-service-selection>
+
       <app-text-input
         [form]="form"
         controlName="maxRps"
         isNumber="true"
         name="Max RPS">
       </app-text-input>
-      <label class="input-group-text" for="arrivalPatternSelect">Inter-arrival Distribution</label>
-      <select [ngClass]="{'is-invalid': !form.get('arrivalPattern').value || form.get('arrivalPattern').value == ''}"
-              id="arrivalPatternSelect" class="custom-select" required formControlName="arrivalPattern">
-        <option *ngFor="let pattern of arrivalPatterns" [ngValue]="pattern">{{pattern}}</option>
-      </select>
       <div class="buttons">
         <button (click)="reset()" type="submit" class="btn btn-primary">Reset</button>
         <button (click)="remove()" type="submit" class="btn btn-danger">Remove</button>

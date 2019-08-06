@@ -1,0 +1,16 @@
+{
+  "schema": {
+    "type": "object",
+    "properties": {
+      "round_robin": {
+        "type": "string"
+      }
+    }
+  },
+  "layout": [
+    {
+      "key": "round_robin",
+      "title": "Round robin"
+    }
+  ]
+}
