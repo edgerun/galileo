@@ -11,7 +11,7 @@ export class PaginatedExperimentListComponent implements OnInit {
   @Input()
   experiments: Experiment[];
 
-  pageSize: number = 6;
+  pageSize: number = 8;
 
   page: number = 1;
 
