@@ -46,6 +46,7 @@ class WorkloadConfiguration(NamedTuple):
     service: str
     ticks: List[int]
     clients_per_host: int
+    arrival_pattern: str
 
 
 class ExperimentConfiguration(NamedTuple):

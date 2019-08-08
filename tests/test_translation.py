@@ -6,7 +6,7 @@ from galileo.experiment.model import ExperimentConfiguration, WorkloadConfigurat
 
 class TestTranslation(unittest.TestCase):
     def test_translation_single_service(self):
-        cfg = ExperimentConfiguration(20, 10, [WorkloadConfiguration('aservice', [2, 6], 3)])
+        cfg = ExperimentConfiguration(20, 10, [WorkloadConfiguration('aservice', [2, 6], 3, 'constant')])
 
         commands = create_instructions(cfg, ['h1', 'h2', 'h3'])
 
@@ -33,8 +33,8 @@ class TestTranslation(unittest.TestCase):
         self.assertEquals(expected, actual)
 
     def test_translation_multiple_services(self):
-        cfg = ExperimentConfiguration(20, 10, [WorkloadConfiguration('aservice', [2, 6], 3),
-                                               WorkloadConfiguration('bservice', [4, 8], 3)])
+        cfg = ExperimentConfiguration(20, 10, [WorkloadConfiguration('aservice', [2, 6], 3, 'constant'),
+                                               WorkloadConfiguration('bservice', [4, 8], 3, 'constant')])
 
         commands = create_instructions(cfg, ['h1', 'h2'])
 
