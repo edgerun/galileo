@@ -36,7 +36,7 @@ export class ExperimentFormComponent implements OnInit {
   curveForm: CurveForm = {
     ticks: [],
     points: [{x: 0, y: 0}, {x: 100, y: 0}],
-    curve: d3.curveBasis
+    curve: d3.curveCatmullRom
   };
 
   workloads: [string, WorkloadConfiguration][];
