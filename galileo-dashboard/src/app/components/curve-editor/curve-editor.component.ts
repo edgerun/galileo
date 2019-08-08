@@ -126,7 +126,7 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     }
   }
 
-    private emitCalculatedPoints(points: { x: number, y: number }[]) {
+  private emitCalculatedPoints(points: { x: number, y: number }[]) {
     const max = points[points.length - 1];
     const min = points[0]; // we assume min.x = 0
 
@@ -227,7 +227,7 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     this.renameDurationTicks();
   }
 
-    private renameRpsTicks() {
+  private renameRpsTicks() {
     this.renameAxis('end', this.maxRps, this.oldRpsMax);
   }
 
@@ -240,8 +240,17 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     const fn = (val: number) => val * (max / old);
     textNodes.forEach(node => {
       const number = +(node.innerHTML.split(" ")[0]);
-      node.innerHTML = fn(number) + " " + unit;
+      let tick = Math.ceil(fn(number));
+      if (Math.abs(fn(number)) < 1) {
+        tick = round(fn(number),2);
+      }
+      node.innerHTML = tick + " " + unit;
     });
+
+    function round(value, precision) {
+      const multiplier = Math.pow(10, precision || 0);
+      return Math.round(value * multiplier) / multiplier;
+    }
   }
 
   private getCircles() {
@@ -253,8 +262,6 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
       }
     });
   }
-
-
 
 
   private removeTicks() {
