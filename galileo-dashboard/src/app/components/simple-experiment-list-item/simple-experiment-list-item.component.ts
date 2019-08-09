@@ -25,7 +25,7 @@ export class SimpleExperimentListItemComponent implements OnInit {
       end = this.prepareTimeForGrafana(this.experiment.end);
     } else {
       start = this.prepareTimeForGrafana(this.experiment.start);
-      end = new Date().getTime();
+      end = 'now&refresh=5s';
     }
     return `http://${this.grafanaUrl}/d/wbwBiuNZk/sandbox?orgId=1&from=${start}&to=${end}`;
 
