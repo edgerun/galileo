@@ -19,7 +19,7 @@ import {HttpServiceService, MockServiceService, ServiceService} from "./services
 import {NumericDirective} from './directives/numeric.directive';
 import {ExperimentService, HttpExperimentService, MockExperimentService} from "./services/experiment.service";
 import {environment} from "../environments/environment";
-import {HttpClientModule} from '@angular/common/http';
+import {HTTP_INTERCEPTORS, HttpClientModule} from '@angular/common/http';
 import { WorkloadFormComponent } from './components/workload-form/workload-form.component';
 import { ExperimentsOverviewComponent } from './views/experiments-overview/experiments-overview.component';
 import { ExperimentListComponent } from './components/experiment-list/experiment-list.component';
@@ -30,6 +30,7 @@ import { PaginatedExperimentListComponent } from './components/paginated-experim
 import {Bootstrap4FrameworkModule} from "angular6-json-schema-form";
 import {LoadBalancingPolicyService, MockLoadBalancingPolicyService} from "./services/load-balancing-policy.service";
 import { LoadBalancingPolicyFormComponent } from './components/load-balancing-policy-form/load-balancing-policy-form.component';
+import {TimeoutInterceptor} from "./interceptors/TimeoutInterceptor";
 
 
 @NgModule({
@@ -69,6 +70,7 @@ import { LoadBalancingPolicyFormComponent } from './components/load-balancing-po
     {provide: LoadBalancingPolicyService, useClass: MockLoadBalancingPolicyService},
     {provide: 'BASE_API_URL', useValue: environment.apiUrl},
     {provide: 'GRAFANA_URL', useValue: environment.grafanaUrl},
+    {provide: HTTP_INTERCEPTORS, useClass: TimeoutInterceptor, multi: true}
   ],
   bootstrap: [AppComponent]
 })

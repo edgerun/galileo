@@ -1,7 +1,8 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {ExperimentService} from "../../services/experiment.service";
-import {Observable} from "rxjs";
+import {Observable, Subject} from "rxjs";
 import {Experiment} from "../../models/Experiment";
+import {debounceTime} from "rxjs/operators";
 
 @Component({
   selector: 'app-experiments-overview',
@@ -13,6 +14,7 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
   private interval;
   collectionSize: number;
   page: number;
+  error: string;
 
   experiments$: Observable<Experiment[]>;
   experiments: Experiment[] = [];
@@ -25,7 +27,7 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
     this.findAll();
     this.interval = setInterval(() => {
       this.findAll();
-    }, 5000);
+    }, 6500);
   }
 
   ngOnDestroy(): void {
@@ -36,6 +38,8 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
   }
 
   refresh() {
+    this.error = null;
+    this.loading = false;
     this.findAll();
   }
 
@@ -46,6 +50,16 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
       this.loading = false;
       this.experiments = data;
       this.collectionSize = data.length;
+    }, (error: Error) => {
+      this.changeErrorMessage(error.message);
+      this.loading = false;
     })
+  }
+
+  private changeErrorMessage(text: string) {
+    this.error = text;
+    setTimeout(() => {
+      this.error = null;
+    }, 3000)
   }
 }

@@ -12,3 +12,8 @@ h4 {
   display: flex;
   justify-content: space-between;
 }
+
+.alert {
+  position: absolute;
+  margin-left: 180px;
+}
