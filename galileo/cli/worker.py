@@ -7,17 +7,13 @@ from symmetry.eventbus.redis import RedisConfig
 from symmetry.service.routing import RedisConnectedBalancer
 
 from galileo.experiment.db import ExperimentDatabase
+from galileo.experiment.db.factory import create_experiment_database
 from galileo.experiment.db.sql import ExperimentSQLDatabase
 from galileo.worker import ExperimentWorker
 from galileo.worker.client import ClientEmulator, ImageClassificationRequestFactory, MXNetImageClassifierService
 from galileo.worker.router import ServiceRegistry, Router
 
 log = logging.getLogger(__name__)
-
-
-def init_database() -> ExperimentDatabase:
-    from galileo.experiment.db.sql.mysql import MysqlAdapter
-    return ExperimentSQLDatabase(MysqlAdapter.create_from_env())
 
 
 def main():
@@ -41,7 +37,7 @@ def main():
 
     exp_db = None
     if args.trace_logging == 'mysql':
-        exp_db = init_database()
+        exp_db = create_experiment_database('mysql')
         exp_db.open()
 
     eventbus.init(RedisConfig(rds))

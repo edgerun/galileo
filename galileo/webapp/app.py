@@ -9,15 +9,16 @@ from symmetry import eventbus
 from symmetry.eventbus.redis import RedisConfig
 from symmetry.webapp import JSONMiddleware, ApiResource
 
-from galileo.cli.experimentd import init_database
 from galileo.controller import ExperimentController
 from galileo.experiment.db import ExperimentDatabase
+from galileo.experiment.db.factory import create_experiment_database_from_env
 from galileo.experiment.experimentd import generate_experiment_id
 from galileo.experiment.model import WorkloadConfiguration, ExperimentConfiguration, Experiment
 from galileo.experiment.service.experiment import ExperimentService, SimpleExperimentService
 from galileo.util import to_seconds
 
 logger = logging.getLogger(__name__)
+
 
 
 class ServicesResource:
@@ -130,7 +131,7 @@ def init_context():
     eventbus.init(RedisConfig(context.rds))
 
     context.ectrl = ExperimentController(context.rds)
-    context.exp_db = init_database()
+    context.exp_db = create_experiment_database_from_env()
     context.exp_service = SimpleExperimentService(context.exp_db)
 
     return context
