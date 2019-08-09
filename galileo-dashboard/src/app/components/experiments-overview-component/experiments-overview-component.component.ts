@@ -43,6 +43,6 @@ export class ExperimentsOverviewComponentComponent implements OnInit {
   }
 
   runningExperiments() {
-    return this.experiments.filter(e => e.status.toLowerCase() === 'running');
+    return this.experiments.filter(e => e.status.toLowerCase() === 'in_progress');
   }
 }
