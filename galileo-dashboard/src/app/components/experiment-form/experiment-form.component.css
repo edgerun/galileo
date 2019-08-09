@@ -6,3 +6,10 @@
   display: flex;
   justify-content: space-evenly;
 }
+
+.add-workload {
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  max-height: 40px;
+}

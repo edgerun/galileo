@@ -19,12 +19,18 @@ import {HttpServiceService, MockServiceService, ServiceService} from "./services
 import {NumericDirective} from './directives/numeric.directive';
 import {ExperimentService, HttpExperimentService, MockExperimentService} from "./services/experiment.service";
 import {environment} from "../environments/environment";
-import {HttpClientModule} from '@angular/common/http';
+import {HTTP_INTERCEPTORS, HttpClientModule} from '@angular/common/http';
 import { WorkloadFormComponent } from './components/workload-form/workload-form.component';
 import { ExperimentsOverviewComponent } from './views/experiments-overview/experiments-overview.component';
 import { ExperimentListComponent } from './components/experiment-list/experiment-list.component';
 import { SimpleExperimentListItemComponent } from './components/simple-experiment-list-item/simple-experiment-list-item.component';
 import { ExperimentsOverviewComponentComponent } from './components/experiments-overview-component/experiments-overview-component.component';
+import { MinuteSecondsPipe } from './pipes/minute-seconds.pipe';
+import { PaginatedExperimentListComponent } from './components/paginated-experiment-list/paginated-experiment-list.component';
+import {Bootstrap4FrameworkModule} from "angular6-json-schema-form";
+import {LoadBalancingPolicyService, MockLoadBalancingPolicyService} from "./services/load-balancing-policy.service";
+import { LoadBalancingPolicyFormComponent } from './components/load-balancing-policy-form/load-balancing-policy-form.component';
+import {TimeoutInterceptor} from "./interceptors/TimeoutInterceptor";
 
 
 @NgModule({
@@ -45,6 +51,9 @@ import { ExperimentsOverviewComponentComponent } from './components/experiments-
     ExperimentListComponent,
     SimpleExperimentListItemComponent,
     ExperimentsOverviewComponentComponent,
+    MinuteSecondsPipe,
+    PaginatedExperimentListComponent,
+    LoadBalancingPolicyFormComponent,
   ],
   imports: [
     BrowserModule,
@@ -52,12 +61,16 @@ import { ExperimentsOverviewComponentComponent } from './components/experiments-
     AppRoutingModule,
     NgbModule,
     FormsModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    Bootstrap4FrameworkModule
   ],
   providers: [
-    {provide: ServiceService, useClass: MockServiceService},
-    {provide: ExperimentService, useClass: MockExperimentService},
-    {provide: 'BASE_API_URL', useValue: environment.apiUrl}
+    {provide: ServiceService, useClass: HttpServiceService},
+    {provide: ExperimentService, useClass: HttpExperimentService},
+    {provide: LoadBalancingPolicyService, useClass: MockLoadBalancingPolicyService},
+    {provide: 'BASE_API_URL', useValue: environment.apiUrl},
+    {provide: 'GRAFANA_URL', useValue: environment.grafanaUrl},
+    {provide: HTTP_INTERCEPTORS, useClass: TimeoutInterceptor, multi: true}
   ],
   bootstrap: [AppComponent]
 })

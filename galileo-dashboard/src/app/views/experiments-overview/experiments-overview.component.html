@@ -1,7 +1,8 @@
-<div class="container">
+<div class="container-fluid">
   <div class="row header">
     <div class="row">
       <h3>Experiments</h3>
+      <ngb-alert [dismissible]="false" class="alert" type="danger" *ngIf="error">{{error}}</ngb-alert>
       <div style="margin-left: 20px" *ngIf="loading" class="spinner-border text-primary" role="status">
         <span class="sr-only">Loading...</span>
       </div>
@@ -9,7 +10,6 @@
     <button class="btn btn-primary" (click)="refresh()">Refresh</button>
   </div>
   <app-experiments-overview-component
-    [experiments]="experiments$ | async "
-  >
+    [experiments]="experiments">
   </app-experiments-overview-component>
 </div>

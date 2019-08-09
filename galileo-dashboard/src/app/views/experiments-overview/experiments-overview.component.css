@@ -1,3 +1,8 @@
+.container-fluid {
+  padding-left: 60px;
+  padding-right: 60px;
+}
+
 h4 {
   padding: 25px;
 }
@@ -6,4 +11,9 @@ h4 {
   margin-top: 20px;
   display: flex;
   justify-content: space-between;
+}
+
+.alert {
+  position: absolute;
+  margin-left: 180px;
 }

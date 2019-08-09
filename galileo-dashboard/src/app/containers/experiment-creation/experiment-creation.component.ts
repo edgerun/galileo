@@ -5,6 +5,8 @@ import {Service} from "../../models/Service";
 import {ExperimentService} from "../../services/experiment.service";
 import {Submission} from "../../models/Submission";
 import {debounceTime} from "rxjs/operators";
+import {LoadBalancingPolicyService} from "../../services/load-balancing-policy.service";
+import {LoadBalancingPolicy, LoadBalancingPolicySchema} from "../../models/LoadBalancingPolicy";
 
 @Component({
   selector: 'app-experiment-creation',
@@ -14,18 +16,25 @@ import {debounceTime} from "rxjs/operators";
 export class ExperimentCreationComponent implements OnInit {
 
   services$: Observable<Service[]>;
+  lbPolicies$: Observable<LoadBalancingPolicySchema[]>;
   _success = new Subject<string>();
   _error = new Subject<string>();
 
-  constructor(private serviceService: ServiceService, private experimentService: ExperimentService) {
+  constructor(private serviceService: ServiceService, private experimentService: ExperimentService,
+              private lbPolicyService: LoadBalancingPolicyService) {
   }
 
 
   ngOnInit() {
     this.services$ = this.serviceService.findAll();
+    this.lbPolicies$ = this.lbPolicyService.findAll();
     this._success.pipe(
       debounceTime(3000)
     ).subscribe(() => this._success.next(null));
+
+    this._error.pipe(
+      debounceTime(2000)
+    ).subscribe(() => this._error.next(null));
   }
 
   private changeSuccessMessage(text: string) {

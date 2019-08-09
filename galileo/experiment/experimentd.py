@@ -78,9 +78,9 @@ class ExperimentDaemon:
                     print('empty message, skipping')
                     continue
 
+                body = None
                 try:
                     body = self._get_json_body(message)
-
                     if body is None:
                         logger.warning('Error parsing message to JSON. Message was: %s', message)
                         return
@@ -89,7 +89,12 @@ class ExperimentDaemon:
 
                     exp, ins = self.load_experiment(body)
                 except Exception as e:
-                    # TODO: set experiment status to failed
+                    if body is not None and body['id']:
+                        exp = self.exp_service.find(body['id'])
+                        if exp is not None:
+                            exp.status = 'FAILED'
+                            self.exp_service.save(exp)
+
                     logger.exception('Error while loading experiment from queue')
                     continue
 
@@ -129,9 +134,11 @@ class ExperimentDaemon:
         exp = self.exp_service.find(body['id']) if 'id' in body else None
 
         if exp:
-            return exp, self.ins_service.find(exp.id)
+            ins = self.ins_service.find(exp.id)
+            if ins is not None:
+                return exp, ins
 
-        exp = Experiment(**subdict(body, ['id', 'name', 'creator', 'status']))
+        exp = Experiment(**subdict(body, ['id', 'name', 'creator', 'status', 'created']))
 
         if not exp.id:
             exp.id = generate_experiment_id()
@@ -139,6 +146,8 @@ class ExperimentDaemon:
             exp.name = exp.id
         if not exp.creator:
             exp.creator = 'galileo-' + str(os.getpid())
+        if not exp.created:
+            exp.created = time.time()
 
         ins = Instructions(exp.id, body['instructions'])
 

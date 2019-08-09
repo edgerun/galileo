@@ -1,18 +1,27 @@
-<div>
-  <h4>Currently running experiment</h4>
-  <app-experiment-list
-    [experiments]="runningExperiments()"
-  ></app-experiment-list>
-</div>
-<div>
-  <h4>Queued experiments</h4>
-  <app-experiment-list
-    [experiments]="queuedExperiments()"
-  ></app-experiment-list>
-</div>
-<div>
-  <h4>Finished experiments</h4>
-  <app-experiment-list
-    [experiments]="finishedExperiments()">
-  </app-experiment-list>
+<div class="row">
+  <div class="col-4">
+    <h4>Currently running experiment</h4>
+    <app-paginated-experiment-list
+      [experiments]="runningExperiments()"
+    >
+      There is no experiment currently running
+    </app-paginated-experiment-list>
+  </div>
+  <div class="col-4">
+    <h4>Queued experiments</h4>
+    <app-paginated-experiment-list
+      [experiments]="queuedExperiments()"
+    >
+      No queued experiments
+    </app-paginated-experiment-list>
+  </div>
+  <div class="col-4">
+    <h4>Finished experiments</h4>
+    <app-paginated-experiment-list
+      [experiments]="finishedExperiments()"
+    >
+      No finished experiments
+    </app-paginated-experiment-list>
+  </div>
+
 </div>

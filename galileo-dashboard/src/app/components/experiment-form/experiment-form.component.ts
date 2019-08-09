@@ -8,6 +8,7 @@ import {Submission} from "../../models/Submission";
 import {ExperimentConfiguration, WorkloadConfiguration} from "../../models/ExperimentConfiguration";
 import * as uuid from 'uuid/v4';
 import {tick} from "@angular/core/testing";
+import {LoadBalancingPolicy, LoadBalancingPolicySchema} from "../../models/LoadBalancingPolicy";
 
 @Component({
   selector: 'app-experiment-form',
@@ -18,6 +19,9 @@ export class ExperimentFormComponent implements OnInit {
 
   @Input()
   services: Service[];
+
+  @Input()
+  lbPolicies: LoadBalancingPolicySchema[];
 
   @Input()
   successMessage: string;
@@ -32,11 +36,12 @@ export class ExperimentFormComponent implements OnInit {
   curveForm: CurveForm = {
     ticks: [],
     points: [{x: 0, y: 0}, {x: 100, y: 0}],
-    curve: d3.curveBasis
+    curve: d3.curveCatmullRom
   };
 
   workloads: [string, WorkloadConfiguration][];
   calculatedWorkloads: Map<string, WorkloadConfiguration>;
+  private lbPolicy: LoadBalancingPolicy;
 
   constructor(private fb: FormBuilder) {
   }
@@ -48,7 +53,7 @@ export class ExperimentFormComponent implements OnInit {
     this.calculatedWorkloads = new Map<string, WorkloadConfiguration>();
 
     this.workloads.push([uuid(), {
-      clients_per_host: 3, service: "", ticks: []
+      clients_per_host: 3, service: "", ticks: [], arrival_pattern: ""
     }]);
 
     this.form = this.fb.group({
@@ -59,6 +64,7 @@ export class ExperimentFormComponent implements OnInit {
       duration: [100, [Validators.required, Validators.pattern('[0-9]*')]],
       durationUnit: [timeUnits[0], Validators.required],
       maxRps: [1000, [Validators.required, Validators.pattern('[0-9]*')]],
+      lbPolicy: [undefined, Validators.required]
     });
 
     this.form.get('duration').valueChanges.subscribe(val => {
@@ -96,7 +102,7 @@ export class ExperimentFormComponent implements OnInit {
 
       this.add.emit(submission);
     } else {
-      this.errorMessage = configValidation[1][0];
+      this.errorMessage = configValidation[1][0] || "Form is invalid";
       setTimeout(() => {
         this.errorMessage = '';
       }, 2000)
@@ -140,6 +146,15 @@ export class ExperimentFormComponent implements OnInit {
 
   durationTime: Time;
   intervalTime: Time;
+  weighted: any = {
+    "round_robin": false,
+    "weights": {
+      "heisenberg": 2,
+      "einstein": 2,
+      "planck": 2,
+      "testla": 2
+    }
+  };
 
   private initCurveForm() {
     return {
@@ -201,10 +216,15 @@ export class ExperimentFormComponent implements OnInit {
     const id = uuid();
     console.log(id);
     this.workloads.push([uuid(), {
-      clients_per_host: 3, service: "", ticks: []
+      clients_per_host: 3, service: "", ticks: [], arrival_pattern: ""
     }]);
 
   }
 
 
+  handlePolicyUpdate(policy: LoadBalancingPolicy) {
+    console.info(policy);
+    this.lbPolicy = policy;
+    this.form.get('lbPolicy').setValue(policy);
+  }
 }

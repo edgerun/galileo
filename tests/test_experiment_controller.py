@@ -29,7 +29,7 @@ class TestExperimentDaemon(unittest.TestCase):
     def test_submit(self):
         self.rds.sadd('exp:hosts', 'host1')
 
-        load = ExperimentConfiguration(2, 1, [WorkloadConfiguration('aservice', [1, 2], 2)])
+        load = ExperimentConfiguration(2, 1, [WorkloadConfiguration('aservice', [1, 2], 2, 'constant')])
         self.ectl.queue(load)
 
         message = self.rds.lpop(ExperimentController.queue_key)

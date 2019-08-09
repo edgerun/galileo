@@ -4,7 +4,8 @@
 
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:5001/api'
+  apiUrl: 'http://localhost:5001/api',
+  grafanaUrl: 'localhost:3000',
 };
 
 /*

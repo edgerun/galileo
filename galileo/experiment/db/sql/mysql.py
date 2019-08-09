@@ -12,7 +12,9 @@ class MysqlAdapter(SqlAdapter):
 
     def _connect(self, *args, **kwargs):
         logger.info('connecting to mysql db with args %s', kwargs)
-        return mysql.connect(**kwargs)
+        con = mysql.connect(**kwargs)
+        con.autocommit = True
+        return con
 
     def cursor(self):
         try:
