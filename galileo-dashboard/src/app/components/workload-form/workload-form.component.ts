@@ -87,7 +87,7 @@ export class WorkloadFormComponent implements OnInit {
       service: getService(this.form.get('service').value),
       ticks: this.calculatedForm.ticks,
       clients_per_host: this.form.get('numberOfClients').value || 0,
-      arrival_pattern: getService(this.form.get('arrivalPattern').value)
+      arrival_pattern: this.form.get('arrivalPattern').value || ""
     };
 
     this.workloadSubmission.emit(workload);

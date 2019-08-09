@@ -102,7 +102,7 @@ export class ExperimentFormComponent implements OnInit {
 
       this.add.emit(submission);
     } else {
-      this.errorMessage = configValidation[1][0];
+      this.errorMessage = configValidation[1][0] || "Form is invalid";
       setTimeout(() => {
         this.errorMessage = '';
       }, 2000)
@@ -225,5 +225,6 @@ export class ExperimentFormComponent implements OnInit {
   handlePolicyUpdate(policy: LoadBalancingPolicy) {
     console.info(policy);
     this.lbPolicy = policy;
+    this.form.get('lbPolicy').setValue(policy);
   }
 }
