@@ -7,7 +7,7 @@ import {catchError, timeout} from "rxjs/operators";
 export class TimeoutInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     return next.handle(req).pipe(
-      timeout(0),
+      timeout(3000),
       catchError(e => {
           let error;
           if (e.statusText === undefined) {
