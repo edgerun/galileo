@@ -9,14 +9,18 @@
       <b>End: </b> {{experiment.end * 1000 | date: 'medium'}}
       <br/>
       <b>Length: </b> {{((experiment.end ) - (experiment.start)) | minuteSeconds}}
+      <br/>
+      <b>Grafana: </b> <a target="_blank" [href]="getGrafanaLink()">Show in dashboard</a>
     </p>
 
     <p *ngIf="experiment.status.toLowerCase() === 'queued'" class="card-text">
       <b>Created: </b> {{experiment.created * 1000 | date: 'medium'}}
     </p>
 
-    <p *ngIf="experiment.status.toLowerCase() === 'running'" class="card-text">
+    <p *ngIf="experiment.status.toLowerCase() === 'in_progress'" class="card-text">
       <b>Created: </b> {{experiment.created * 1000 | date: 'medium'}}
+      <br/>
+      <b>Grafana: </b> <a target="_blank" [href]="getGrafanaLink()">Show in dashboard</a>
     </p>
 
   </div>

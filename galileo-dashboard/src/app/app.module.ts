@@ -67,7 +67,8 @@ import { LoadBalancingPolicyFormComponent } from './components/load-balancing-po
     {provide: ServiceService, useClass: HttpServiceService},
     {provide: ExperimentService, useClass: HttpExperimentService},
     {provide: LoadBalancingPolicyService, useClass: MockLoadBalancingPolicyService},
-    {provide: 'BASE_API_URL', useValue: environment.apiUrl}
+    {provide: 'BASE_API_URL', useValue: environment.apiUrl},
+    {provide: 'GRAFANA_URL', useValue: environment.grafanaUrl},
   ],
   bootstrap: [AppComponent]
 })
