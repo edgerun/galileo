@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 
 import falcon
 import redis
@@ -89,6 +90,10 @@ class ExperimentsResource:
             exp['id'] = generate_experiment_id()
 
         exp = Experiment(**exp)
+        exp.created = time.time()
+        exp.status = 'QUEUED'
+        self.exp_service.save(exp)
+
         logger.debug('deserialized experiment %s', exp)
 
         workloads = [WorkloadConfiguration(**workload) for workload in doc['configuration']['workloads']]
@@ -96,7 +101,6 @@ class ExperimentsResource:
         interval = to_seconds(doc['configuration']['interval'])
         config = ExperimentConfiguration(duration, interval, workloads)
         logger.debug('deserialized experiment config %s', config)
-
         logger.debug('queuing experiment with id %s', exp.id)
         self.ectrl.queue(config, exp)
 

@@ -129,9 +129,11 @@ class ExperimentDaemon:
         exp = self.exp_service.find(body['id']) if 'id' in body else None
 
         if exp:
-            return exp, self.ins_service.find(exp.id)
+            ins = self.ins_service.find(exp.id)
+            if ins is not None:
+                return exp, ins
 
-        exp = Experiment(**subdict(body, ['id', 'name', 'creator', 'status']))
+        exp = Experiment(**subdict(body, ['id', 'name', 'creator', 'status', 'created']))
 
         if not exp.id:
             exp.id = generate_experiment_id()
@@ -139,6 +141,8 @@ class ExperimentDaemon:
             exp.name = exp.id
         if not exp.creator:
             exp.creator = 'galileo-' + str(os.getpid())
+        if not exp.created:
+            exp.created = time.time()
 
         ins = Instructions(exp.id, body['instructions'])
 
