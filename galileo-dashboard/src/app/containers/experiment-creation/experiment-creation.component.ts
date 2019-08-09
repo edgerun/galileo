@@ -31,6 +31,10 @@ export class ExperimentCreationComponent implements OnInit {
     this._success.pipe(
       debounceTime(3000)
     ).subscribe(() => this._success.next(null));
+
+    this._error.pipe(
+      debounceTime(2000)
+    ).subscribe(() => this._error.next(null));
   }
 
   private changeSuccessMessage(text: string) {
