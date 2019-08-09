@@ -1,3 +1,5 @@
+<ngb-alert *ngIf="successMessage" type="success" (close)="successMessage = null">{{ successMessage }}</ngb-alert>
+<ngb-alert *ngIf="errorMessage" type="danger" (close)="errorMessage = null">{{ errorMessage }}</ngb-alert>
 <div class="row">
   <div class="col-2">
     <form [formGroup]="form">
@@ -30,10 +32,14 @@
       (update)="handlePolicyUpdate($event)"
       [policies]="lbPolicies"></app-load-balancing-policy-form>
 
-    <button (click)="submit()" type="submit" class="btn btn-primary">Submit</button>
   </div>
-  <div class="col-2 add-workload">
-    <button (click)="addWorkload()" type="submit" class="btn btn-success">Add workload</button>
+  <div class="col-2">
+    <div class="row">
+      <button (click)="addWorkload()" type="submit" class="btn btn-success">Add workload</button>
+    </div>
+    <div class="row">
+      <button (click)="submit()" type="submit" class="btn btn-primary">Submit</button>
+    </div>
   </div>
   <div class="col-6">
     <div style="padding-bottom: 40px" *ngFor="let entry of workloads"
@@ -54,6 +60,3 @@
   </div>
 </div>
 
-
-<ngb-alert *ngIf="successMessage" type="success" (close)="successMessage = null">{{ successMessage }}</ngb-alert>
-<ngb-alert *ngIf="errorMessage" type="danger" (close)="errorMessage = null">{{ errorMessage }}</ngb-alert>
