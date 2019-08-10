@@ -19,8 +19,12 @@
       <div class="card-header">
         Config
         <div class="buttons float-right">
-          <button (click)="reset()" type="submit" class="btn btn-sm btn-primary mr-3">Reset</button>
-          <button (click)="remove()" type="submit" class="btn btn-sm btn-danger">Remove</button>
+          <button (click)="reset()" type="submit" class="btn btn-sm btn-light">
+            <i class="fa fa-undo"></i>
+          </button>
+          <button (click)="remove()" type="submit" class="btn btn-sm btn-light">
+            <i class="fa fa-trash"></i>
+          </button>
         </div>
       </div>
 
@@ -49,7 +53,7 @@
 
           <div class="form-group">
             <div class="input-group">
-              <label class="input-group-text" for="arrivalPatternSelect">Inter-arrival Distribution</label>
+              <label class="input-group-text" for="arrivalPatternSelect">Arrival</label>
               <select
                 [ngClass]="{'is-invalid': !form.get('arrivalPattern').value || form.get('arrivalPattern').value == ''}"
                 id="arrivalPatternSelect" class="custom-select" required formControlName="arrivalPattern">
