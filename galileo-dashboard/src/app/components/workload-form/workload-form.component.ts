@@ -51,7 +51,7 @@ export class WorkloadFormComponent implements OnInit {
       maxRps: [1000, [Validators.required, Validators.pattern('[0-9]*')]],
       service: [undefined, Validators.required],
       numberOfClients: [3, [Validators.required, Validators.pattern('[0-9]*')]],
-      arrivalPattern: [undefined, Validators.required]
+      arrivalPattern: ['Constant', Validators.required]
     });
 
     this.form.get('service').valueChanges.subscribe(val => {

@@ -1,50 +1,70 @@
 <div class="row">
-  <form [formGroup]="form" class="form-inline top-row">
-    <app-service-selection
-      [form]="form"
-      [services]="services"
-    ></app-service-selection>
-    <div class="input-group">
-      <label class="input-group-text" for="arrivalPatternSelect">Inter-arrival Distribution</label>
-      <select
-        [ngClass]="{'is-invalid': !form.get('arrivalPattern').value || form.get('arrivalPattern').value == ''}"
-        id="arrivalPatternSelect" class="custom-select" required formControlName="arrivalPattern">
-        <option *ngFor="let pattern of arrivalPatterns" [ngValue]="pattern">{{pattern}}</option>
-      </select>
-    </div>
-  </form>
-</div>
-<div class="row">
-  <div class="editor col-9">
-    <app-curve-editor
-      [duration]="duration"
-      [maxRps]="form.get('maxRps').value"
-      [form]="curveForm"
-      [interval]="interval"
-      (formEmitter)="handleCurveForm($event)"
-      [id]="id"
-    ></app-curve-editor>
-  </div>
-  <div class="col-3">
-    <form [formGroup]="form">
-      <app-text-input
-        [form]="form"
-        controlName="numberOfClients"
-        [isNumber]="true"
-        name="Number of clients">
-      </app-text-input>
 
-      <app-text-input
-        [form]="form"
-        controlName="maxRps"
-        isNumber="true"
-        name="Max RPS">
-      </app-text-input>
-      <div class="buttons">
-        <button (click)="reset()" type="submit" class="btn btn-primary">Reset</button>
-        <button (click)="remove()" type="submit" class="btn btn-danger">Remove</button>
+  <div class="col-8">
+    <div class="editor">
+      <app-curve-editor
+        [duration]="duration"
+        [maxRps]="form.get('maxRps').value"
+        [form]="curveForm"
+        [interval]="interval"
+        (formEmitter)="handleCurveForm($event)"
+        [id]="id"
+      ></app-curve-editor>
+    </div>
+  </div>
+
+  <div class="col-4">
+    <div class="card">
+
+      <div class="card-header">
+        Config
+        <div class="buttons float-right">
+          <button (click)="reset()" type="submit" class="btn btn-sm btn-light">
+            <i class="fa fa-undo"></i>
+          </button>
+          <button (click)="remove()" type="submit" class="btn btn-sm btn-light">
+            <i class="fa fa-trash"></i>
+          </button>
+        </div>
       </div>
-    </form>
+
+      <div class="card-body">
+        <form [formGroup]="form">
+          <div class="form-group">
+            <app-service-selection
+              [form]="form"
+              [services]="services"
+            ></app-service-selection>
+          </div>
+
+          <app-text-input
+            [form]="form"
+            controlName="numberOfClients"
+            [isNumber]="true"
+            name="Clients">
+          </app-text-input>
+
+          <app-text-input
+            [form]="form"
+            controlName="maxRps"
+            isNumber="true"
+            name="Max RPS">
+          </app-text-input>
+
+          <div class="form-group">
+            <div class="input-group">
+              <label class="input-group-text" for="arrivalPatternSelect">Arrival</label>
+              <select
+                [ngClass]="{'is-invalid': !form.get('arrivalPattern').value || form.get('arrivalPattern').value == ''}"
+                id="arrivalPatternSelect" class="custom-select" required formControlName="arrivalPattern">
+                <option *ngFor="let pattern of arrivalPatterns" [ngValue]="pattern">{{pattern}}</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </div>
 
 </div>

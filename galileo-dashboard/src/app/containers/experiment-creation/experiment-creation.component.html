@@ -1,9 +1,7 @@
-<div class="container-fluid">
-  <app-experiment-form
-    (add)="submitExperiment($event)"
-    [services]="services$ | async"
-    [lbPolicies]="lbPolicies$ | async"
-    [successMessage]="_success | async"
-    [errorMessage]="_error | async"
-  ></app-experiment-form>
-</div>
+<app-experiment-form
+  (add)="submitExperiment($event)"
+  [services]="services$ | async"
+  [lbPolicies]="lbPolicies$ | async"
+  [successMessage]="_success | async"
+  [errorMessage]="_error | async"
+></app-experiment-form>

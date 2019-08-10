@@ -215,7 +215,7 @@ export class ExperimentFormComponent implements OnInit {
   addWorkload() {
     const id = uuid();
     console.log(id);
-    this.workloads.push([uuid(), {
+    this.workloads.push([id, {
       clients_per_host: 3, service: "", ticks: [], arrival_pattern: ""
     }]);
 

@@ -1,62 +1,75 @@
 <ngb-alert *ngIf="successMessage" type="success" (close)="successMessage = null">{{ successMessage }}</ngb-alert>
 <ngb-alert *ngIf="errorMessage" type="danger" (close)="errorMessage = null">{{ errorMessage }}</ngb-alert>
 <div class="row">
-  <div class="col-2">
-    <form [formGroup]="form">
-      <app-text-input
-        [form]="form"
-        controlName="name"
-        name="Name"
-        placeholder="Lazy-Exp"
-      ></app-text-input>
-      <app-text-input
-        [form]="form"
-        controlName="creator"
-        name="Creator"
-        placeholder="User"
-      ></app-text-input>
-      <app-time-input
-        [form]="form"
-        timeFormControl="interval"
-        unitFormControl="intervalUnit"
-        name="Interval"
-      ></app-time-input>
-      <app-time-input
-        [form]="form"
-        timeFormControl="duration"
-        unitFormControl="durationUnit"
-        name="Duration"
-      ></app-time-input>
-    </form>
-    <app-load-balancing-policy-form
-      (update)="handlePolicyUpdate($event)"
-      [policies]="lbPolicies"></app-load-balancing-policy-form>
+  <div class="col-3">
+    <div class="card">
+      <h4 class="card-header">Experiment Configuration</h4>
+      <div class="card-body">
+        <form [formGroup]="form">
+          <button (click)="submit()" type="submit" class="btn btn-danger">
+            <i class="fa fa-play"></i> Run Experiment
+          </button>
+          <hr>
+          <app-text-input
+            [form]="form"
+            controlName="name"
+            name="Name"
+            placeholder="Lazy-Exp"
+          ></app-text-input>
+          <app-text-input
+            [form]="form"
+            controlName="creator"
+            name="Creator"
+            placeholder="User"
+          ></app-text-input>
+          <app-time-input
+            [form]="form"
+            timeFormControl="interval"
+            unitFormControl="intervalUnit"
+            name="Interval"
+          ></app-time-input>
+          <app-time-input
+            [form]="form"
+            timeFormControl="duration"
+            unitFormControl="durationUnit"
+            name="Duration"
+          ></app-time-input>
+        </form>
+        <app-load-balancing-policy-form
+          (update)="handlePolicyUpdate($event)"
+          [policies]="lbPolicies"></app-load-balancing-policy-form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-9">
+
+    <div class="card">
+
+      <h4 class="card-header">Workload configuration
+        <button (click)="addWorkload()" type="submit" class="btn btn-sm btn-secondary float-right mr-1">
+          <i class="fa fa-plus"></i>
+        </button>
+      </h4>
+
+      <div class="card-body">
+        <div class="workload-editor mb-4" *ngFor="let entry of workloads">
+          <app-workload-form
+            [id]="entry[0]"
+            [curveForm]="curveForm"
+            [services]="services"
+            [duration]="durationTime"
+            [interval]="intervalTime"
+            (workloadSubmission)="handleWorkloadSubmission(entry[0],$event)"
+            (removeWorkload)="removeWorkload(entry[0])"
+          ></app-workload-form>
+          <hr>
+        </div>
+
+      </div>
+    </div>
 
   </div>
-  <div class="col-2">
-    <div class="row">
-      <button (click)="addWorkload()" type="submit" class="btn btn-success">Add workload</button>
-    </div>
-    <div class="row">
-      <button (click)="submit()" type="submit" class="btn btn-primary">Submit</button>
-    </div>
-  </div>
-  <div class="col-6">
-    <div style="padding-bottom: 40px" *ngFor="let entry of workloads"
-    >
-      <app-workload-form
-        [id]="entry[0]"
-        [curveForm]="curveForm"
-        [services]="services"
-        [duration]="durationTime"
-        [interval]="intervalTime"
-        (workloadSubmission)="handleWorkloadSubmission(entry[0],$event)"
-        (removeWorkload)="removeWorkload(entry[0])"
-      ></app-workload-form>
 
-    </div>
-
-
-  </div>
 </div>
 

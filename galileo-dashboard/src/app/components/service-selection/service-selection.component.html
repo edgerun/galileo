@@ -1,7 +1,7 @@
-<form class="form-group " [formGroup]="form">
+<div class="input-group" [formGroup]="form">
   <label class="input-group-text" for="serviceSelect">Service</label>
   <select [ngClass]="{'is-invalid': !form.get('service').value || form.get('service').value == ''}" id="serviceSelect"
           class="custom-select" required formControlName="service">
     <option *ngFor="let service of services" [ngValue]="service">{{service.name}}</option>
   </select>
-</form>
+</div>
