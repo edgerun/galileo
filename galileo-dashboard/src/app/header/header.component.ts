@@ -20,7 +20,7 @@ export class HeaderComponent implements OnInit {
         url: '/experiments'
       },
       {
-        text: 'Submit Experiment',
+        text: 'Designer',
         url: '/create'
       }
     ];
