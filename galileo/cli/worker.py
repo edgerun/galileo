@@ -4,14 +4,11 @@ import logging
 import redis
 import symmetry.eventbus as eventbus
 from symmetry.eventbus.redis import RedisConfig
-from symmetry.service.routing import RedisConnectedBalancer
+from symmetry.gateway import RedisConnectedBalancer, StaticRouter, SymmetryRouter
 
-from galileo.experiment.db import ExperimentDatabase
 from galileo.experiment.db.factory import create_experiment_database
-from galileo.experiment.db.sql import ExperimentSQLDatabase
 from galileo.worker import ExperimentWorker
-from galileo.worker.client import ClientEmulator, ImageClassificationRequestFactory, MXNetImageClassifierService
-from galileo.worker.router import ServiceRegistry, Router
+from galileo.worker.client import ClientEmulator, ImageClassificationRequestFactory
 
 log = logging.getLogger(__name__)
 
@@ -45,29 +42,25 @@ def main():
     # experiment services (request generators)
     services = [
         ClientEmulator(
-            'squeezenet',
-            # TODO: parameterize path
-            ImageClassificationRequestFactory('squeezenet', 'resources/images/small')
+            'squeezenet',  # FIXME: won't work with SymmetryRouter
+            ImageClassificationRequestFactory('squeezenet',
+                                              'resources/images/small')
         ),
         ClientEmulator(
-            'alexnet',
-            # TODO: parameterize path
-            ImageClassificationRequestFactory('alexnet', 'resources/images/small')
+            'alexnet',  # FIXME: won't work with SymmetryRouter
+            ImageClassificationRequestFactory('alexnet',
+                                              'resources/images/small')
         )
     ]
 
-    # client services
-    registry = ServiceRegistry()
-    registry.register('squeezenet', MXNetImageClassifierService('squeezenet'))
-    registry.register('alexnet', MXNetImageClassifierService('alexnet'))
-    # balancer = StaticLocalhostBalancer()  # TODO parameterize
+    # Router
     balancer = RedisConnectedBalancer(rds)
-    router = Router(registry, balancer)
+    router = SymmetryRouter(balancer)
+    # router = StaticRouter('http://localhost:8080')
 
     # run host
     host = ExperimentWorker(rds, services, router=router, trace_logging=args.trace_logging, experiment_db=exp_db)
 
-    log.info('using balancer: %s', balancer)
     try:
         log.info('starting experiment host %s', host.host_name)
         host.run()
