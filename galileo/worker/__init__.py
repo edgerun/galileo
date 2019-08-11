@@ -8,16 +8,17 @@ from threading import Event, Lock
 from typing import Iterable, Dict
 
 import redis
+import requests
 import symmetry.eventbus as eventbus
+from symmetry.gateway import Router, ServiceRequest
 
 from galileo import util
 from galileo.event import RegisterEvent, RegisterCommand, UnregisterEvent, SpawnClientsCommand, InfoCommand, \
     SetRpsCommand, RuntimeMetric, CloseRuntimeCommand
 from galileo.experiment.db import ExperimentDatabase
-from galileo.worker.client import ClientEmulator
-from galileo.worker.router import Router
-from galileo.worker.trace import TraceLogger, TraceRedisLogger, TraceDatabaseLogger, TraceFileLogger
 from galileo.experiment.model import ServiceRequestTrace
+from galileo.worker.client import ClientEmulator
+from galileo.worker.trace import TraceLogger, TraceRedisLogger, TraceDatabaseLogger, TraceFileLogger
 
 POISON = "__POISON__"
 
@@ -31,28 +32,76 @@ class ExperimentClient:
         self.client_id = client_id
         self.q = request_queue
         self.traces = trace_queue
-        # TODO: init router, etc...
 
     def run(self):
+        client_id = self.client_id
+        q = self.q
+        traces = self.traces
+        router = self.router
+
         try:
             while True:
-                request = self.q.get()
+                request: ServiceRequest = q.get()
                 if request == POISON:
                     break
-                request.client_id = self.client_id
+                request.client_id = client_id
 
                 try:
-                    self.router.request(request)
+                    response: requests.Response = router.request(request)
+                    host = response.url.split("//")[-1].split("/")[0].split('?')[0]
+                    t = ServiceRequestTrace(client_id, request.service, host, request.created, request.sent,
+                                            time.time())
                 except Exception as e:
                     logger.error('error while handling request: %s', e)
+                    t = ServiceRequestTrace(client_id, request.service, 'none', request.created, request.sent,
+                                            time.time())
 
                 try:
-                    self.traces.put_nowait(ServiceRequestTrace.from_request(request))
+                    traces.put_nowait(t)
                 except Full:
                     pass
 
         except KeyboardInterrupt:
             return
+
+
+class ThreadedExperimentClient:
+    def __init__(self, router: Router, request_queue: Queue, trace_queue: Queue, client_id=None, threads=None) -> None:
+        super().__init__()
+        self.router = router
+        self.client_id = client_id
+        self.q = request_queue
+        self.traces = trace_queue
+        self.threads = threads
+
+    def run(self):
+        with ThreadPoolExecutor(max_workers=self.threads) as executor:
+            try:
+                while True:
+                    request: ServiceRequest = self.q.get()
+                    if request == POISON:
+                        break
+                    request.client_id = self.client_id
+
+                    executor.submit(self._do_request, request)
+
+            except KeyboardInterrupt:
+                return
+
+    def _do_request(self, request):
+        try:
+            response: requests.Response = self.router.request(request)
+            host = response.url.split("//")[-1].split("/")[0].split('?')[0]
+            t = ServiceRequestTrace(self.client_id, request.service, host, request.created, request.sent,
+                                    time.time())
+        except Exception as e:
+            logger.error('error while handling request: %s', e)
+            t = ServiceRequestTrace(self.client_id, request.service, 'none', request.created, request.sent,
+                                    time.time())
+        try:
+            self.traces.put_nowait(t)
+        except Full:
+            pass
 
 
 class RequestGenerator:
@@ -178,6 +227,9 @@ class ExperimentWorker:
     """
     An experiment worker manages multiple ExperimentService runtimes on a host and accepts commands via the symmetry
     event bus.
+
+    TODO: this should support multiple runtimes per service with different parameters. (e.g., mxnet-model-server with
+     the model as parameter). that is probably a deeper change.
     """
 
     def __init__(self, rds: redis.Redis, services: Iterable[ClientEmulator], router: Router, trace_logging='file',

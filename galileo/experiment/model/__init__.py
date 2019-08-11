@@ -64,10 +64,13 @@ class ServiceRequestTrace(NamedTuple):
     done: float
 
     @property
-    def milliseconds(self):
+    def rt_time(self):
         return (self.done - self.created) * 1000
 
-    @staticmethod
-    def from_request(request):
-        return ServiceRequestTrace(request.client_id, request.service, request.host, request.time_created,
-                                   request.time_sent, request.time_done)
+    @property
+    def queue_time(self):
+        return (self.sent - self.created) * 1000
+
+    @property
+    def processing_time(self):
+        return (self.done - self.sent) * 1000

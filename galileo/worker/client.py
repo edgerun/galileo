@@ -2,10 +2,9 @@ import abc
 import logging
 import os
 
-import requests
+from symmetry.gateway import ServiceRequest
 
 from galileo.util import read_file
-from galileo.worker.router import Service, ServiceRequest
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +26,29 @@ class ClientEmulator:
 
 class ImageClassificationRequestFactory(RequestFactory):
 
-    def __init__(self, service, image_directory) -> None:
+    def __init__(self, model, image_directory, service='mxnet-model-server') -> None:
         super().__init__()
+        self.model = model
+        self.image_directory = image_directory
         self.service = service
-        self.images = self.load_images(image_directory)
-        self.i = 0
+        self._request_generator = self._requestgen()
+
+    def _requestgen(self):
+        images = self.load_images(self.image_directory)
+        model = self.model
+        service = self.service
+
+        n = len(images)
+
+        i = 0
+        while True:
+            payload = images[i]
+            kwargs = {'files': {'data': (payload['name'], payload['data'])}}
+            yield ServiceRequest(service, f'/predictions/{model}', method='post', **kwargs)
+            i = (i + 1) % n
 
     def create_request(self) -> ServiceRequest:
-        r = ServiceRequest(self.images[self.i], self.service)
-        self.i = (self.i + 1) % len(self.images)
-        return r
+        return next(self._request_generator)
 
     @staticmethod
     def load_images(path):
@@ -51,18 +63,3 @@ class ImageClassificationRequestFactory(RequestFactory):
         images = [{'name': f, 'data': read_file(os.path.join(path, f))} for f in jpegs]
         # print("Loaded %d images" % len(images))
         return images
-
-
-class MXNetImageClassifierService(Service):
-
-    def __init__(self, model: str) -> None:
-        super().__init__()
-        self.model = model
-
-    def request(self, host, request: ServiceRequest, timeout=None):
-        url = 'http://' + host + ':8080/predictions/' + self.model
-
-        file_name = request.payload['name']
-        file_data = request.payload['data']
-
-        return requests.post(url, files={'data': (file_name, file_data)}, timeout=timeout)
