@@ -4,7 +4,7 @@ import logging
 import redis
 import symmetry.eventbus as eventbus
 from symmetry.eventbus.redis import RedisConfig
-from symmetry.gateway import RedisConnectedBalancer, StaticRouter, SymmetryRouter
+from symmetry.gateway import RedisConnectedBalancer, SymmetryServiceRouter, SymmetryHostRouter
 
 from galileo.experiment.db.factory import create_experiment_database
 from galileo.worker import ExperimentWorker
@@ -42,21 +42,18 @@ def main():
     # experiment services (request generators)
     services = [
         ClientEmulator(
-            'squeezenet',  # FIXME: won't work with SymmetryRouter
-            ImageClassificationRequestFactory('squeezenet',
-                                              'resources/images/small')
+            'squeezenet', ImageClassificationRequestFactory('squeezenet', 'resources/images/small')
         ),
         ClientEmulator(
-            'alexnet',  # FIXME: won't work with SymmetryRouter
-            ImageClassificationRequestFactory('alexnet',
-                                              'resources/images/small')
+            'alexnet', ImageClassificationRequestFactory('alexnet', 'resources/images/small')
         )
     ]
 
     # Router
     balancer = RedisConnectedBalancer(rds)
-    router = SymmetryRouter(balancer)
+    router = SymmetryServiceRouter(balancer)
     # router = StaticRouter('http://localhost:8080')
+    # router = SymmetryHostRouter(balancer)
 
     # run host
     host = ExperimentWorker(rds, services, router=router, trace_logging=args.trace_logging, experiment_db=exp_db)
