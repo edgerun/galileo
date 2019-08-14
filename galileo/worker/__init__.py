@@ -10,7 +10,7 @@ from typing import Iterable, Dict
 import redis
 import requests
 import symmetry.eventbus as eventbus
-from symmetry.gateway import Router, ServiceRequest
+from symmetry.gateway import Router, ServiceRequest, SymmetryRouter
 
 from galileo import util
 from galileo.event import RegisterEvent, RegisterCommand, UnregisterEvent, SpawnClientsCommand, InfoCommand, \

@@ -4,7 +4,8 @@ import logging
 import redis
 import symmetry.eventbus as eventbus
 from symmetry.eventbus.redis import RedisConfig
-from symmetry.gateway import RedisConnectedBalancer, SymmetryServiceRouter, SymmetryHostRouter
+from symmetry.gateway import SymmetryServiceRouter, SymmetryHostRouter, WeightedRandomBalancer, StaticRouter
+from symmetry.service.routing import ReadOnlyListeningRedisRoutingTable
 
 from galileo.experiment.db.factory import create_experiment_database
 from galileo.worker import ExperimentWorker
@@ -50,7 +51,8 @@ def main():
     ]
 
     # Router
-    balancer = RedisConnectedBalancer(rds)
+    rtable = ReadOnlyListeningRedisRoutingTable(rds)
+    balancer = WeightedRandomBalancer(rtable)
     router = SymmetryServiceRouter(balancer)
     # router = StaticRouter('http://localhost:8080')
     # router = SymmetryHostRouter(balancer)
@@ -59,11 +61,13 @@ def main():
     host = ExperimentWorker(rds, services, router=router, trace_logging=args.trace_logging, experiment_db=exp_db)
 
     try:
+        rtable.start()
         log.info('starting experiment host %s', host.host_name)
         host.run()
     except KeyboardInterrupt:
         pass
     finally:
+        rtable.stop(2)
         host.close()
 
     print('done, bye')
