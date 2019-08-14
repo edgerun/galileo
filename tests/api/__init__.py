@@ -3,7 +3,6 @@ import redis
 from falcon import testing
 from symmetry import eventbus
 from symmetry.eventbus.redis import RedisConfig
-from symmetry.webapp import JSONMiddleware
 
 from galileo.controller import ExperimentController
 from galileo.experiment.db.sql import ExperimentSQLDatabase
@@ -38,7 +37,7 @@ class ResourceTest(testing.TestCase):
         return self.redis_resource.rds
 
     def create_api(self, db: ExperimentSQLDatabase, rds: redis.Redis) -> falcon.API:
-        api = falcon.API(middleware=[CORSComponent(), JSONMiddleware()])
+        api = falcon.API(middleware=[CORSComponent()])
         setup(api, self.init_context(db, rds))
         return api
 

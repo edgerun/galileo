@@ -6,7 +6,7 @@ import falcon
 import redis
 from symmetry import eventbus
 from symmetry.eventbus.redis import RedisConfig
-from symmetry.webapp import JSONMiddleware, ApiResource
+from symmetry.webapp import ApiResource
 
 from galileo.controller import ExperimentController, CancelError
 from galileo.experiment.db import ExperimentDatabase
@@ -82,7 +82,7 @@ class ExperimentsResource:
         if not self.ectrl.list_hosts():
             raise falcon.HTTPServiceUnavailable('no available hosts to execute the experiment')
 
-        doc = req.json
+        doc = req.media
 
         exp = doc['experiment'] if 'experiment' in doc else dict()
         if 'id' not in exp:
@@ -211,5 +211,5 @@ class CORSComponent(object):
 
 
 if __name__ == '__main__':
-    api = falcon.API(middleware=[CORSComponent(), JSONMiddleware()])
+    api = falcon.API(middleware=[CORSComponent()])
     setup(api, init_context())
