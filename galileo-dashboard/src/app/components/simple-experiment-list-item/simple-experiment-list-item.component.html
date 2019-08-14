@@ -1,7 +1,10 @@
 <div class="card">
   <div class="card-body">
     <h5 *ngIf="experiment.creator" class="card-title">{{experiment.creator}} - {{experiment.name}}</h5>
+
     <p *ngIf="experiment.status.toLowerCase() === 'finished'" class="card-text">
+      <button class="btn btn-danger float-right" (click)="delete(experiment)"><i class="fa fa-trash"></i></button>
+
       <b>Created: </b> {{experiment.created * 1000 | date: 'medium'}}
       <br/>
       <b>Start: </b> {{experiment.start * 1000 | date: 'medium'}}

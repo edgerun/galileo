@@ -2,8 +2,6 @@ import {Inject, Injectable} from '@angular/core';
 import {Submission} from "../models/Submission";
 import {Observable, of} from "rxjs";
 import {HttpClient} from "@angular/common/http";
-import {Service} from "../models/Service";
-import {ServiceService} from "./service.service";
 import {Experiment} from "../models/Experiment";
 
 @Injectable({
@@ -12,6 +10,8 @@ import {Experiment} from "../models/Experiment";
 export abstract class ExperimentService {
 
   abstract submit(submission: Submission): Observable<string>;
+
+  abstract delete(experiment: Experiment): Observable<string>;
 
   abstract findAll(): Observable<Experiment[]>;
 }
@@ -27,6 +27,11 @@ export class MockExperimentService implements ExperimentService {
     console.info('submitted');
     console.info(submission);
     return of('fakeid');
+  }
+
+  delete(experiment: Experiment): Observable<string> {
+    console.info('deleting', experiment.id);
+    return of(experiment.id);
   }
 
   findAll(): Observable<Experiment[]> {
@@ -99,6 +104,12 @@ export class HttpExperimentService implements ExperimentService {
 
   submit(submission: Submission): Observable<string> {
     return this.httpClient.post<string>(this.baseUrl + "/experiments", submission);
+  }
+
+  delete(experiment: Experiment): Observable<string> {
+    const url = this.baseUrl + "/experiments/" + experiment.id;
+    console.log('calling delete on ', url);
+    return this.httpClient.delete<string>(url);
   }
 
   findAll(): Observable<Experiment[]> {

@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import time
@@ -18,7 +17,6 @@ from galileo.experiment.service.experiment import ExperimentService, SimpleExper
 from galileo.util import to_seconds
 
 logger = logging.getLogger(__name__)
-
 
 
 class ServicesResource:
@@ -108,6 +106,31 @@ class ExperimentsResource:
         resp.media = exp.id
 
 
+class ExperimentResource:
+
+    def __init__(self, exp_service: ExperimentService):
+        self.exp_service = exp_service
+
+    def on_get(self, req, resp, exp_id):
+        logger.debug('finding experiment %s', exp_id)
+        experiment = self.exp_service.find(exp_id)
+
+        if not experiment:
+            raise falcon.HTTPNotFound()
+
+        resp.json = experiment.__dict__
+
+    def on_delete(self, req, resp, exp_id):
+        logger.debug('deleting experiment %s', exp_id)
+
+        try:
+            self.exp_service.delete(exp_id)
+        except ValueError:
+            raise falcon.HTTPNotFound()
+
+        resp.json = exp_id
+
+
 def setup(api, context):
     rds = context.rds
 
@@ -115,6 +138,7 @@ def setup(api, context):
     api.add_route('/api/hosts', HostsResource(context.ectrl))
     api.add_route('/api/services', ServicesResource())
     api.add_route('/api/experiments', ExperimentsResource(context.ectrl, context.exp_service))
+    api.add_route('/api/experiments/{exp_id}', ExperimentResource(context.exp_service))
 
 
 class AppContext:

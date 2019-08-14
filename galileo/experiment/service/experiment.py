@@ -14,6 +14,9 @@ class ExperimentService(ABC):
     def find(self, exp_id: str):
         raise NotImplementedError
 
+    def delete(self, exp_id: str):
+        raise NotImplementedError
+
     def finalize_experiment(self, exp: Experiment, status):
         raise NotImplementedError
 
@@ -39,6 +42,9 @@ class SimpleExperimentService(ExperimentService):
 
     def find(self, exp_id: str):
         return self.repository.get_experiment(exp_id)
+
+    def delete(self, exp_id: str):
+        self.repository.delete_experiment(exp_id)
 
     def finalize_experiment(self, exp: Experiment, status):
         exp.status = status

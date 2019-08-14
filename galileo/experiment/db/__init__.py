@@ -21,6 +21,9 @@ class ExperimentDatabase(ABC):
     def update_experiment(self, experiment: Experiment):
         raise NotImplementedError
 
+    def delete_experiment(self, exp_id: str):
+        raise NotImplementedError
+
     def get_experiment(self, exp_id: str) -> Experiment:
         raise NotImplementedError
 

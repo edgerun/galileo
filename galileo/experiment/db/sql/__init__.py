@@ -211,6 +211,24 @@ class ExperimentSQLDatabase(ExperimentDatabase):
 
         self.db.update_by_id('experiments', ('exp_id', experiment.id), data)
 
+    def delete_experiment(self, exp_id: str):
+        experiment = self.get_experiment(exp_id)
+        if experiment is None:
+            raise ValueError('No such experiment %s' % exp_id)
+
+        stmts = [
+            "DELETE FROM `telemetry` WHERE EXP_ID = " + self.db.placeholder,
+            "DELETE FROM `traces` WHERE EXP_ID = " + self.db.placeholder,
+            "DELETE FROM `instructions` WHERE EXP_ID = " + self.db.placeholder,
+            "DELETE FROM `experiments` WHERE EXP_ID = " + self.db.placeholder,
+        ]
+
+        for sql in stmts:
+            try:
+                self.db.execute(sql, (exp_id,))
+            except Exception as e:
+                logger.exception('Exception while executing %s', sql, e)
+
     def get_experiment(self, exp_id: str) -> Experiment:
         sql = "SELECT * FROM `experiments` WHERE EXP_ID = " + self.db.placeholder
 
