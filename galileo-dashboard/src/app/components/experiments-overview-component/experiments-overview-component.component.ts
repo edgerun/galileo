@@ -31,7 +31,7 @@ export class ExperimentsOverviewComponentComponent implements OnInit {
   }
 
   queuedExperiments() {
-    return this.experiments.filter(e => e.status.toLowerCase() === 'queued').sort((a, b) => -1 * this.sort(a, b));
+    return this.experiments.filter(e => e.status.toLowerCase() === 'queued').sort((a, b) => this.sort(a, b));
   }
 
   private sort(a: Experiment, b: Experiment): number {
