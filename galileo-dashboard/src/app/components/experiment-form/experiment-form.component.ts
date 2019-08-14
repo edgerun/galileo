@@ -1,14 +1,14 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {convertToSeconds, Time, TimeUnit, timeUnits} from "../../models/TimeUnit";
-import {CurveForm, CurveKind} from "../../models/ExperimentForm";
+import {CurveForm} from "../../models/ExperimentForm";
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {Service} from "../../models/Service";
 import * as d3 from 'd3';
 import {Submission} from "../../models/Submission";
 import {ExperimentConfiguration, WorkloadConfiguration} from "../../models/ExperimentConfiguration";
 import * as uuid from 'uuid/v4';
-import {tick} from "@angular/core/testing";
 import {LoadBalancingPolicy, LoadBalancingPolicySchema} from "../../models/LoadBalancingPolicy";
+import {NgbModal} from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
   selector: 'app-experiment-form',
@@ -43,11 +43,11 @@ export class ExperimentFormComponent implements OnInit {
   calculatedWorkloads: Map<string, WorkloadConfiguration>;
   private lbPolicy: LoadBalancingPolicy;
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private modalService: NgbModal) {
   }
 
   ngOnInit() {
-      this.durationTime = new Time(100, timeUnits[0].id);
+    this.durationTime = new Time(100, timeUnits[0].id);
     this.intervalTime = new Time(10, timeUnits[0].id);
     this.workloads = [];
     this.calculatedWorkloads = new Map<string, WorkloadConfiguration>();
@@ -108,6 +108,29 @@ export class ExperimentFormComponent implements OnInit {
       }, 2000)
     }
   }
+
+  experimentAsJson = JSON.stringify({});
+
+  export(content) {
+    const configuration = this.getConfiguration();
+
+    let submission: Submission = {
+      configuration
+    };
+
+    const experiment = this.getOptionalInput();
+
+    submission = {
+      ...submission,
+      experiment
+    };
+
+    this.experimentAsJson = JSON.stringify(submission, null, 2);
+    console.log(this.experimentAsJson);
+
+    this.modalService.open(content, {ariaLabelledBy: 'modal-basic-title', size: 'lg', scrollable: true});
+  }
+
 
   private configurationsAreValid(): [boolean, string[]] {
     console.log('validate configurations');

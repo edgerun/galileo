@@ -1,13 +1,32 @@
 <ngb-alert *ngIf="successMessage" type="success" (close)="successMessage = null">{{ successMessage }}</ngb-alert>
 <ngb-alert *ngIf="errorMessage" type="danger" (close)="errorMessage = null">{{ errorMessage }}</ngb-alert>
+
+<ng-template #content let-modal>
+  <div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">Export experiment configuration</h4>
+    <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('Cross click')">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="modal-body">
+    <pre>{{experimentAsJson}}</pre>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-outline-dark" (click)="modal.close('Close')">Close</button>
+  </div>
+</ng-template>
+
 <div class="row">
   <div class="col-3">
     <div class="card">
       <h4 class="card-header">Experiment Configuration</h4>
       <div class="card-body">
         <form [formGroup]="form">
-          <button (click)="submit()" type="submit" class="btn btn-danger">
+          <button (click)="submit()" type="submit" class="btn btn-danger mr-3">
             <i class="fa fa-play"></i> Run Experiment
+          </button>
+          <button (click)="export(content)" type="submit" class="btn btn-primary btn-primary">
+            <i class="fa fa-download"></i> Export
           </button>
           <hr>
           <app-text-input
