@@ -73,7 +73,7 @@ class ExperimentDaemon:
         logger.info('Listening for incoming experiment instructions...')
         try:
             while self.cancelled is False:
-                message = rds.blpop(ExperimentController.queue_key)
+                message = rds.brpop(ExperimentController.queue_key)
                 if not message or not message[1]:
                     print('empty message, skipping')
                     continue
