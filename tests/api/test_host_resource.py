@@ -11,7 +11,7 @@ class TestHostResource(ResourceTest):
     def test_get_empty_hosts(self):
         result = self.simulate_get('/api/hosts')
 
-        self.assertEqual(result.json, None)
+        self.assertEqual(result.json, [])
 
     def test_get_hosts(self):
         hosts = ['host1', 'host2']

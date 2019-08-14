@@ -40,7 +40,7 @@ class HostsResource:
         self.ectrl = ectrl
 
     def on_get(self, req, resp):
-        resp.json = list(self.ectrl.list_hosts())
+        resp.media = list(self.ectrl.list_hosts())
 
 
 class ExperimentsResource:
@@ -53,7 +53,7 @@ class ExperimentsResource:
         logger.debug('fetching all experiments')
         experiments = self.exp_service.find_all()
         logger.debug(f"found {len(experiments)} experiments")
-        resp.json = [exp.__dict__ for exp in experiments]
+        resp.media = [exp.__dict__ for exp in experiments]
 
     """
     here's an example request:
@@ -119,7 +119,7 @@ class ExperimentResource:
         if not experiment:
             raise falcon.HTTPNotFound()
 
-        resp.json = experiment.__dict__
+        resp.media = experiment.__dict__
 
     def on_delete(self, req, resp, exp_id):
         logger.debug('deleting experiment %s', exp_id)
@@ -147,7 +147,7 @@ class ExperimentResource:
         except ValueError:
             raise falcon.HTTPNotFound()
 
-        resp.json = exp_id
+        resp.media = exp_id
 
 
 def setup(api, context):

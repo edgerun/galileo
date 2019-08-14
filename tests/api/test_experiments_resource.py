@@ -13,7 +13,7 @@ class TestExperimentsResource(ResourceTest):
 
     def test_get_experiments_empty(self):
         result = self.simulate_get('/api/experiments')
-        self.assertEqual(result.json, None)
+        self.assertEqual(result.json, [])
 
     def test_get_experiments(self):
         self.maxDiff = None
