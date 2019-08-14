@@ -13,16 +13,18 @@ from tests.testutils import RedisResource, SqliteResource
 
 
 class ResourceTest(testing.TestCase):
+    redis_resource: RedisResource = RedisResource()
+
     def setUp(self):
         super(ResourceTest, self).setUp()
-        rds_resource = self.init_rds()
+        rds = self.init_rds()
         db = self.init_db()
-        self.app = self.create_api(db, rds_resource)
+        self.app = self.create_api(db, rds)
 
     def tearDown(self) -> None:
         super(ResourceTest, self).tearDown()
         eventbus.shutdown()
-        self.rds_resource.tearDown()
+        self.redis_resource.tearDown()
         self.db_resource.tearDown()
 
     def init_db(self):
@@ -31,10 +33,9 @@ class ResourceTest(testing.TestCase):
         return self.db_resource.db
 
     def init_rds(self):
-        self.rds_resource = RedisResource()
-        self.rds_resource.setUp()
-        rds_resource = self.rds_resource.rds
-        return rds_resource
+        self.redis_resource.setUp()
+        eventbus.init(RedisConfig(self.redis_resource.rds))
+        return self.redis_resource.rds
 
     def create_api(self, db: ExperimentSQLDatabase, rds: redis.Redis) -> falcon.API:
         api = falcon.API(middleware=[CORSComponent(), JSONMiddleware()])
@@ -46,7 +47,6 @@ class ResourceTest(testing.TestCase):
         context = AppContext()
 
         context.rds = rds
-        eventbus.init(RedisConfig(context.rds))
 
         context.ectrl = ExperimentController(context.rds)
         context.exp_db = db
