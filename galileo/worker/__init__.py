@@ -10,7 +10,7 @@ from typing import Iterable, Dict
 import redis
 import requests
 import symmetry.eventbus as eventbus
-from symmetry.gateway import Router, ServiceRequest, SymmetryRouter
+from symmetry.gateway import Router, ServiceRequest, SymmetryRouter, WeightedRandomBalancer
 from symmetry.service.routing import ReadOnlyListeningRedisRoutingTable
 
 from galileo import util
@@ -81,15 +81,17 @@ class ThreadedExperimentClient:
 
         # FIXME: multiprocessing ...
         if isinstance(self.router, SymmetryRouter):
-            if isinstance(self.router._balancer, ReadOnlyListeningRedisRoutingTable):
-                logger.debug('starting routing table listener')
-                self.router._balancer.start()
+            if isinstance(self.router._balancer, WeightedRandomBalancer):
+                if isinstance(self.router._balancer._rtbl, ReadOnlyListeningRedisRoutingTable):
+                    logger.debug('starting routing table listener')
+                    self.router._balancer._rtbl.start()
 
         with ThreadPoolExecutor(max_workers=self.threads) as executor:
             try:
                 while True:
                     request: ServiceRequest = q.get()
                     if request == POISON:
+                        logger.debug('client %s received poison, exitting', client_id)
                         break
                     request.client_id = client_id
 
@@ -100,8 +102,11 @@ class ThreadedExperimentClient:
 
         # FIXME: multiprocessing ...
         if isinstance(self.router, SymmetryRouter):
-            if isinstance(self.router._balancer, ReadOnlyListeningRedisRoutingTable):
-                self.router._balancer.stop(2)
+            if isinstance(self.router._balancer, WeightedRandomBalancer):
+                if isinstance(self.router._balancer._rtbl, ReadOnlyListeningRedisRoutingTable):
+                    logger.debug('starting routing table listener')
+                    self.router._balancer._rtbl.stop(2)
+
 
 
     def _do_request(self, request):
