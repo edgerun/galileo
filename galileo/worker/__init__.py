@@ -11,6 +11,7 @@ import redis
 import requests
 import symmetry.eventbus as eventbus
 from symmetry.gateway import Router, ServiceRequest, SymmetryRouter
+from symmetry.service.routing import ReadOnlyListeningRedisRoutingTable
 
 from galileo import util
 from galileo.event import RegisterEvent, RegisterCommand, UnregisterEvent, SpawnClientsCommand, InfoCommand, \
@@ -75,18 +76,33 @@ class ThreadedExperimentClient:
         self.threads = threads
 
     def run(self):
+        q = self.q
+        client_id = self.client_id
+
+        # FIXME: multiprocessing ...
+        if isinstance(self.router, SymmetryRouter):
+            if isinstance(self.router._balancer, ReadOnlyListeningRedisRoutingTable):
+                logger.debug('starting routing table listener')
+                self.router._balancer.start()
+
         with ThreadPoolExecutor(max_workers=self.threads) as executor:
             try:
                 while True:
-                    request: ServiceRequest = self.q.get()
+                    request: ServiceRequest = q.get()
                     if request == POISON:
                         break
-                    request.client_id = self.client_id
+                    request.client_id = client_id
 
                     executor.submit(self._do_request, request)
 
             except KeyboardInterrupt:
                 return
+
+        # FIXME: multiprocessing ...
+        if isinstance(self.router, SymmetryRouter):
+            if isinstance(self.router._balancer, ReadOnlyListeningRedisRoutingTable):
+                self.router._balancer.stop(2)
+
 
     def _do_request(self, request):
         try:
@@ -243,6 +259,7 @@ class ExperimentWorker:
 
         self.trace_queue = Queue()
         self.trace_logger = self._create_trace_logger(trace_logging)
+        self.trace_logger.flush_interval = 64
 
         self.rt_index: Dict[str, ServiceRuntime] = dict()
         self.rt_executor: ThreadPoolExecutor = None

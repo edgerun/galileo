@@ -61,13 +61,11 @@ def main():
     host = ExperimentWorker(rds, services, router=router, trace_logging=args.trace_logging, experiment_db=exp_db)
 
     try:
-        rtable.start()
         log.info('starting experiment host %s', host.host_name)
         host.run()
     except KeyboardInterrupt:
         pass
     finally:
-        rtable.stop(2)
         host.close()
 
     print('done, bye')
