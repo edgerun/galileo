@@ -64,7 +64,7 @@ class TraceLogger(Process):
                 if trace == POISON:
                     logger.debug('poison received, setting closed to true')
                     self.closed = True
-                    continue
+                    break
                 elif trace == self.FLUSH:
                     logger.debug('flush command received, flushing buffer')
                     self.flush()
