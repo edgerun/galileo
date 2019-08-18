@@ -47,6 +47,16 @@ class ExperimentController:
         logger.debug('queuing experiment data: %s', message)
         self.rds.lpush(ExperimentController.queue_key, json.dumps(message))
 
+    def cancel(self, exp: Experiment) -> bool:
+        # start watch
+        # get list of experiments (with python)
+        # find index of exp to cancel (with python)
+        # lset idx "DELETE"
+        # lrem 1 "DELETE"
+        # exec
+        # https://stackoverflow.com/questions/31580535/remove-element-at-specific-index-from-redis-list
+        return False
+
     def ping(self):
         eventbus.publish(RegisterCommand())
 

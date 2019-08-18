@@ -108,8 +108,9 @@ class ExperimentsResource:
 
 class ExperimentResource:
 
-    def __init__(self, exp_service: ExperimentService):
+    def __init__(self, exp_service: ExperimentService, ectrl: ExperimentController):
         self.exp_service = exp_service
+        self.ectrl = ectrl
 
     def on_get(self, req, resp, exp_id):
         logger.debug('finding experiment %s', exp_id)
@@ -124,7 +125,18 @@ class ExperimentResource:
         logger.debug('deleting experiment %s', exp_id)
 
         try:
-            self.exp_service.delete(exp_id)
+            exp: Experiment = self.exp_service.find(exp_id)
+            if exp is None:
+                raise falcon.HTTPNotFound()
+
+            if exp.status.lower() == 'queued':
+                cancelled = self.ectrl.cancel(exp)
+                if cancelled:
+                    self.exp_service.delete(exp_id)
+                else:
+                    logger.debug(f"Experiment {exp_id} was not cancelled")
+            else:
+                self.exp_service.delete(exp_id)
         except ValueError:
             raise falcon.HTTPNotFound()
 
@@ -138,7 +150,7 @@ def setup(api, context):
     api.add_route('/api/hosts', HostsResource(context.ectrl))
     api.add_route('/api/services', ServicesResource())
     api.add_route('/api/experiments', ExperimentsResource(context.ectrl, context.exp_service))
-    api.add_route('/api/experiments/{exp_id}', ExperimentResource(context.exp_service))
+    api.add_route('/api/experiments/{exp_id}', ExperimentResource(context.exp_service, context.ectrl))
 
 
 class AppContext:
