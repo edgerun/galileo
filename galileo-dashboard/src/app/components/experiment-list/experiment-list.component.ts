@@ -1,4 +1,4 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {Experiment} from "../../models/Experiment";
 
 @Component({
@@ -11,7 +11,11 @@ export class ExperimentListComponent implements OnInit {
   @Input()
   experiments: Experiment[];
 
+  @Output()
+  deleteExperiment: EventEmitter<string> = new EventEmitter<string>();
+
   collapsed: string = "";
+
 
   constructor() { }
 
@@ -24,6 +28,12 @@ export class ExperimentListComponent implements OnInit {
       this.collapsed = ""
     } else {
       this.collapsed = id;
+    }
+  }
+
+  cancelExperiment(id: string) {
+    if (confirm(`Are you sure to cancel experiment ${id}?`)) {
+      this.deleteExperiment.emit(id);
     }
   }
 }

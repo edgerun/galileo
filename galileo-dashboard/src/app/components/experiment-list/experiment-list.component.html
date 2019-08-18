@@ -5,11 +5,16 @@
         <button data-toggle="collapse" class="btn btn-link" type="button" (click)="toggle(exp.id)">
           ID: {{exp.id}}
         </button>
+        <button (click)="cancelExperiment(exp.id)" *ngIf="exp.status.toLowerCase() === 'queued'"
+                class="btn btn-danger">Cancel
+        </button>
       </h2>
     </div>
 
-    <div  [id]="'collapse' + exp.id" [ngbCollapse]="collapsed !== exp.id">
-          <app-simple-experiment-list-item [experiment]="exp"></app-simple-experiment-list-item>
+    <div [id]="'collapse' + exp.id" [ngbCollapse]="collapsed !== exp.id">
+      <app-simple-experiment-list-item
+        (deleteEvent)="deleteExperiment.emit($event)"
+        [experiment]="exp"></app-simple-experiment-list-item>
     </div>
   </div>
 </div>

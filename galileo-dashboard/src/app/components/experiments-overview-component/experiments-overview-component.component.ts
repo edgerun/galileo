@@ -11,6 +11,9 @@ export class ExperimentsOverviewComponentComponent implements OnInit {
 
   private _experiments: Experiment[];
 
+  @Output()
+  deleteExperiment: EventEmitter<string> = new EventEmitter<string>();
+
   @Input()
   set experiments(value: Experiment[]) {
     if (value) {
@@ -45,4 +48,5 @@ export class ExperimentsOverviewComponentComponent implements OnInit {
   runningExperiments() {
     return this.experiments.filter(e => e.status.toLowerCase() === 'in_progress');
   }
+
 }

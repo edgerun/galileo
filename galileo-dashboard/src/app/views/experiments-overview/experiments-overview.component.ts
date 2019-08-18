@@ -1,8 +1,7 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
 import {ExperimentService} from "../../services/experiment.service";
-import {Observable, Subject} from "rxjs";
+import {Observable} from "rxjs";
 import {Experiment} from "../../models/Experiment";
-import {debounceTime} from "rxjs/operators";
 
 @Component({
   selector: 'app-experiments-overview',
@@ -15,10 +14,12 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
   collectionSize: number;
   page: number;
   error: string;
+  success: string;
 
   experiments$: Observable<Experiment[]>;
   experiments: Experiment[] = [];
   loading: boolean;
+  timeout: any;
 
   constructor(private experimentsService: ExperimentService) {
   }
@@ -57,9 +58,28 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
   }
 
   private changeErrorMessage(text: string) {
+    clearTimeout(this.timeout);
     this.error = text;
-    setTimeout(() => {
+    this.timeout = setTimeout(() => {
       this.error = null;
     }, 3000)
+  }
+
+  private changeSuccessMessage(text: string) {
+    clearTimeout(this.timeout);
+    this.success = text;
+    this.timeout = setTimeout(() => {
+      this.success = null;
+    }, 3000)
+  }
+
+  deleteExperiment(id: string) {
+    this.experimentsService.delete(id).subscribe(() => {
+      this.changeSuccessMessage(`Experiment ${id} got removed.`);
+      this.experiments = this.experiments.filter(e => e.id !== id);
+    }, (err: Error) => {
+      console.error(`Error cancelling experiment ${id}. ${err}`);
+      this.changeErrorMessage(`Error happened cancelling experiment ${id}. ${err.message}`);
+    });
   }
 }

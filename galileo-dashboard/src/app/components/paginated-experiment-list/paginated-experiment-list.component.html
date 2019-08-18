@@ -1,5 +1,6 @@
 <div class="container" *ngIf="experiments.length > 0; else noExperiment">
   <app-experiment-list
+    (deleteExperiment)="deleteExperiment.emit($event)"
     [experiments]="experiments |  slice: (page-1) * pageSize : (page-1) * pageSize + pageSize">
   </app-experiment-list>
 

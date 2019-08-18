@@ -3,6 +3,7 @@
     <div class="row">
       <h3>Experiments</h3>
       <ngb-alert [dismissible]="false" class="alert" type="danger" *ngIf="error">{{error}}</ngb-alert>
+      <ngb-alert [dismissible]="false" class="alert" type="info" *ngIf="success">{{success}}</ngb-alert>
       <div style="margin-left: 20px" *ngIf="loading" class="spinner-border text-primary" role="status">
         <span class="sr-only">Loading...</span>
       </div>
@@ -10,6 +11,7 @@
     <button class="btn btn-primary" (click)="refresh()">Refresh</button>
   </div>
   <app-experiments-overview-component
+    (deleteExperiment)="deleteExperiment($event)"
     [experiments]="experiments">
   </app-experiments-overview-component>
 </div>

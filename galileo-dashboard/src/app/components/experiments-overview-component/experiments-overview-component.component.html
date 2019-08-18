@@ -10,6 +10,7 @@
   <div class="col-4">
     <h4>Queued experiments</h4>
     <app-paginated-experiment-list
+      (deleteExperiment)="deleteExperiment.emit($event)"
       [experiments]="queuedExperiments()"
     >
       No queued experiments
@@ -18,6 +19,7 @@
   <div class="col-4">
     <h4>Finished experiments</h4>
     <app-paginated-experiment-list
+      (deleteExperiment)="deleteExperiment.emit($event)"
       [experiments]="finishedExperiments()"
     >
       No finished experiments
