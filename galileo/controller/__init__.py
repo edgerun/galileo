@@ -47,7 +47,7 @@ class ExperimentController:
         logger.debug('queuing experiment data: %s', message)
         self.rds.lpush(ExperimentController.queue_key, json.dumps(message))
 
-    def cancel(self, exp: Experiment) -> bool:
+    def cancel(self, exp_id: str) -> bool:
         # start watch
         # get list of experiments (with python)
         # find index of exp to cancel (with python)

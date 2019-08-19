@@ -130,7 +130,7 @@ class ExperimentResource:
                 raise falcon.HTTPNotFound()
 
             if exp.status.lower() == 'queued':
-                cancelled = self.ectrl.cancel(exp)
+                cancelled = self.ectrl.cancel(exp_id)
                 if cancelled:
                     self.exp_service.delete(exp_id)
                 else:
