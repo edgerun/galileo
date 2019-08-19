@@ -8,7 +8,7 @@ from symmetry import eventbus
 from symmetry.eventbus.redis import RedisConfig
 from symmetry.webapp import JSONMiddleware, ApiResource
 
-from galileo.controller import ExperimentController
+from galileo.controller import ExperimentController, CancelError
 from galileo.experiment.db import ExperimentDatabase
 from galileo.experiment.db.factory import create_experiment_database_from_env
 from galileo.experiment.experimentd import generate_experiment_id
@@ -130,11 +130,18 @@ class ExperimentResource:
                 raise falcon.HTTPNotFound()
 
             if exp.status.lower() == 'queued':
-                cancelled = self.ectrl.cancel(exp_id)
+                cancelled = False
+                try:
+                    cancelled = self.ectrl.cancel(exp_id)
+                except CancelError:
+                    try:
+                        cancelled = self.ectrl.cancel(exp_id)
+                    except CancelError:
+                        logger.error(f'Cancellation of exp with id {exp_id} failed two times')
                 if cancelled:
                     self.exp_service.delete(exp_id)
                 else:
-                    logger.debug(f"Experiment {exp_id} was not cancelled")
+                    logger.debug(f"Experiment {exp_id} was not cancelled, did not exist")
             else:
                 self.exp_service.delete(exp_id)
         except ValueError:

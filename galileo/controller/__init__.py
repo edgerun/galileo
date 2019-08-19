@@ -8,6 +8,7 @@ from typing import List
 
 import redis
 import symmetry.eventbus as eventbus
+from redis import WatchError
 from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 
 from galileo.event import RegisterCommand, InfoCommand, RegisterEvent, UnregisterEvent, SpawnClientsCommand, \
@@ -48,14 +49,27 @@ class ExperimentController:
         self.rds.lpush(ExperimentController.queue_key, json.dumps(message))
 
     def cancel(self, exp_id: str) -> bool:
-        # start watch
-        # get list of experiments (with python)
-        # find index of exp to cancel (with python)
-        # lset idx "DELETE"
-        # lrem 1 "DELETE"
-        # exec
-        # https://stackoverflow.com/questions/31580535/remove-element-at-specific-index-from-redis-list
-        return False
+        try:
+            with self.rds.pipeline() as pipe:
+                pipe.watch(ExperimentController.queue_key)
+                workloads = pipe.lrange(ExperimentController.queue_key, 0, -1)
+                pipe.multi()
+                index = -1
+                for idx, entry in enumerate(workloads):
+                    body = json.loads(entry)
+                    if body['id'] == exp_id:
+                        index = idx
+                if index == -1:
+                    return False
+
+                pipe.lset(ExperimentController.queue_key, index, 'DELETE')
+                pipe.lrem(ExperimentController.queue_key, 1, 'DELETE')
+                pipe.execute()
+                return True
+        except WatchError:
+            # TODO maybe retry here and break out after too many retries
+            logger.warning('WatchError cancelling experiment with id ' + exp_id)
+            raise CancelError
 
     def ping(self):
         eventbus.publish(RegisterCommand())
@@ -209,3 +223,7 @@ def create_instructions(cfg: ExperimentConfiguration, hosts: List[str]) -> List[
             commands.append(f'close {host} {workload.service}')
 
     return commands
+
+
+class CancelError(Exception):
+    pass
