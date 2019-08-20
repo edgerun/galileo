@@ -7,7 +7,7 @@ import time
 from typing import List
 
 import redis
-import symmetry.eventbus as eventbus
+import pymq
 from redis import WatchError
 from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 
@@ -27,9 +27,9 @@ class ExperimentController:
         self.pubsub = None
         self.infos = list()
 
-        eventbus.listener(self._on_register_host)
-        eventbus.listener(self._on_unregister_host)
-        eventbus.listener(self._on_info)
+        pymq.subscribe(self._on_register_host)
+        pymq.subscribe(self._on_unregister_host)
+        pymq.subscribe(self._on_info)
 
     def queue(self, config: ExperimentConfiguration, exp: Experiment = None):
         """
@@ -72,11 +72,11 @@ class ExperimentController:
             raise CancelError
 
     def ping(self):
-        eventbus.publish(RegisterCommand())
+        pymq.publish(RegisterCommand())
 
     def info(self):
         self.infos.clear()
-        eventbus.publish(InfoCommand())
+        pymq.publish(InfoCommand())
 
     def get_infos(self):
         return self.infos
@@ -96,13 +96,13 @@ class ExperimentController:
         return self.rds.smembers('galileo:clients:%s' % host)
 
     def spawn_client(self, host, service, num):
-        return eventbus.publish(SpawnClientsCommand(host, service, num), SpawnClientsCommand.channel(host))
+        return pymq.publish(SpawnClientsCommand(host, service, num), SpawnClientsCommand.channel(host))
 
     def set_rps(self, host, service, rps):
-        return eventbus.publish(SetRpsCommand(host, service, rps), SetRpsCommand.channel(host))
+        return pymq.publish(SetRpsCommand(host, service, rps), SetRpsCommand.channel(host))
 
     def close_runtime(self, host, service):
-        return eventbus.publish(CloseRuntimeCommand(host, service), CloseRuntimeCommand.channel(host))
+        return pymq.publish(CloseRuntimeCommand(host, service), CloseRuntimeCommand.channel(host))
 
     def _on_register_host(self, event: RegisterEvent):
         self.rds.sadd('galileo:workers', event.host)

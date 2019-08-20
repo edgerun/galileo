@@ -3,9 +3,9 @@ import os
 import time
 
 import falcon
+import pymq
 import redis
-from symmetry import eventbus
-from symmetry.eventbus.redis import RedisConfig
+from pymq.provider.redis import RedisConfig
 from symmetry.webapp import ApiResource
 
 from galileo.controller import ExperimentController, CancelError
@@ -171,7 +171,7 @@ def init_context():
     context = AppContext()
 
     context.rds = redis.Redis(os.getenv('REDIS_HOST', 'localhost'), decode_responses=True)
-    eventbus.init(RedisConfig(context.rds))
+    pymq.init(RedisConfig(context.rds))
 
     context.ectrl = ExperimentController(context.rds)
     context.exp_db = create_experiment_database_from_env()

@@ -1,8 +1,8 @@
 import falcon
 import redis
 from falcon import testing
-from symmetry import eventbus
-from symmetry.eventbus.redis import RedisConfig
+import pymq
+from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
 from galileo.experiment.db.sql import ExperimentSQLDatabase
@@ -22,7 +22,7 @@ class ResourceTest(testing.TestCase):
 
     def tearDown(self) -> None:
         super(ResourceTest, self).tearDown()
-        eventbus.shutdown()
+        pymq.shutdown()
         self.redis_resource.tearDown()
         self.db_resource.tearDown()
 
@@ -33,7 +33,7 @@ class ResourceTest(testing.TestCase):
 
     def init_rds(self):
         self.redis_resource.setUp()
-        eventbus.init(RedisConfig(self.redis_resource.rds))
+        pymq.init(RedisConfig(self.redis_resource.rds))
         return self.redis_resource.rds
 
     def create_api(self, db: ExperimentSQLDatabase, rds: redis.Redis) -> falcon.API:

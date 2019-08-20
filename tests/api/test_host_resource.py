@@ -1,6 +1,6 @@
 from time import sleep
 
-import symmetry.eventbus as eventbus
+import pymq
 
 from galileo.event import RegisterEvent
 from tests.api import ResourceTest
@@ -15,8 +15,8 @@ class TestHostResource(ResourceTest):
 
     def test_get_hosts(self):
         hosts = ['host1', 'host2']
-        eventbus.publish(RegisterEvent('host1'))
-        eventbus.publish(RegisterEvent('host2'))
+        pymq.publish(RegisterEvent('host1'))
+        pymq.publish(RegisterEvent('host2'))
 
         # sleep to publish events and add hosts to redis
         sleep(0.5)

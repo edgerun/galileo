@@ -2,8 +2,8 @@ import argparse
 import logging
 
 import redis
-import symmetry.eventbus as eventbus
-from symmetry.eventbus.redis import RedisConfig
+import pymq
+from symmetry.pymq.redis import RedisConfig
 from symmetry.gateway import SymmetryServiceRouter, SymmetryHostRouter, WeightedRandomBalancer, StaticRouter
 from symmetry.service.routing import ReadOnlyListeningRedisRoutingTable
 
@@ -38,7 +38,7 @@ def main():
         exp_db = create_experiment_database('mysql')
         exp_db.open()
 
-    eventbus.init(RedisConfig(rds))
+    pymq.init(RedisConfig(rds))
 
     # experiment services (request generators)
     services = [

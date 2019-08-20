@@ -1,7 +1,7 @@
 import json
 from time import sleep
 
-from symmetry import eventbus
+import pymq
 
 from galileo.controller import ExperimentController
 from galileo.event import RegisterEvent
@@ -54,7 +54,7 @@ class TestExperimentsResource(ResourceTest):
             }
         }
 
-        eventbus.publish(RegisterEvent('host1'))
+        pymq.publish(RegisterEvent('host1'))
         # sleep to publish events and add hosts to redis
         sleep(0.5)
 

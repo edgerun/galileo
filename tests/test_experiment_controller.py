@@ -3,8 +3,8 @@ import logging
 import unittest
 
 import redis
-from symmetry import eventbus
-from symmetry.eventbus.redis import RedisConfig
+import pymq
+from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
 from galileo.experiment.model import ExperimentConfiguration, WorkloadConfiguration
@@ -18,13 +18,13 @@ class TestExperimentDaemon(unittest.TestCase):
 
     def setUp(self) -> None:
         self.rds = redis.Redis(decode_responses=True)
-        eventbus.init(RedisConfig(self.rds))
+        pymq.init(RedisConfig(self.rds))
         self.ectl = ExperimentController(self.rds)
         self.rds.delete('exp:hosts', ExperimentController.queue_key)
 
     def tearDown(self) -> None:
         self.rds.delete('exp:hosts', ExperimentController.queue_key)
-        eventbus.shutdown()
+        pymq.shutdown()
 
     def test_submit(self):
         self.rds.sadd('exp:hosts', 'host1')

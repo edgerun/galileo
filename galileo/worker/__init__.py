@@ -7,9 +7,9 @@ from socket import gethostname
 from threading import Event, Lock
 from typing import Iterable, Dict
 
+import pymq
 import redis
 import requests
-import symmetry.eventbus as eventbus
 from symmetry.gateway import Router, ServiceRequest, SymmetryRouter, WeightedRandomBalancer
 from symmetry.service.routing import ReadOnlyListeningRedisRoutingTable
 
@@ -106,8 +106,6 @@ class ThreadedExperimentClient:
                 if isinstance(self.router._balancer._rtbl, ReadOnlyListeningRedisRoutingTable):
                     logger.debug('starting routing table listener')
                     self.router._balancer._rtbl.stop(2)
-
-
 
     def _do_request(self, request):
         try:
@@ -271,11 +269,11 @@ class ExperimentWorker:
         self._require_runtime_lock = Lock()
         self._closed = Event()
 
-        eventbus.listener(self._on_register_command)
-        eventbus.listener(self._on_info)
-        eventbus.listener(self._on_close_runtime, CloseRuntimeCommand.channel(self.host_name))
-        eventbus.listener(self._on_spawn_client, SpawnClientsCommand.channel(self.host_name))
-        eventbus.listener(self._on_set_rps, SetRpsCommand.channel(self.host_name))
+        pymq.subscribe(self._on_register_command)
+        pymq.subscribe(self._on_info)
+        pymq.subscribe(self._on_close_runtime, CloseRuntimeCommand.channel(self.host_name))
+        pymq.subscribe(self._on_spawn_client, SpawnClientsCommand.channel(self.host_name))
+        pymq.subscribe(self._on_set_rps, SetRpsCommand.channel(self.host_name))
 
     def _create_trace_logger(self, trace_logging) -> TraceLogger:
         logger.debug('trace logging: %s', trace_logging)
@@ -360,9 +358,9 @@ class ExperimentWorker:
             rps = service_rt.request_generator.rps if service_rt.request_generator else 0
             queue = service_rt.request_queue.qsize()
 
-            eventbus.publish(RuntimeMetric(self.host_name, service_name, 'clients', clients))
-            eventbus.publish(RuntimeMetric(self.host_name, service_name, 'rps', rps))
-            eventbus.publish(RuntimeMetric(self.host_name, service_name, 'queue', queue))
+            pymq.publish(RuntimeMetric(self.host_name, service_name, 'clients', clients))
+            pymq.publish(RuntimeMetric(self.host_name, service_name, 'rps', rps))
+            pymq.publish(RuntimeMetric(self.host_name, service_name, 'queue', queue))
 
     def _on_spawn_client(self, event: SpawnClientsCommand):
         service = event.service
@@ -393,8 +391,8 @@ class ExperimentWorker:
 
     def _register_host(self):
         logger.info('registering host %s', self.host_name)
-        eventbus.publish(RegisterEvent(self.host_name))
+        pymq.publish(RegisterEvent(self.host_name))
 
     def _unregister_host(self):
         logger.info('unregistering host %s', self.host_name)
-        eventbus.publish(UnregisterEvent(self.host_name))
+        pymq.publish(UnregisterEvent(self.host_name))

@@ -7,8 +7,8 @@ import time
 import unittest
 
 import redis
-from symmetry import eventbus
-from symmetry.eventbus.redis import RedisConfig
+import pymq
+from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
 from galileo.experiment.db.sql import ExperimentSQLDatabase
@@ -28,7 +28,7 @@ class TestExperimentDaemon(unittest.TestCase):
 
     def setUp(self) -> None:
         self.rds = redis.Redis(decode_responses=True)
-        eventbus.init(RedisConfig(self.rds))
+        pymq.init(RedisConfig(self.rds))
 
         self.db_file = tempfile.mktemp('.sqlite', 'galileo_test_')
         self.exp_db = ExperimentSQLDatabase(SqliteAdapter(self.db_file))
@@ -41,7 +41,7 @@ class TestExperimentDaemon(unittest.TestCase):
     def tearDown(self) -> None:
         self.exp_db.close()
         os.remove(self.db_file)
-        eventbus.shutdown()
+        pymq.shutdown()
 
     def test_integration(self):
         daemon = ExperimentDaemon(self.rds, self.recorder_factory, self.exp_ctrl, self.exp_service, self.ins_service)
