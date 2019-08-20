@@ -210,6 +210,7 @@ class CORSComponent(object):
             ))
 
 
-if __name__ == '__main__':
+def start():
     api = falcon.API(middleware=[CORSComponent()])
     setup(api, init_context())
+    return api
