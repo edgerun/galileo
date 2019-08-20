@@ -2,22 +2,22 @@ import json
 import logging
 import unittest
 
-import redis
 import pymq
 from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
 from galileo.experiment.model import ExperimentConfiguration, WorkloadConfiguration
+from tests.testutils import RedisResource
 
 logging.basicConfig(level=logging.DEBUG)
 
 
 class TestExperimentDaemon(unittest.TestCase):
-    rds: redis.Redis
+    redis_resource: RedisResource = RedisResource()
     ectl: ExperimentController
 
     def setUp(self) -> None:
-        self.rds = redis.Redis(decode_responses=True)
+        self.rds = self.init_rds()
         pymq.init(RedisConfig(self.rds))
         self.ectl = ExperimentController(self.rds)
         self.rds.delete(ExperimentController.worker_key, ExperimentController.queue_key)
@@ -25,6 +25,7 @@ class TestExperimentDaemon(unittest.TestCase):
     def tearDown(self) -> None:
         self.rds.delete(ExperimentController.worker_key, ExperimentController.queue_key)
         pymq.shutdown()
+        self.redis_resource.tearDown()
 
     def test_submit(self):
         self.rds.sadd(ExperimentController.worker_key, 'host1')
@@ -52,6 +53,10 @@ class TestExperimentDaemon(unittest.TestCase):
         queued = self.rds.lrange(ExperimentController.queue_key, 0, -1)
         self.assertEqual(len(queued), 0)
         pass
+
+    def init_rds(self):
+        self.redis_resource.setUp()
+        return self.redis_resource.rds
 
 
 if __name__ == '__main__':
