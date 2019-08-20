@@ -1,22 +1,33 @@
 import logging
-import os
 import time
 
 import falcon
-import pymq
 import redis
-from pymq.provider.redis import RedisConfig
 from symmetry.webapp import ApiResource
 
 from galileo.controller import ExperimentController, CancelError
 from galileo.experiment.db import ExperimentDatabase
-from galileo.experiment.db.factory import create_experiment_database_from_env
 from galileo.experiment.experimentd import generate_experiment_id
 from galileo.experiment.model import WorkloadConfiguration, ExperimentConfiguration, Experiment
-from galileo.experiment.service.experiment import ExperimentService, SimpleExperimentService
+from galileo.experiment.service.experiment import ExperimentService
 from galileo.util import to_seconds
 
 logger = logging.getLogger(__name__)
+
+
+class AppContext:
+    rds: redis.Redis
+    ectrl: ExperimentController
+    exp_db: ExperimentDatabase
+    exp_service: ExperimentService
+
+
+def setup(api, context):
+    api.add_route('/api', ApiResource(api))
+    api.add_route('/api/hosts', HostsResource(context.ectrl))
+    api.add_route('/api/services', ServicesResource())
+    api.add_route('/api/experiments', ExperimentsResource(context.ectrl, context.exp_service))
+    api.add_route('/api/experiments/{exp_id}', ExperimentResource(context.exp_service, context.ectrl))
 
 
 class ServicesResource:
@@ -153,36 +164,6 @@ class ExperimentResource:
         resp.media = exp_id
 
 
-def setup(api, context):
-    rds = context.rds
-
-    api.add_route('/api', ApiResource(api))
-    api.add_route('/api/hosts', HostsResource(context.ectrl))
-    api.add_route('/api/services', ServicesResource())
-    api.add_route('/api/experiments', ExperimentsResource(context.ectrl, context.exp_service))
-    api.add_route('/api/experiments/{exp_id}', ExperimentResource(context.exp_service, context.ectrl))
-
-
-class AppContext:
-    rds: redis.Redis
-    ectrl: ExperimentController
-    exp_db: ExperimentDatabase
-    exp_service: ExperimentService
-
-
-def init_context():
-    context = AppContext()
-
-    context.rds = redis.Redis(os.getenv('REDIS_HOST', 'localhost'), decode_responses=True)
-    pymq.init(RedisConfig(context.rds))
-
-    context.ectrl = ExperimentController(context.rds)
-    context.exp_db = create_experiment_database_from_env()
-    context.exp_service = SimpleExperimentService(context.exp_db)
-
-    return context
-
-
 class CORSComponent(object):
     """
     CORS preprocessor from the Falcon documentation.
@@ -211,9 +192,3 @@ class CORSComponent(object):
                 ('Access-Control-Allow-Headers', allow_headers),
                 ('Access-Control-Max-Age', '86400'),  # 24 hours
             ))
-
-
-def start():
-    api = falcon.API(middleware=[CORSComponent()])
-    setup(api, init_context())
-    return api

@@ -156,7 +156,7 @@ Serve the app with gunicorn
 
     gunicorn -w 4 --preload -b 0.0.0.0:5001 \
         -c galileo/webapp/gunicorn.conf.py \
-        galileo.webapp.app:api
+        galileo.webapp.wsgi:api
 
 
 Run the Galileo Dashboard
