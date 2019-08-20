@@ -11,6 +11,9 @@ export class PaginatedExperimentListComponent implements OnInit {
   @Input()
   experiments: Experiment[];
 
+  @Input()
+  loading: Map<string, boolean>;
+
   @Output()
   deleteExperiment: EventEmitter<string> = new EventEmitter<string>();
 

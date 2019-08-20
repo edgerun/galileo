@@ -18,6 +18,7 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
 
   experiments$: Observable<Experiment[]>;
   experiments: Experiment[] = [];
+  loadingMap: Map<string, boolean> = new Map();
   loading: boolean;
   timeout: any;
 
@@ -26,9 +27,6 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.findAll();
-    this.interval = setInterval(() => {
-      this.findAll();
-    }, 6500);
   }
 
   ngOnDestroy(): void {
@@ -45,12 +43,16 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
   }
 
   private findAll() {
+    clearInterval(this.interval);
     this.loading = true;
     this.experiments$ = this.experimentsService.findAll();
     this.experiments$.subscribe(data => {
       this.loading = false;
       this.experiments = data;
       this.collectionSize = data.length;
+      this.interval = setInterval(() => {
+        this.findAll();
+      }, 6500);
     }, (error: Error) => {
       this.changeErrorMessage(error.message);
       this.loading = false;
@@ -74,12 +76,15 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
   }
 
   deleteExperiment(id: string) {
+    this.loadingMap.set(id, true);
     this.experimentsService.delete(id).subscribe(() => {
       this.changeSuccessMessage(`Experiment ${id} got removed.`);
       this.experiments = this.experiments.filter(e => e.id !== id);
+      this.loadingMap.set(id, false);
     }, (err: Error) => {
       console.error(`Error cancelling experiment ${id}. ${err}`);
       this.changeErrorMessage(`Error happened cancelling experiment ${id}. ${err.message}`);
+      this.loadingMap.set(id, false);
     });
   }
 }

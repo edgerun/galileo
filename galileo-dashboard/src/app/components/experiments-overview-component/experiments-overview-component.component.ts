@@ -11,6 +11,9 @@ export class ExperimentsOverviewComponentComponent implements OnInit {
 
   private _experiments: Experiment[];
 
+  @Input()
+  loading: Map<string, boolean>;
+
   @Output()
   deleteExperiment: EventEmitter<string> = new EventEmitter<string>();
 

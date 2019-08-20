@@ -5,14 +5,25 @@
         <button data-toggle="collapse" class="btn btn-link" type="button" (click)="toggle(exp.id)">
           ID: {{exp.id}}
         </button>
-        <button (click)="cancelExperiment(exp.id)" *ngIf="exp.status.toLowerCase() === 'queued'"
-                class="btn btn-danger">Cancel
-        </button>
+        <div *ngIf="exp.status.toLowerCase() === 'queued'">
+          <button *ngIf="!loading.get(exp.id); else loadingInProgress" (click)="cancelExperiment(exp.id)"
+                  class="btn btn-danger">Cancel
+          </button>
+          <ng-template #loadingInProgress>
+            <button [disabled]="loadingInProgress"
+                    class="btn btn-danger">
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              Cancelling...
+              <span class="sr-only">Cancelling</span>
+            </button>
+          </ng-template>
+        </div>
       </h2>
     </div>
 
     <div [id]="'collapse' + exp.id" [ngbCollapse]="collapsed !== exp.id">
       <app-simple-experiment-list-item
+        [loading]="loading.get(exp.id) || false"
         (deleteEvent)="deleteExperiment.emit($event)"
         [experiment]="exp"></app-simple-experiment-list-item>
     </div>

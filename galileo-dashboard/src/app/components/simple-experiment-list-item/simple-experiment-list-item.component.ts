@@ -14,6 +14,9 @@ export class SimpleExperimentListItemComponent implements OnInit {
   @Output()
   deleteEvent: EventEmitter<string> = new EventEmitter<string>();
 
+  @Input()
+  loading: boolean;
+
   constructor(@Inject('GRAFANA_URL') private grafanaUrl: string) {
   }
 
