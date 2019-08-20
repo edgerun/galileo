@@ -1,0 +1,4 @@
+redislite>=5.0.124623
+timeout_decorator>=0.4.1
+pytest>=5.0.0
+pytest-cov>=2.7.1
