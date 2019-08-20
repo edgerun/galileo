@@ -39,6 +39,20 @@ class TestExperimentDaemon(unittest.TestCase):
         actual = json.loads(message)
         self.assertEqual(expected, actual)
 
+    def test_cancel(self):
+        exp_id = 'abcd'
+        exp = {
+            'id': exp_id,
+            'instructions': 'spawn host1 aservice 2\nrps host1 aservice 1\nsleep 1\nrps host1 aservice 2\nsleep 1\nrps host1 aservice 0\nclose host1 aservice'
+        }
+        self.rds.lpush(ExperimentController.queue_key, json.dumps(exp))
+
+        cancelled = self.ectl.cancel(exp_id)
+        self.assertTrue(cancelled)
+        queued = self.rds.lrange(ExperimentController.queue_key, 0, -1)
+        self.assertEqual(len(queued), 0)
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

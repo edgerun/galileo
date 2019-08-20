@@ -1,6 +1,5 @@
-import {Component, Inject, Input, OnInit} from '@angular/core';
+import {Component, EventEmitter, Inject, Input, OnInit, Output} from '@angular/core';
 import {Experiment} from "../../models/Experiment";
-import {ExperimentService} from "../../services/experiment.service";
 
 @Component({
   selector: 'app-simple-experiment-list-item',
@@ -12,7 +11,10 @@ export class SimpleExperimentListItemComponent implements OnInit {
   @Input()
   experiment: Experiment;
 
-  constructor(@Inject('GRAFANA_URL') private grafanaUrl: string, private experimentService: ExperimentService) {
+  @Output()
+  deleteEvent: EventEmitter<string> = new EventEmitter<string>();
+
+  constructor(@Inject('GRAFANA_URL') private grafanaUrl: string) {
   }
 
   ngOnInit() {
@@ -36,15 +38,9 @@ export class SimpleExperimentListItemComponent implements OnInit {
     return Math.ceil(time * 1000);
   }
 
-  delete(experiment: Experiment) {
-    if (confirm("Are you sure to delete experiment " + experiment.id)) {
-      console.info('deleting', experiment.id);
-      // TODO: use event emitter to also remove from list
-      this.experimentService.delete(experiment).subscribe(succ => {
-        console.info(succ);
-      }, err => {
-        console.info('failed', err);
-      });
+  delete() {
+    if (confirm("Are you sure to delete experiment " + this.experiment.id)) {
+      this.deleteEvent.emit(this.experiment.id);
     }
   }
 }

@@ -8,7 +8,7 @@ from symmetry import eventbus
 from symmetry.eventbus.redis import RedisConfig
 from symmetry.webapp import JSONMiddleware, ApiResource
 
-from galileo.controller import ExperimentController
+from galileo.controller import ExperimentController, CancelError
 from galileo.experiment.db import ExperimentDatabase
 from galileo.experiment.db.factory import create_experiment_database_from_env
 from galileo.experiment.experimentd import generate_experiment_id
@@ -108,8 +108,9 @@ class ExperimentsResource:
 
 class ExperimentResource:
 
-    def __init__(self, exp_service: ExperimentService):
+    def __init__(self, exp_service: ExperimentService, ectrl: ExperimentController):
         self.exp_service = exp_service
+        self.ectrl = ectrl
 
     def on_get(self, req, resp, exp_id):
         logger.debug('finding experiment %s', exp_id)
@@ -124,7 +125,25 @@ class ExperimentResource:
         logger.debug('deleting experiment %s', exp_id)
 
         try:
-            self.exp_service.delete(exp_id)
+            exp: Experiment = self.exp_service.find(exp_id)
+            if exp is None:
+                raise falcon.HTTPNotFound()
+
+            if exp.status.lower() == 'queued':
+                cancelled = False
+                try:
+                    cancelled = self.ectrl.cancel(exp_id)
+                except CancelError:
+                    try:
+                        cancelled = self.ectrl.cancel(exp_id)
+                    except CancelError:
+                        logger.error(f'Cancellation of exp with id {exp_id} failed two times')
+                if cancelled:
+                    self.exp_service.delete(exp_id)
+                else:
+                    logger.debug(f"Experiment {exp_id} was not cancelled, did not exist")
+            else:
+                self.exp_service.delete(exp_id)
         except ValueError:
             raise falcon.HTTPNotFound()
 
@@ -138,7 +157,7 @@ def setup(api, context):
     api.add_route('/api/hosts', HostsResource(context.ectrl))
     api.add_route('/api/services', ServicesResource())
     api.add_route('/api/experiments', ExperimentsResource(context.ectrl, context.exp_service))
-    api.add_route('/api/experiments/{exp_id}', ExperimentResource(context.exp_service))
+    api.add_route('/api/experiments/{exp_id}', ExperimentResource(context.exp_service, context.ectrl))
 
 
 class AppContext:

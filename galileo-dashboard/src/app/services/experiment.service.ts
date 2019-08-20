@@ -11,11 +11,11 @@ export abstract class ExperimentService {
 
   abstract submit(submission: Submission): Observable<string>;
 
-  abstract delete(experiment: Experiment): Observable<string>;
+  abstract delete(id: string): Observable<string>;
 
   abstract findAll(): Observable<Experiment[]>;
-}
 
+}
 
 @Injectable(
   {
@@ -23,21 +23,12 @@ export abstract class ExperimentService {
   }
 )
 export class MockExperimentService implements ExperimentService {
-  submit(submission: Submission): Observable<string> {
-    console.info('submitted');
-    console.info(submission);
-    return of('fakeid');
-  }
 
-  delete(experiment: Experiment): Observable<string> {
-    console.info('deleting', experiment.id);
-    return of(experiment.id);
-  }
+  experiments: Experiment[];
 
-  findAll(): Observable<Experiment[]> {
-    const finishedExperiments: Experiment[] = [];
-
-    for (let i = 0; i < 60; i++) {
+  constructor() {
+    const finishedExperiments = [];
+    for (let i = 0; i < 3; i++) {
       finishedExperiments.push(
         {
           id: `${i}`,
@@ -51,10 +42,10 @@ export class MockExperimentService implements ExperimentService {
       );
     }
 
-    const experiments = [
+    this.experiments = [
       ...finishedExperiments,
       {
-        id: '1',
+        id: '1asdf',
         creator: 'Philipp',
         name: 'Important Experiment',
         start: new Date().getTime(),
@@ -63,12 +54,12 @@ export class MockExperimentService implements ExperimentService {
         status: 'finished'
       },
       {
-        id: '2',
+        id: '2ad',
         status: 'queued',
         created: new Date().getTime() - 100000
       },
       {
-        id: '3',
+        id: '3adfb',
         creator: 'Philipp',
         name: 'Test Peaks',
         start: new Date().getTime(),
@@ -76,7 +67,7 @@ export class MockExperimentService implements ExperimentService {
         status: 'running'
       },
       {
-        id: '4',
+        id: '4adfbf',
         creator: 'User1',
         name: 'low load',
         start: new Date().getTime(),
@@ -84,7 +75,23 @@ export class MockExperimentService implements ExperimentService {
         status: 'queued'
       },
     ];
-    return of(experiments);
+  }
+
+
+  submit(submission: Submission): Observable<string> {
+    console.info('submitted');
+    console.info(submission);
+    return of('fakeid');
+  }
+
+  delete(id: string): Observable<string> {
+    console.info('deleting', id);
+    this.experiments = this.experiments.filter(e => e.id !== id);
+    return of(id);
+  }
+
+  findAll(): Observable<Experiment[]> {
+    return of(this.experiments);
   }
 
 
@@ -106,8 +113,8 @@ export class HttpExperimentService implements ExperimentService {
     return this.httpClient.post<string>(this.baseUrl + "/experiments", submission);
   }
 
-  delete(experiment: Experiment): Observable<string> {
-    const url = this.baseUrl + "/experiments/" + experiment.id;
+  delete(id: string): Observable<string> {
+    const url = this.baseUrl + "/experiments/" + id;
     console.log('calling delete on ', url);
     return this.httpClient.delete<string>(url);
   }
