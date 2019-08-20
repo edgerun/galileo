@@ -133,15 +133,18 @@ class ExperimentResource:
                 cancelled = False
                 try:
                     cancelled = self.ectrl.cancel(exp_id)
+                    self.exp_service.delete(exp_id)
                 except CancelError:
                     try:
                         cancelled = self.ectrl.cancel(exp_id)
+                        self.exp_service.delete(exp_id)
                     except CancelError:
                         logger.error(f'Cancellation of exp with id {exp_id} failed two times')
+
                 if cancelled:
-                    self.exp_service.delete(exp_id)
+                    logger.info(f"Experiment {exp_id} was removed from queue")
                 else:
-                    logger.debug(f"Experiment {exp_id} was not cancelled, did not exist")
+                    logger.info(f"Experiment {exp_id} was not removed from queue")
             else:
                 self.exp_service.delete(exp_id)
         except ValueError:
