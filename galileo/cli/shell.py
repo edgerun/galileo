@@ -4,7 +4,7 @@ import redis
 
 import pymq
 from galileo.controller import ExperimentController, ExperimentShell
-from symmetry.pymq.redis import RedisConfig
+from pymq.provider.redis import RedisConfig
 
 
 def main():

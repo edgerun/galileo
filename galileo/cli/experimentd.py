@@ -4,7 +4,7 @@ import os
 
 import redis
 import pymq
-from symmetry.pymq.redis import RedisConfig
+from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
 from galileo.experiment.db.factory import create_experiment_database_from_env

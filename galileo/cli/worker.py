@@ -3,7 +3,7 @@ import logging
 
 import redis
 import pymq
-from symmetry.pymq.redis import RedisConfig
+from pymq.provider.redis import RedisConfig
 from symmetry.gateway import SymmetryServiceRouter, SymmetryHostRouter, WeightedRandomBalancer, StaticRouter
 from symmetry.service.routing import ReadOnlyListeningRedisRoutingTable
 
