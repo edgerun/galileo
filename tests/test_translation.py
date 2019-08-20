@@ -30,7 +30,7 @@ class TestTranslation(unittest.TestCase):
                    'close h2 aservice\n' + \
                    'close h3 aservice'
 
-        self.assertEquals(expected, actual)
+        self.assertEqual(expected, actual)
 
     def test_translation_multiple_services(self):
         cfg = ExperimentConfiguration(20, 10, [WorkloadConfiguration('aservice', [2, 6], 3, 'constant'),

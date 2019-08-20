@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class ExperimentController:
     queue_key = 'galileo:experiments:queue'
+    worker_key = 'galileo:workers'
 
     def __init__(self, rds: redis.Redis = None) -> None:
         super().__init__()
@@ -82,7 +83,7 @@ class ExperimentController:
         return self.infos
 
     def list_hosts(self, pattern: str = ''):
-        hosts = self.rds.smembers('galileo:workers')
+        hosts = self.rds.smembers(self.worker_key)
 
         if not pattern:
             return hosts

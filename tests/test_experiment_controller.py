@@ -20,14 +20,14 @@ class TestExperimentDaemon(unittest.TestCase):
         self.rds = redis.Redis(decode_responses=True)
         pymq.init(RedisConfig(self.rds))
         self.ectl = ExperimentController(self.rds)
-        self.rds.delete('exp:hosts', ExperimentController.queue_key)
+        self.rds.delete(ExperimentController.worker_key, ExperimentController.queue_key)
 
     def tearDown(self) -> None:
-        self.rds.delete('exp:hosts', ExperimentController.queue_key)
+        self.rds.delete(ExperimentController.worker_key, ExperimentController.queue_key)
         pymq.shutdown()
 
     def test_submit(self):
-        self.rds.sadd('exp:hosts', 'host1')
+        self.rds.sadd(ExperimentController.worker_key, 'host1')
 
         load = ExperimentConfiguration(2, 1, [WorkloadConfiguration('aservice', [1, 2], 2, 'constant')])
         self.ectl.queue(load)
