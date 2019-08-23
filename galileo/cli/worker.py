@@ -1,10 +1,10 @@
 import argparse
 import logging
 
-import redis
 import pymq
+import redis
 from pymq.provider.redis import RedisConfig
-from symmetry.gateway import SymmetryServiceRouter, SymmetryHostRouter, WeightedRandomBalancer, StaticRouter
+from symmetry.gateway import SymmetryServiceRouter, WeightedRandomBalancer
 from symmetry.service.routing import ReadOnlyListeningRedisRoutingTable
 
 from galileo.experiment.db.factory import create_experiment_database
@@ -12,6 +12,15 @@ from galileo.worker import ExperimentWorker
 from galileo.worker.client import ClientEmulator, ImageClassificationRequestFactory
 
 log = logging.getLogger(__name__)
+
+import signal
+
+
+def handle_sigterm(*args):
+    raise KeyboardInterrupt()
+
+
+signal.signal(signal.SIGTERM, handle_sigterm)
 
 
 def main():
