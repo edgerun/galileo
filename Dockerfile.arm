@@ -22,9 +22,6 @@ RUN --mount=type=ssh git clone ssh://git@git.dsg.tuwien.ac.at/mc2/symmetry.git /
 # Clone with HTTPS
 # RUN git clone https://<token-name>:<token>@git.dsg.tuwien.ac.at/mc2/symmetry.git /symmetry
 
-RUN make -C /symmetry/ dist
-RUN pip install -e /symmetry/
-
 # install galileo dependencies
 COPY requirements.txt ./requirements.txt
 RUN pip install -r ./requirements.txt
