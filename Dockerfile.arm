@@ -41,4 +41,4 @@ WORKDIR /app
 
 COPY galileo galileo
 
-CMD ["python", "-u", "-m", "galileo.cli.worker"]
+ENTRYPOINT ["python", "-u", "-m", "galileo.cli.worker"]
