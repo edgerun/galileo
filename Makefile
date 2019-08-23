@@ -19,16 +19,18 @@ $(VENV_DIR)/bin/activate: requirements.txt requirements-dev.txt
 clean:
 	rm -rf build/
 	rm -rf .eggs/
-	rm -rf *.egg-info/
 
 test: venv
-	. .venv/bin/activate; python setup.py test
+	$(VENV_ACTIVATE); python setup.py test
+
+pytest: venv
+	$(VENV_ACTIVATE); pytest --cov galileo/
 
 dist: venv
-	. .venv/bin/activate; python setup.py sdist
+	$(VENV_ACTIVATE); python setup.py sdist
 
 install: venv
-	. .venv/bin/activate; python setup.py install
+	$(VENV_ACTIVATE); python setup.py install
 
 clean-dist: clean
 	rm -rf dist/
