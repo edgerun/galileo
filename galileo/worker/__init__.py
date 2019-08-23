@@ -11,7 +11,7 @@ import pymq
 import redis
 import requests
 from symmetry.gateway import Router, ServiceRequest, SymmetryRouter, WeightedRandomBalancer
-from symmetry.service.routing import ReadOnlyListeningRedisRoutingTable
+from symmetry.routing import ReadOnlyListeningRedisRoutingTable
 
 from galileo import util
 from galileo.event import RegisterEvent, RegisterCommand, UnregisterEvent, SpawnClientsCommand, InfoCommand, \

@@ -1,11 +1,11 @@
 import argparse
 import logging
 
-import redis
 import pymq
+import redis
 from pymq.provider.redis import RedisConfig
-from symmetry.gateway import SymmetryServiceRouter, SymmetryHostRouter, WeightedRandomBalancer, StaticRouter
-from symmetry.service.routing import ReadOnlyListeningRedisRoutingTable
+from symmetry.gateway import SymmetryServiceRouter, WeightedRandomBalancer
+from symmetry.routing import ReadOnlyListeningRedisRoutingTable
 
 from galileo.experiment.db.factory import create_experiment_database
 from galileo.worker import ExperimentWorker
