@@ -54,7 +54,7 @@ class ExperimentClient:
                                             time.time())
                 except Exception as e:
                     logger.error('error while handling request: %s', e)
-                    t = ServiceRequestTrace(client_id, request.service, 'none', request.created, request.sent,
+                    t = ServiceRequestTrace(client_id, request.service, 'none', request.created, -1,
                                             time.time())
 
                 try:
