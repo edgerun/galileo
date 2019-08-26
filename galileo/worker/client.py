@@ -4,6 +4,7 @@ import os
 
 from symmetry.gateway import ServiceRequest
 
+from galileo.apps.app import AppClient
 from galileo.util import read_file
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,21 @@ logger = logging.getLogger(__name__)
 class RequestFactory(abc.ABC):
     def create_request(self) -> ServiceRequest:
         raise NotImplementedError()
+
+    def __call__(self, *args, **kwargs) -> ServiceRequest:
+        return self.create_request()
+
+
+class AppClientRequestFactory(RequestFactory):
+
+    def __init__(self, service: str, client: AppClient) -> None:
+        super().__init__()
+        self.service = service
+        self.client = client
+
+    def create_request(self) -> ServiceRequest:
+        req = self.client.next_request()
+        return ServiceRequest(self.service, req.endpoint, req.method, **req.kwargs)
 
 
 class ClientEmulator:

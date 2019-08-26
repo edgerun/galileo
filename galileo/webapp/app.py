@@ -5,6 +5,7 @@ import falcon
 import redis
 from symmetry.webapp import ApiResource
 
+from galileo.apps.repository import Repository, RepositoryResource
 from galileo.controller import ExperimentController, CancelError
 from galileo.experiment.db import ExperimentDatabase
 from galileo.experiment.experimentd import generate_experiment_id
@@ -20,14 +21,20 @@ class AppContext:
     ectrl: ExperimentController
     exp_db: ExperimentDatabase
     exp_service: ExperimentService
+    repository: Repository
 
 
-def setup(api, context):
+def setup(api: falcon.API, context: AppContext):
     api.add_route('/api', ApiResource(api))
     api.add_route('/api/hosts', HostsResource(context.ectrl))
     api.add_route('/api/services', ServicesResource())
     api.add_route('/api/experiments', ExperimentsResource(context.ectrl, context.exp_service))
     api.add_route('/api/experiments/{exp_id}', ExperimentResource(context.exp_service, context.ectrl))
+
+    repo = RepositoryResource(context.repository)
+    api.add_route('/api/apps', repo)
+    api.add_route('/api/apps/{app_name}', repo, suffix='info')
+    api.add_route('/api/apps/{app_name}/download', repo, suffix='download')
 
 
 class ServicesResource:

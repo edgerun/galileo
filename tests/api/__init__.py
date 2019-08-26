@@ -1,5 +1,6 @@
 import falcon
 import redis
+import unittest.mock
 from falcon import testing
 import pymq
 from pymq.provider.redis import RedisConfig
@@ -50,5 +51,6 @@ class ResourceTest(testing.TestCase):
         context.ectrl = ExperimentController(context.rds)
         context.exp_db = db
         context.exp_service = SimpleExperimentService(context.exp_db)
+        context.repository = unittest.mock.MagicMock('repository')
 
         return context
