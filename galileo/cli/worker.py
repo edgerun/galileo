@@ -2,43 +2,28 @@ import argparse
 import logging
 
 import pymq
-import redis
-from pymq.provider.redis import RedisConfig
-from symmetry.gateway import SymmetryServiceRouter, WeightedRandomBalancer
-from symmetry.routing import ReadOnlyListeningRedisRoutingTable
 
-from galileo.experiment.db.factory import create_experiment_database
 from galileo.worker import ExperimentWorker
 from galileo.worker.client import ClientEmulator, ImageClassificationRequestFactory
+from galileo.worker.context import Context
 
 log = logging.getLogger(__name__)
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--redis', metavar='URL', required=False,
-                        help='Redis URL, for example: redis://[:password]@localhost:6379/0')
     parser.add_argument('--logging', required=False,
                         help='set log level (DEBUG|INFO|WARN|...) to activate logging')
-    parser.add_argument('--trace-logging', required=False, default=None,
-                        help='set trace logging type (file|redis|mysql)')
 
     args = parser.parse_args()
 
     if args.logging:
         logging.basicConfig(level=logging._nameToLevel[args.logging])
 
-    if args.redis:
-        rds = redis.Redis.from_url(url=args.redis, decode_responses=True)
-    else:
-        rds = redis.Redis(decode_responses=True)
+    context = Context()
 
-    exp_db = None
-    if args.trace_logging == 'mysql':
-        exp_db = create_experiment_database('mysql')
-        exp_db.open()
-
-    pymq.init(RedisConfig(rds))
+    redis = context.create_redis()
+    pymq.init(redis)
 
     # experiment services (request generators)
     services = [
@@ -50,15 +35,8 @@ def main():
         )
     ]
 
-    # Router
-    rtable = ReadOnlyListeningRedisRoutingTable(rds)
-    balancer = WeightedRandomBalancer(rtable)
-    router = SymmetryServiceRouter(balancer)
-    # router = StaticRouter('http://localhost:8080')
-    # router = SymmetryHostRouter(balancer)
-
     # run host
-    host = ExperimentWorker(rds, services, router=router, trace_logging=args.trace_logging, experiment_db=exp_db)
+    host = ExperimentWorker(context, services)
 
     try:
         log.info('starting experiment host %s', host.host_name)

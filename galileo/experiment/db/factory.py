@@ -1,5 +1,6 @@
 import os
 import logging
+from typing import MutableMapping
 
 from galileo.experiment.db import ExperimentDatabase
 from galileo.experiment.db.sql import ExperimentSQLDatabase
@@ -7,15 +8,15 @@ from galileo.experiment.db.sql import ExperimentSQLDatabase
 logger = logging.getLogger(__name__)
 
 
-def create_experiment_database_from_env() -> ExperimentDatabase:
-    db_type = os.getenv('DB_TYPE', 'sqlite')
+def create_experiment_database_from_env(env: MutableMapping = os.environ) -> ExperimentDatabase:
+    db_type = env.get('DB_TYPE', 'sqlite')
     return create_experiment_database(db_type)
 
 
-def create_experiment_database(db_type: str) -> ExperimentDatabase:
+def create_experiment_database(db_type: str, env: MutableMapping = os.environ) -> ExperimentDatabase:
     if db_type == 'sqlite':
         from galileo.experiment.db.sql.sqlite import SqliteAdapter
-        db_file = os.getenv('SQLITE_PATH', '/tmp/galileo.sqlite')
+        db_file = env.get('SQLITE_PATH', '/tmp/galileo.sqlite')
         logger.info('creating db adapter to SQLite %s', db_file)
         db_adapter = SqliteAdapter(db_file)
 

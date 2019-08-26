@@ -3,22 +3,19 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Process, Queue
 from queue import Full
-from socket import gethostname
 from threading import Event, Lock
 from typing import Iterable, Dict
 
 import pymq
-import redis
 import requests
-from symmetry.gateway import Router, ServiceRequest, SymmetryRouter, WeightedRandomBalancer
-from symmetry.routing import ReadOnlyListeningRedisRoutingTable
+from symmetry.gateway import Router, ServiceRequest
 
 from galileo import util
 from galileo.event import RegisterEvent, RegisterCommand, UnregisterEvent, SpawnClientsCommand, InfoCommand, \
     SetRpsCommand, RuntimeMetric, CloseRuntimeCommand
-from galileo.experiment.db import ExperimentDatabase
 from galileo.experiment.model import ServiceRequestTrace
 from galileo.worker.client import ClientEmulator
+from galileo.worker.context import Context
 from galileo.worker.trace import TraceLogger, TraceRedisLogger, TraceDatabaseLogger, TraceFileLogger
 
 POISON = "__POISON__"
@@ -27,9 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 class ExperimentClient:
-    def __init__(self, router: Router, request_queue: Queue, trace_queue: Queue, client_id=None) -> None:
+    def __init__(self, client_id: str, ctx: Context, request_queue: Queue, trace_queue: Queue) -> None:
         super().__init__()
-        self.router = router
+        self.router = ctx.create_router()
         self.client_id = client_id
         self.q = request_queue
         self.traces = trace_queue
@@ -64,63 +61,6 @@ class ExperimentClient:
 
         except KeyboardInterrupt:
             return
-
-
-class ThreadedExperimentClient:
-    def __init__(self, router: Router, request_queue: Queue, trace_queue: Queue, client_id=None, threads=None) -> None:
-        super().__init__()
-        self.router = router
-        self.client_id = client_id
-        self.q = request_queue
-        self.traces = trace_queue
-        self.threads = threads
-
-    def run(self):
-        q = self.q
-        client_id = self.client_id
-
-        # FIXME: multiprocessing ...
-        if isinstance(self.router, SymmetryRouter):
-            if isinstance(self.router._balancer, WeightedRandomBalancer):
-                if isinstance(self.router._balancer._rtbl, ReadOnlyListeningRedisRoutingTable):
-                    logger.debug('starting routing table listener')
-                    self.router._balancer._rtbl.start()
-
-        with ThreadPoolExecutor(max_workers=self.threads) as executor:
-            try:
-                while True:
-                    request: ServiceRequest = q.get()
-                    if request == POISON:
-                        logger.debug('client %s received poison, exitting', client_id)
-                        break
-                    request.client_id = client_id
-
-                    executor.submit(self._do_request, request)
-
-            except KeyboardInterrupt:
-                return
-
-        # FIXME: multiprocessing ...
-        if isinstance(self.router, SymmetryRouter):
-            if isinstance(self.router._balancer, WeightedRandomBalancer):
-                if isinstance(self.router._balancer._rtbl, ReadOnlyListeningRedisRoutingTable):
-                    logger.debug('starting routing table listener')
-                    self.router._balancer._rtbl.stop(2)
-
-    def _do_request(self, request):
-        try:
-            response: requests.Response = self.router.request(request)
-            host = response.url.split("//")[-1].split("/")[0].split('?')[0]
-            t = ServiceRequestTrace(self.client_id, request.service, host, request.created, request.sent,
-                                    time.time())
-        except Exception as e:
-            logger.error('error while handling request: %s', e)
-            t = ServiceRequestTrace(self.client_id, request.service, 'none', request.created, request.sent,
-                                    time.time())
-        try:
-            self.traces.put_nowait(t)
-        except Full:
-            pass
 
 
 class RequestGenerator:
@@ -186,22 +126,22 @@ class ServiceRuntime:
     """
     clients = set()
 
-    def __init__(self, router: Router, service: ClientEmulator, trace_queue: Queue, host_name: str = None) -> None:
+    def __init__(self, ctx: Context, service: ClientEmulator, trace_queue: Queue) -> None:
         super().__init__()
-        self.router = router
+        self.ctx = ctx
         self.service = service
         self.request_queue = Queue(1000)
         self.trace_queue = trace_queue
         self.request_generator = RequestGenerator(self.request_queue, self.service.request_factory)
-        self.host_name = host_name or gethostname()
+        self.host_name = ctx.worker_name
 
         self.closed = False
 
     def create_client(self):
-        return ExperimentClient(self.router, self.request_queue, self.trace_queue, self.create_client_id())
+        return ExperimentClient(self.create_client_id(), self.ctx, self.request_queue, self.trace_queue)
 
     def create_client_id(self):
-        return "client-{host}-{service}-{id}".format(host=self.host_name, service=self.service.name, id=util.uuid()[:8])
+        return "client-{host}-{service}-{id}".format(host=self.host_name, service=self.service.name, id=util.uuid()[:4])
 
     def start_client(self):
         if self.closed:
@@ -251,17 +191,14 @@ class ExperimentWorker:
      the model as parameter). that is probably a deeper change.
     """
 
-    def __init__(self, rds: redis.Redis, services: Iterable[ClientEmulator], router: Router, trace_logging='file',
-                 host_name=None, experiment_db: ExperimentDatabase = None) -> None:
+    def __init__(self, ctx: Context, services: Iterable[ClientEmulator]) -> None:
         super().__init__()
-        self.rds = rds
-        self.experiment_db = experiment_db
+        self.ctx = ctx
         self.services = {service.name: service for service in services}
-        self.router = router
-        self.host_name = host_name or gethostname()
+        self.host_name = ctx.worker_name
 
         self.trace_queue = Queue()
-        self.trace_logger = self._create_trace_logger(trace_logging)
+        self.trace_logger = ctx.create_trace_logger(self.trace_queue)
         self.trace_logger.flush_interval = 64
 
         self.rt_index: Dict[str, ServiceRuntime] = dict()
@@ -274,21 +211,6 @@ class ExperimentWorker:
         pymq.subscribe(self._on_close_runtime, CloseRuntimeCommand.channel(self.host_name))
         pymq.subscribe(self._on_spawn_client, SpawnClientsCommand.channel(self.host_name))
         pymq.subscribe(self._on_set_rps, SetRpsCommand.channel(self.host_name))
-
-    def _create_trace_logger(self, trace_logging) -> TraceLogger:
-        logger.debug('trace logging: %s', trace_logging)
-
-        # careful when passing state to the TraceLogger: it's a new process
-        if not trace_logging:
-            return TraceLogger(self.trace_queue)
-        elif trace_logging == 'file':
-            return TraceFileLogger(self.trace_queue, self.host_name)
-        elif trace_logging == 'redis':
-            return TraceRedisLogger(self.trace_queue, rds=self.rds)
-        elif trace_logging == 'mysql':
-            return TraceDatabaseLogger(self.trace_queue, self.experiment_db)
-        else:
-            raise ValueError('Unknown trace logging type %s' % trace_logging)
 
     def run(self):
         logger.info('started with experiment services: %s', list(self.services.keys()))
@@ -340,7 +262,7 @@ class ExperimentWorker:
 
             logger.debug('creating new service runtime %s', service)
             experiment_service = self.services[service]
-            service_runtime = ServiceRuntime(self.router, experiment_service, self.trace_queue, self.host_name)
+            service_runtime = ServiceRuntime(self.ctx, experiment_service, self.trace_queue)
             self.rt_executor.submit(service_runtime.run)
 
             self.rt_index[service] = service_runtime
