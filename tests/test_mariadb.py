@@ -4,6 +4,7 @@ from galileo.experiment.db.sql.mysql import MysqlAdapter
 from tests.test_experiment_db import AbstractTestSqlDatabase
 
 
+@unittest.skip
 class TestMariaDatabase(AbstractTestSqlDatabase, unittest.TestCase):
 
     def tearDown(self) -> None:
