@@ -106,9 +106,15 @@ class AppRepositoryFallbackLoader(AppClientLoader):
         self.repo = repo
 
     def list(self) -> List[AppInfo]:
-        apps = {info.name: info for info in self.repo.list()}
+        try:
+            apps = {info.name: info for info in self.repo.list()}
+        except IOError:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception('Error getting list from app repository')
+            apps = {}
 
         for app in self.loader.list():
+            # we prioritize local apps
             apps[app.name] = app
 
         return list(apps.values())
