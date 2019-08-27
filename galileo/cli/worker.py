@@ -2,6 +2,7 @@ import argparse
 import logging
 
 import pymq
+from pymq.provider.redis import RedisConfig
 
 from galileo.worker import ExperimentWorker
 from galileo.worker.client import ClientEmulator, ImageClassificationRequestFactory
@@ -23,7 +24,7 @@ def main():
     context = Context()
 
     redis = context.create_redis()
-    pymq.init(redis)
+    pymq.init(RedisConfig(redis))
 
     # experiment services (request generators)
     services = [
