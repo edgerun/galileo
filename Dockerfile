@@ -20,11 +20,8 @@ RUN pip install -r ./requirements.txt
 ############
 FROM base
 COPY --from=builder  /usr/local /usr/local
-COPY --from=builder  /symmetry /symmetry
 
 RUN mkdir /app
 WORKDIR /app
 
 COPY galileo galileo
-
-CMD ["python", "-u", "-m", "galileo.cli.worker"]

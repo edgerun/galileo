@@ -1,4 +1,4 @@
-.PHONY: usage clean clean-dist
+.PHONY: usage clean clean-dist docker
 
 VENV_BIN = virtualenv -p python3.7
 VENV_DIR ?= .venv
@@ -31,6 +31,9 @@ dist: venv
 
 install: venv
 	$(VENV_ACTIVATE); python setup.py install
+
+docker:
+	docker build -t galileo/galileo .
 
 clean-dist: clean
 	rm -rf dist/

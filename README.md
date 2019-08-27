@@ -25,12 +25,16 @@ If you have symmetry locally in the parent folder, link it via
 
     pip install -e ../symmetry
 
-####Docker
-If you want to create a docker image that starts a worker execute:
+#### Docker
 
-    DOCKER_BUILDKIT=1 docker build -t galileo/worker --ssh default .
+To create a Docker image that can run galileo components, run 
 
-In case the command is run as sudo, add the -E flag to preserve your SSH_SOCK_AUTH env variable.
+    make docker
+
+Start a worker with
+
+    cd docker/galileo-worker
+    docker-compose up
 
 Preparing the Example Application
 ---------------------------------
