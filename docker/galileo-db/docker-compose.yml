@@ -5,9 +5,10 @@ services:
   db:
     image: mariadb
     restart: always
+    container_name: galileodb
     volumes:
       - ./mysql:/var/lib/mysql
-      -  ../../etc:/docker-entrypoint-initdb.d
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_USER: galileo
