@@ -26,6 +26,13 @@ class InvalidManifestError(RepositoryException):
     pass
 
 
+def validate_manifest(manifest):
+    if 'name' not in manifest:
+        raise InvalidManifestError('No name property found in manifest')
+
+    return manifest
+
+
 class Repository:
     repo_path: str
 
@@ -80,15 +87,9 @@ class Repository:
                 read = zf.read('manifest.yml')
                 y = yaml.safe_load(read)
 
-                return self._validate_manifest(y)
+                return validate_manifest(y)
         except zipfile.BadZipFile as e:
             raise InvalidArchiveError('Error extracting archive %s' % archive, e)
-
-    def _validate_manifest(self, manifest):
-        if 'name' not in manifest:
-            raise InvalidManifestError('No name property found in manifest')
-
-        return manifest
 
 
 class RepositoryResource:
