@@ -1,0 +1,14 @@
+version: '3.4'
+
+services:
+
+  worker:
+    image: localhost:5000/galileo
+    command: "python -u -m galileo.cli.worker"
+    restart: always
+    network_mode: host
+    volumes:
+      - /home/pirate/resources:/app/resources
+      - ./apps:/app/apps
+    env_file:
+      - 'worker.env'
