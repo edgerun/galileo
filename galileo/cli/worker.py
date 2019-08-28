@@ -1,6 +1,8 @@
 import argparse
 import logging
 import os
+import signal
+
 import pymq
 from pymq.provider.redis import RedisConfig
 
@@ -12,6 +14,7 @@ log = logging.getLogger(__name__)
 
 
 def main():
+    signal.signal(signal.SIGTERM, handle_sigterm)
     parser = argparse.ArgumentParser()
     parser.add_argument('--logging', required=False,
                         help='set log level (DEBUG|INFO|WARN|...) to activate logging',
@@ -59,6 +62,10 @@ def require_redis(context):
         print('Could not initiate Redis connection:', e)
         exit(1)
         raise e
+
+
+def handle_sigterm(*args):
+    raise KeyboardInterrupt()
 
 
 if __name__ == '__main__':

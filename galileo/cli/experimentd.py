@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import signal
 
 import pymq
 import redis
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
+    signal.signal(signal.SIGTERM, handle_sigterm)
     parser = argparse.ArgumentParser()
     parser.add_argument('--logging', required=False,
                         help='set log level (DEBUG|INFO|WARN|...) to activate logging',
@@ -48,6 +50,10 @@ def main():
         daemon.run()
     finally:
         exp_db.close()
+
+
+def handle_sigterm(*args):
+    raise KeyboardInterrupt()
 
 
 if __name__ == '__main__':
