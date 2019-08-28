@@ -38,17 +38,3 @@ class MysqlAdapter(SqlAdapter):
             self.db.commit()
         except:
             self.db.rollback()
-
-    @staticmethod
-    def create_from_env():
-        import os
-
-        params = {
-            'host': os.getenv('MYSQL_HOST', 'localhost'),
-            'port': int(os.getenv('MYSQL_PORT', '3307')),
-            'user': os.getenv('MYSQL_USER', None),
-            'password': os.getenv('MYSQL_PASSWORD', None),
-            'db': os.getenv('MYSQL_DB', None)
-        }
-        logger.info('read mysql adapter parameters from environment %s', params)
-        return MysqlAdapter(**params)

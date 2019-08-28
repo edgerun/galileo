@@ -53,10 +53,9 @@ Prepare the Experiment Worker Hosts
 
 The devices hosting the workers that generate load need to run the experiment controller host application.
 
-    python -m galileo.cli.worker --redis redis://graviton --trace-logging 'redis'
+    python -m galileo.cli.worker
 
-The `--redis` option takes as argument the URL to the Redis instance used for communication and data storage.
-
+All runtime parameters are controlled via `galileo_*` environment variables. Check `docker/galileo-worker/worker.env` for some examples.
 
 Run the Routing Table CLI
 -------------------------
@@ -131,20 +130,24 @@ Usage: rps host_pattern service rps
 Run the Experiment Daemon
 -------------------------
 
-The experiment daemon continuously reads from the blocking redis queue `exp:experiments:instructions`.
+The experiment daemon continuously reads from the blocking redis queue `galileo:experiments:instructions`.
 After receiving instructions, the controller will execute the commands and record the telemetry data
 published via Redis. At the end the status of the experiment will be set to 'FINISHED' and the traces,
 that were saved in the db by the clients, will be updated to reference the experiment.
 
 Example Redis command to inject a new experiment (where `exphost` is the hostname of the experiment host):
 
-    LPUSH exp:experiments:instructions '{"instructions": "spawn exphost squeezenet 1\nsleep 2\nrps exphost squeezenet 1\nsleep 5\nrps exphost squeezenet 0\nsleep 2\nclose exphost squeezenet"}'
+    LPUSH galileo:experiments:instructions '{"instructions": "spawn exphost squeezenet 1\nsleep 2\nrps exphost squeezenet 1\nsleep 5\nrps exphost squeezenet 0\nsleep 2\nclose exphost squeezenet"}'
 
 you can also specify `exp_id`, `creator`, and `name`, otherwise some generated/standard values will be used.
 
-You can change the database used to store the experiment data via the env `DB_TYPE` (`sqlite` or `mysql`).
+You can change the database used to store the experiment data via the env `galileo_expdb_driver` (`sqlite` or `mysql`).
 To write the changes into MySQL (or MariaDB), set the following environment variables:
-`MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DB`
+`galileo_expdb_mysql_host`,
+`galileo_expdb_mysql_port`,
+`galileo_expdb_mysql_db`,
+`galileo_expdb_mysql_user`,
+`galileo_expdb_mysql_password`
 
 You can create a mariadb docker instance with:
 

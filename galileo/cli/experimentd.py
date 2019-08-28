@@ -2,8 +2,8 @@ import argparse
 import logging
 import os
 
-import redis
 import pymq
+import redis
 from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
@@ -19,14 +19,18 @@ logger = logging.getLogger(__name__)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--logging', required=False,
-                        help='set log level (DEBUG|INFO|WARN|...) to activate logging')
+                        help='set log level (DEBUG|INFO|WARN|...) to activate logging',
+                        default=os.getenv('galileo_logging_level'))
     args = parser.parse_args()
 
     if args.logging:
         logging.basicConfig(level=logging._nameToLevel[args.logging])
 
-    rds = redis.Redis(host=os.getenv('REDIS_HOST', 'localhost'), decode_responses=True)
-
+    rds = redis.Redis(
+        host=os.getenv('galileo_redis_host', 'localhost'),
+        port=int(os.getenv('galileo_redis_port', 6379)),
+        decode_responses=True
+    )
     pymq.init(RedisConfig(rds))
 
     exp_db = create_experiment_database_from_env()

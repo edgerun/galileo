@@ -20,43 +20,49 @@ class Context:
     """
     Factory for various worker services. Below are the environment variables that can be set:
 
+    - Logging
+        - galileo_log_level (DEBUG|INFO|WARN| ... )
+
     - Redis connection:
-        - GALILEO_REDIS_HOST (localhost)
-        - GALILEO_REDIS_PORT (6379)
+        - galileo_redis_host (localhost)
+        - galileo_redis_port (6379)
 
     - Trace logging:
-        - GALILEO_TRACE_LOGGING: file|redis|mysql
+        - galileo_trace_logging: file|redis|sql
         - mysql:
-            - DB_TYPE: sqlite|mysql
+            - galileo_expdb_driver: sqlite|mysql
             - sqlite:
-                - SQLITE_PATH ('/tmp/galileo.sqlite')
+                - galileo_expdb_sqlite_path ('/tmp/galileo_sqlite')
             - mysql:
-                - MYSQL_HOST (localhost)
-                - MYSQL_PORT (3307)
-                - MYSQL_USER
-                - MYSQL_PASSWORD
-                - MYSQL_DB
+                - galileo_expdb_mysql_host (localhost)
+                - galileo_expdb_mysql_port (3307)
+                - galileo_expdb_mysql_user
+                - galileo_expdb_mysql_password
+                - galileo_expdb_mysql_db
 
     - Request router
-        - GALILEO_ROUTER_TYPE: SymmetryServiceRouter|SymmetryHostRouter|StaticRouter
+        - galileo_router_type: SymmetryServiceRouter|SymmetryHostRouter|StaticRouter
             - StaticRouter:
-                - GALILEO_ROUTER_STATIC_HOST (http://localhost)
+                - galileo_router_static_host (http://localhost)
 
     - Client app loader:
-        - GALILEO_APP_DIR ('./apps')
-        - GALILEO_APP_REPOSITORY ('http://localhost:5001')
+        - galileo_apps_dir ('./apps')
+        - galileo_apps_repository ('http://localhost:5001')
     """
 
     def __init__(self, env: MutableMapping = os.environ) -> None:
         super().__init__()
         self.env = env
 
+    def getenv(self, *args, **kwargs):
+        return self.env.get(*args, **kwargs)
+
     @property
     def worker_name(self):
-        return self.env.get('GALILEO_WORKER_NAME', gethostname())
+        return self.env.get('galileo_worker_name', gethostname())
 
     def create_trace_logger(self, trace_queue) -> TraceLogger:
-        trace_logging = self.env.get('GALILEO_TRACE_LOGGING')
+        trace_logging = self.env.get('galileo_trace_logging')
 
         logger.debug('trace logging: %s', trace_logging or 'None')
 
@@ -67,13 +73,13 @@ class Context:
             return TraceFileLogger(trace_queue, host_name=self.worker_name)
         elif trace_logging == 'redis':
             return TraceRedisLogger(trace_queue, rds=self.create_redis())
-        elif trace_logging == 'mysql':
+        elif trace_logging == 'sql':
             return TraceDatabaseLogger(trace_queue, experiment_db=self.create_exp_db())
         else:
             raise ValueError('Unknown trace logging type %s' % trace_logging)
 
     def create_router(self):
-        router_type = self.env.get('GALILEO_ROUTER_TYPE', 'SymmetryServiceRouter')
+        router_type = self.env.get('galileo_router_type', 'SymmetryServiceRouter')
         rds = self.create_redis()
 
         if router_type == 'SymmetryServiceRouter':
@@ -85,21 +91,21 @@ class Context:
             balancer = WeightedRandomBalancer(rtable)
             return SymmetryHostRouter(balancer)
         elif router_type == 'StaticRouter':
-            host = self.env.get('GALILEO_ROUTER_STATIC_HOST', 'http://localhost')
+            host = self.env.get('galileo_router_static_host', 'http://localhost')
             return StaticRouter(host)
 
         raise ValueError('Unknown router type %s' % router_type)
 
     def create_app_loader(self) -> AppClientLoader:
-        loader = AppClientDirectoryLoader(self.env.get('GALILEO_APP_DIR', os.path.abspath('./apps')))
-        repo = RepositoryClient(self.env.get('GALILEO_APP_REPOSITORY', 'http://localhost:5001'))
+        loader = AppClientDirectoryLoader(self.env.get('galileo_apps_dir', os.path.abspath('./apps')))
+        repo = RepositoryClient(self.env.get('galileo_apps_repository', 'http://localhost:5001'))
 
         return AppRepositoryFallbackLoader(loader, repo)
 
     def create_redis(self) -> redis.Redis:
         params = {
-            'host': self.env.get('GALILEO_REDIS_HOST', 'localhost'),
-            'port': int(self.env.get('GALILEO_REDIS_PORT', '6379')),
+            'host': self.env.get('galileo_redis_host', 'localhost'),
+            'port': int(self.env.get('galileo_redis_port', '6379')),
             'decode_responses': True,
         }
 
