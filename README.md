@@ -30,12 +30,20 @@ If you have symmetry locally in the parent folder, link it via
 To create a Docker image that can run galileo components, run 
 
     make docker
+    
+To create a arm32v7 Docker image that can run galileo components, run
+    
+    make docker-arm
 
 Start a worker with
 
     cd docker/galileo-worker
     docker-compose up
 
+Compose files for arm32v7 are located in 
+    
+    docker/arm
+ 
 Preparing the Example Application
 ---------------------------------
 

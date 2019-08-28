@@ -35,6 +35,9 @@ install: venv
 docker:
 	docker build -t galileo/galileo .
 
+docker-arm:
+	docker build -t galileo/galileo-arm32v7 -f Dockerfile.arm .
+
 clean-dist: clean
 	rm -rf dist/
 	rm -rf *.egg-info/
