@@ -20,7 +20,11 @@ from galileo.webapp.app import AppContext, CORSComponent, setup
 def create_context() -> AppContext:
     context = AppContext()
 
-    context.rds = redis.Redis(os.getenv('REDIS_HOST', 'localhost'), decode_responses=True)
+    context.rds = redis.Redis(
+        host=os.getenv('galileo_redis_host', 'localhost'),
+        port=int(os.getenv('galileo_redis_port', 6379)),
+        decode_responses=True
+    )
     pymq.init(RedisConfig(context.rds))
 
     context.ectrl = ExperimentController(context.rds)
