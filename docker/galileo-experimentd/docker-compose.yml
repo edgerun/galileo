@@ -1,0 +1,10 @@
+version: '3.4'
+
+services:
+
+  worker:
+    image: galileo/galileo
+    command: "python -u -m galileo.cli.experimentd"
+    restart: always
+    env_file:
+      - 'experimentd.env'
