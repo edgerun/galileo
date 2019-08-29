@@ -5,15 +5,17 @@ import {
   Component,
   EventEmitter,
   Inject,
-  Input, OnDestroy, OnInit,
+  Input,
+  OnDestroy,
   Output
 } from '@angular/core';
 import * as D3CE from 'd3-curve-editor';
 import {DOCUMENT} from "@angular/common";
-import {CurveForm} from "../../models/ExperimentForm";
+import {CurveForm, Point} from "../../models/ExperimentForm";
 import * as d3 from 'd3';
 import {debounce} from "ts-debounce";
 import {convertTimeToSeconds, Time} from "../../models/TimeUnit";
+import {findYForX} from "../../utils/calculator";
 
 @Component({
   selector: 'app-curve-editor',
@@ -91,6 +93,8 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
   @Output()
   private formEmitter: EventEmitter<CurveForm> = new EventEmitter();
 
+  @Output()
+  private pointsEmitter: EventEmitter<Point[]> = new EventEmitter();
 
   get duration() {
     return this._duration;
@@ -142,7 +146,7 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
 
     for (let i = 0; i < n; i++) {
       let xs = i * interval_screen; // x in screen space
-      let ys = this.findYForX(xs, path, 0); // y in screen space
+      let ys = findYForX(xs, path, 0); // y in screen space
 
       // calculate y in function space
       let yf = Math.ceil(this.maxRps * (1 - (ys / min.y)));
@@ -196,13 +200,13 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
       const debounced = debounce(() => {
         instance.editor.view.update();
         const points = instance.getCircles();
-        instance.emitCalculatedPoints(points);
+        instance.pointsEmitter.emit(points);
       }, 500);
 
       this.editor.eventListener.on('add change', function (_) {
         debounced();
       });
-      this.emitCalculatedPoints(this.form.points);
+      this.pointsEmitter.emit(this.form.points);
       this.initMutationObserver();
     }
   }
@@ -280,30 +284,7 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
       .attr('stroke-width', '5');
   }
 
-  private findYForX(x, path, error = 0.01): number {
-    var length_end = path.getTotalLength()
-      , length_start = 0
-      , point = path.getPointAtLength((length_end + length_start) / 2) // get the middle point
-      , bisection_iterations_max = 50
-      , bisection_iterations = 0;
 
-
-    while (x < point.x - error || x > point.x) {
-      // get the middle point
-      point = path.getPointAtLength((length_end + length_start) / 2);
-
-      if (x < point.x) {
-        length_end = (length_start + length_end) / 2
-      } else {
-        length_start = (length_start + length_end) / 2
-      }
-
-      // Increase iteration
-      if (bisection_iterations_max < ++bisection_iterations)
-        break;
-    }
-    return point.y
-  }
 
 
   private debouncedRefresh = debounce(this.refreshValues, 500);
@@ -311,7 +292,7 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
   private refreshValues() {
     if (this.editor) {
       const points = this.getCircles();
-      this.emitCalculatedPoints(points);
+      this.pointsEmitter.emit(points);
     }
   }
 

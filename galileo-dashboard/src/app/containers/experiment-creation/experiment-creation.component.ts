@@ -1,12 +1,12 @@
 import {Component, OnInit} from '@angular/core';
 import {ServiceService} from "../../services/service.service";
-import {Observable, of, Subject} from "rxjs";
+import {Observable, Subject} from "rxjs";
 import {Service} from "../../models/Service";
 import {ExperimentService} from "../../services/experiment.service";
 import {Submission} from "../../models/Submission";
 import {debounceTime} from "rxjs/operators";
 import {LoadBalancingPolicyService} from "../../services/load-balancing-policy.service";
-import {LoadBalancingPolicy, LoadBalancingPolicySchema} from "../../models/LoadBalancingPolicy";
+import {LoadBalancingPolicySchema} from "../../models/LoadBalancingPolicy";
 
 @Component({
   selector: 'app-experiment-creation',
@@ -19,7 +19,7 @@ export class ExperimentCreationComponent implements OnInit {
   lbPolicies$: Observable<LoadBalancingPolicySchema[]>;
   _success = new Subject<string>();
   _error = new Subject<string>();
-
+  loading: boolean = false;
   constructor(private serviceService: ServiceService, private experimentService: ExperimentService,
               private lbPolicyService: LoadBalancingPolicyService) {
   }
@@ -46,10 +46,13 @@ export class ExperimentCreationComponent implements OnInit {
   }
 
   submitExperiment($event: Submission) {
+    this.loading = true;
     this.experimentService.submit($event).subscribe(succ => {
       console.info(succ);
+      this.loading = false;
       this.changeSuccessMessage(`Experiment submitted. ID: ${succ}`)
     }, err => {
+      this.loading = false;
       this.changeErrorMessage(`Error submitting experiment: ${err.message}`)
     });
   }

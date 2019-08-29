@@ -22,12 +22,31 @@
       <h4 class="card-header">Experiment Configuration</h4>
       <div class="card-body">
         <form [formGroup]="form">
-          <button (click)="submit()" type="submit" class="btn btn-danger mr-3">
-            <i class="fa fa-play"></i> Run Experiment
-          </button>
-          <button (click)="export(content)" type="submit" class="btn btn-primary btn-primary">
-            <i class="fa fa-download"></i> Export
-          </button>
+          <div *ngIf="!calculating && !loading; else calculatingInProgress">
+            <button (click)="submit()" type="submit" class="btn btn-danger mr-3">
+              <i class="fa fa-play"></i> Run Experiment
+            </button>
+            <button (click)="export(content)" type="submit" class="btn btn-primary btn-primary">
+              <i class="fa fa-download"></i> Export
+            </button>
+          </div>
+
+          <ng-template #calculatingInProgress>
+            <button (click)="submit()" disabled type="submit" class="btn btn-danger mr-3">
+              <i class="fa fa-play"></i> Submitting...
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <span class="sr-only">Submitting</span>
+
+            </button>
+            <button (click)="export(content)" disabled type="submit" class="btn btn-primary btn-primary">
+              <i class="fa fa-download"></i> Exporting...
+
+              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              <span class="sr-only">Exporting</span>
+
+            </button>
+          </ng-template>
+
           <hr>
           <app-text-input
             [form]="form"
@@ -85,6 +104,7 @@
             [services]="services"
             [duration]="durationTime"
             [interval]="intervalTime"
+            (pointsEmitted)="handlePointsUpdate(entry[0], $event)"
             (workloadSubmission)="handleWorkloadSubmission(entry[0],$event)"
             (removeWorkload)="removeWorkload(entry[0])"
           ></app-workload-form>
@@ -97,4 +117,3 @@
   </div>
 
 </div>
-
