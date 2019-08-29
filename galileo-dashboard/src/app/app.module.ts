@@ -14,7 +14,7 @@ import {PageNotFoundComponent} from './views/page-not-found/page-not-found.compo
 import {ServiceSelectionComponent} from './components/service-selection/service-selection.component';
 import {TimeInputComponent} from './components/time-input/time-input.component';
 import {TextInputComponent} from './components/text-input/text-input.component';
-import {HttpServiceService, ServiceService} from "./services/service.service";
+import {MockServiceService, ServiceService} from "./services/service.service";
 import {NumericDirective} from './directives/numeric.directive';
 import {ExperimentService, MockExperimentService} from "./services/experiment.service";
 import {environment} from "../environments/environment";
@@ -64,10 +64,11 @@ import {TimeoutInterceptor} from "./interceptors/TimeoutInterceptor";
     Bootstrap4FrameworkModule
   ],
   providers: [
-    {provide: ServiceService, useClass: HttpServiceService},
+    {provide: ServiceService, useClass: MockServiceService},
     {provide: ExperimentService, useClass: MockExperimentService},
     {provide: LoadBalancingPolicyService, useClass: MockLoadBalancingPolicyService},
     {provide: 'BASE_API_URL', useValue: environment.apiUrl},
+    {provide: 'SYMMETRY_API_URL', useValue: environment.symmetryUrl},
     {provide: 'GRAFANA_URL', useValue: environment.grafanaUrl},
     {provide: HTTP_INTERCEPTORS, useClass: TimeoutInterceptor, multi: true}
   ],
