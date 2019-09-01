@@ -1,10 +1,8 @@
-<div class="container-fluid">
-  <div class="row header">
-    <div class="row">
-      <h3>Experiments</h3>
-      <ngb-alert [dismissible]="false" class="alert" type="danger" *ngIf="error">{{error}}</ngb-alert>
-      <ngb-alert [dismissible]="false" class="alert" type="info" *ngIf="success">{{success}}</ngb-alert>
-    </div>
+<main class="container-fluid" role="main">
+  <div class="d-flex header border-bottom mb-3">
+    <h2>Experiments</h2>
+    <ngb-alert [dismissible]="false" class="alert" type="danger" *ngIf="error">{{error}}</ngb-alert>
+    <ngb-alert [dismissible]="false" class="alert" type="info" *ngIf="success">{{success}}</ngb-alert>
     <div>
       <button *ngIf="!loading; else loadingInProgress" class="btn btn-primary" (click)="refresh()">Refresh</button>
       <ng-template #loadingInProgress>
@@ -15,11 +13,13 @@
         </button>
       </ng-template>
     </div>
-
   </div>
+
+
   <app-experiments-overview-component
     [loading]="loadingMap"
     (deleteExperiment)="deleteExperiment($event)"
     [experiments]="experiments">
   </app-experiments-overview-component>
-</div>
+</main>
+
