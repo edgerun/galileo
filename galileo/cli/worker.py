@@ -6,15 +6,16 @@ import signal
 import pymq
 from pymq.provider.redis import RedisConfig
 
-from galileo.worker import ExperimentWorker
-from galileo.worker.client import ClientEmulator, ImageClassificationRequestFactory
 from galileo.worker.context import Context
+from galileo.worker.daemon import WorkerDaemon
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def main():
-    signal.signal(signal.SIGTERM, handle_sigterm)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--logging', required=False,
                         help='set log level (DEBUG|INFO|WARN|...) to activate logging',
@@ -29,28 +30,18 @@ def main():
     redis = require_redis(context)
     pymq.init(RedisConfig(redis))
 
-    # experiment services (request generators)
-    services = [
-        ClientEmulator(
-            'squeezenet', ImageClassificationRequestFactory('squeezenet', 'resources/images/small')
-        ),
-        ClientEmulator(
-            'alexnet', ImageClassificationRequestFactory('alexnet', 'resources/images/small')
-        )
-    ]
-
     # run host
-    host = ExperimentWorker(context, services)
+    worker = WorkerDaemon(context)
 
     try:
-        log.info('starting experiment host %s', host.host_name)
-        host.run()
+        logger.info('starting experiment worker %s', worker.name)
+        worker.run()
     except KeyboardInterrupt:
         pass
     finally:
-        host.close()
+        worker.close()
 
-    print('done, bye')
+    logger.info('done, bye')
 
 
 def require_redis(context):
@@ -60,12 +51,12 @@ def require_redis(context):
         return redis
     except Exception as e:
         print('Could not initiate Redis connection:', e)
-        exit(1)
-        raise e
+
+    exit(1)
 
 
-def handle_sigterm(*args):
-    raise KeyboardInterrupt()
+def signal_handler(signum, frame):
+    raise KeyboardInterrupt
 
 
 if __name__ == '__main__':

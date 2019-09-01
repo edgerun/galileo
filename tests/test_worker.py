@@ -6,8 +6,9 @@ import redis
 from pymq.provider.redis import RedisConfig
 from timeout_decorator import timeout_decorator
 
-from galileo.event import RegisterEvent
-from galileo.worker import ExperimentWorker, Context
+from galileo.worker.api import RegisterWorkerEvent
+from galileo.worker.context import Context
+from galileo.worker.daemon import WorkerDaemon
 from tests.testutils import RedisResource
 
 
@@ -38,14 +39,14 @@ class WorkerTest(unittest.TestCase):
 
         register_event = threading.Event()
 
-        def register_listener(event: RegisterEvent):
+        def register_listener(event: RegisterWorkerEvent):
             register_event.set()
 
         pymq.subscribe(register_listener)
 
         ctx = TestContext()
 
-        worker = ExperimentWorker(ctx, [])
+        worker = WorkerDaemon(ctx)
 
         worker_thread = threading.Thread(target=worker.run)
         worker_thread.start()

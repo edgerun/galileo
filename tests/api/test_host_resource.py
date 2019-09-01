@@ -2,7 +2,7 @@ from time import sleep
 
 import pymq
 
-from galileo.event import RegisterEvent
+from galileo.worker.api import RegisterWorkerEvent
 from tests.api import ResourceTest
 
 
@@ -15,8 +15,8 @@ class TestHostResource(ResourceTest):
 
     def test_get_hosts(self):
         hosts = ['host1', 'host2']
-        pymq.publish(RegisterEvent('host1'))
-        pymq.publish(RegisterEvent('host2'))
+        pymq.publish(RegisterWorkerEvent('host1'))
+        pymq.publish(RegisterWorkerEvent('host2'))
 
         # sleep to publish events and add hosts to redis
         sleep(0.5)

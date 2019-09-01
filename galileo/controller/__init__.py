@@ -6,14 +6,14 @@ import sre_constants
 import time
 from typing import List
 
-import redis
 import pymq
+import redis
 from redis import WatchError
 from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 
-from galileo.event import RegisterCommand, InfoCommand, RegisterEvent, UnregisterEvent, SpawnClientsCommand, \
-    RuntimeMetric, CloseRuntimeCommand, SetRpsCommand
 from galileo.experiment.model import Experiment, ExperimentConfiguration
+from galileo.worker.api import CreateClientGroupCommand, CloseClientGroupCommand, ClientConfig, RegisterWorkerEvent, \
+    UnregisterWorkerEvent, RegisterWorkerCommand, SetRpsCommand, StartClientsCommand
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,6 @@ class ExperimentController:
 
         pymq.subscribe(self._on_register_host)
         pymq.subscribe(self._on_unregister_host)
-        pymq.subscribe(self._on_info)
 
     def queue(self, config: ExperimentConfiguration, exp: Experiment = None):
         """
@@ -73,11 +72,10 @@ class ExperimentController:
             raise CancelError
 
     def ping(self):
-        pymq.publish(RegisterCommand())
+        pymq.publish(RegisterWorkerCommand())
 
     def info(self):
-        self.infos.clear()
-        pymq.publish(InfoCommand())
+        raise NotImplementedError  # TODO: create new info command
 
     def get_infos(self):
         return self.infos
@@ -97,26 +95,26 @@ class ExperimentController:
         return self.rds.smembers('galileo:clients:%s' % host)
 
     def spawn_client(self, host, service, num):
-        return pymq.publish(SpawnClientsCommand(host, service, num), SpawnClientsCommand.channel(host))
+        # FIXME: split into create/spawn command
+        pymq.publish(CreateClientGroupCommand(host, ClientConfig(service, service)))
+        time.sleep(1)
+        pymq.publish(StartClientsCommand(f'{host}:{service}:{service}', num))
 
     def set_rps(self, host, service, rps):
-        return pymq.publish(SetRpsCommand(host, service, rps), SetRpsCommand.channel(host))
+        return pymq.publish(SetRpsCommand(f'{host}:{service}:{service}', rps))
 
     def close_runtime(self, host, service):
-        return pymq.publish(CloseRuntimeCommand(host, service), CloseRuntimeCommand.channel(host))
+        return pymq.publish(CloseClientGroupCommand(f'{host}:{service}:{service}'))
 
-    def _on_register_host(self, event: RegisterEvent):
-        self.rds.sadd('galileo:workers', event.host)
+    def _on_register_host(self, event: RegisterWorkerEvent):
+        self.rds.sadd('galileo:workers', event.name)
 
-    def _on_unregister_host(self, event: UnregisterEvent):
-        self.rds.srem('galileo:workers', event.host)
-        self.rds.delete('galileo:clients:%s' % event.host)
+    def _on_unregister_host(self, event: UnregisterWorkerEvent):
+        self.rds.srem('galileo:workers', event.name)
+        self.rds.delete('galileo:clients:%s' % event.name)
 
     def _on_unregister_client(self, host, client):
         self.rds.srem('galileo:clients:%s' % host, client)
-
-    def _on_info(self, event: RuntimeMetric):
-        self.infos.append(event._asdict())
 
 
 class ExperimentShell(Shell):

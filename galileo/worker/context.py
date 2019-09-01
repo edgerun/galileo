@@ -1,10 +1,13 @@
 import logging
 import os
+import time
 from socket import gethostname
 from typing import MutableMapping
 
 import redis
-from symmetry.gateway import WeightedRandomBalancer, SymmetryServiceRouter, SymmetryHostRouter, StaticRouter
+import requests
+from symmetry.gateway import WeightedRandomBalancer, SymmetryServiceRouter, SymmetryHostRouter, StaticRouter, Router, \
+    ServiceRequest
 from symmetry.routing import ReadOnlyListeningRedisRoutingTable
 
 from galileo.apps.loader import AppClientLoader, AppClientDirectoryLoader, AppRepositoryFallbackLoader
@@ -41,7 +44,7 @@ class Context:
                 - galileo_expdb_mysql_db
 
     - Request router
-        - galileo_router_type: SymmetryServiceRouter|SymmetryHostRouter|StaticRouter
+        - galileo_router_type: SymmetryServiceRouter|SymmetryHostRouter|StaticRouter|DebugRouter
             - StaticRouter:
                 - galileo_router_static_host (http://localhost)
 
@@ -93,6 +96,8 @@ class Context:
         elif router_type == 'StaticRouter':
             host = self.env.get('galileo_router_static_host', 'http://localhost')
             return StaticRouter(host)
+        elif router_type == 'DebugRouter':
+            return DebugRouter()
 
         raise ValueError('Unknown router type %s' % router_type)
 
@@ -113,3 +118,19 @@ class Context:
 
     def create_exp_db(self) -> ExperimentDatabase:
         return create_experiment_database_from_env(self.env)
+
+
+class DebugRouter(Router):
+
+    def request(self, req: ServiceRequest) -> requests.Response:
+        logger.debug('DebugRouter received service request %s', req)
+
+        response = requests.Response()
+        response.status_code = 200
+        response.url = self._get_url(req)
+        req.sent = time.time()
+
+        return response
+
+    def _get_url(self, req: ServiceRequest) -> str:
+        return 'http://debughost' + req.path
