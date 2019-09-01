@@ -1,6 +1,6 @@
 import {Component, Input, OnInit} from '@angular/core';
 import {timeUnits} from "../../models/TimeUnit";
-import {FormControl, FormGroup} from "@angular/forms";
+import {FormGroup} from "@angular/forms";
 
 @Component({
   selector: 'app-time-input',
@@ -27,6 +27,7 @@ export class TimeInputComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
+    this.form.get(this.unitFormControl).valueChanges.subscribe(e => console.log(e));
   }
 
 }

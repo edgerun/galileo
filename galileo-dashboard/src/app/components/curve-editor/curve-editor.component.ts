@@ -11,11 +11,11 @@ import {
 } from '@angular/core';
 import * as D3CE from 'd3-curve-editor';
 import {DOCUMENT} from "@angular/common";
-import {CurveForm, Point} from "../../models/ExperimentForm";
+import {CurveForm, CurveKind, Point} from "../../models/ExperimentForm";
 import * as d3 from 'd3';
 import {debounce} from "ts-debounce";
 import {convertTimeToSeconds, Time} from "../../models/TimeUnit";
-import {findYForX} from "../../utils/calculator";
+import {findYForX, round} from "../../utils/calculator";
 
 @Component({
   selector: 'app-curve-editor',
@@ -60,7 +60,7 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
   set duration(time: Time) {
     if ((time.value > 0 && (!this.duration || !this.duration.equals(time)))) {
       if (!this.duration) {
-        this.oldDuration = 100;
+        this.oldDuration = getMaxValue();
       } else {
         this.oldDuration = this.duration.value;
       }
@@ -92,9 +92,6 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
 
   @Output()
   private formEmitter: EventEmitter<CurveForm> = new EventEmitter();
-
-  @Output()
-  private pointsEmitter: EventEmitter<Point[]> = new EventEmitter();
 
   get duration() {
     return this._duration;
@@ -130,43 +127,6 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     }
   }
 
-  private emitCalculatedPoints(points: { x: number, y: number }[]) {
-    const max = points[points.length - 1];
-    const min = points[0]; // we assume min.x = 0
-
-    const durationSeconds = convertTimeToSeconds(this.duration);
-    const intervalSeconds = convertTimeToSeconds(this.interval);
-    const n = Math.ceil(durationSeconds / intervalSeconds);
-    const interval_screen = max.x / n; // distance between ticks in screen space
-    const fn: Array<number> = new Array<number>(n); // y values in function space
-
-    const svg = this.document.getElementById(`${this.id}`);
-    const path = svg.querySelector(`path`);
-    this.removeTicks();
-
-    for (let i = 0; i < n; i++) {
-      let xs = i * interval_screen; // x in screen space
-      let ys = findYForX(xs, path, 0); // y in screen space
-
-      // calculate y in function space
-      let yf = Math.ceil(this.maxRps * (1 - (ys / min.y)));
-      if (yf === -Infinity) {
-        yf = 0
-      }
-      fn[i] = yf;
-
-      this.drawTick(xs, ys, min.y);
-    }
-
-    this._form = {
-      ...this.form,
-      points: points,
-      ticks: fn
-    };
-
-    this.formEmitter.emit(this.form);
-  }
-
   private initEditor() {
     if (this.observer) {
       this.observer.disconnect();
@@ -175,13 +135,21 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
 
     if (this.document.getElementById(this.id) != null) {
       const firstPoint = this.form.points[0];
-      const endPoint = this.form.points[1];
-      const curve = this.form.curve;
+      const endPoint = this.form.points[this.form.points.length - 1];
+      const curve = this.getCurve();
       const point = new D3CE.CurvePoint(firstPoint.x, firstPoint.y).isFixed(true);
+      const points = [];
+
+      for (let i = 1; i < this.form.points.length - 1; i++) {
+        points.push(new D3CE.CurvePoint(this.form.points[i].x, this.form.points[i].y))
+      }
+
       const line = new D3CE.Line("#47a", [
         point,
+        ...points,
         new D3CE.CurvePoint(endPoint.x, endPoint.y).isFixed(true)
       ]);
+
       this.lines = [];
       this.lines.push(line);
 
@@ -189,7 +157,7 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
       container.innerHTML = '';
       container.setAttribute('height', "0");
 
-      this.editor = new D3CE.CurveEditor(container, this.lines, getProps(this.duration, this.duration, curve));
+      this.editor = new D3CE.CurveEditor(container, this.lines, getProps(curve));
 
       this.editor.active = {
         line,
@@ -200,14 +168,27 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
       const debounced = debounce(() => {
         instance.editor.view.update();
         const points = instance.getCircles();
-        instance.pointsEmitter.emit(points);
+        instance.formEmitter.emit({points, interpolation: this.form.interpolation});
       }, 500);
 
       this.editor.eventListener.on('add change', function (_) {
         debounced();
       });
-      this.pointsEmitter.emit(this.form.points);
+      this.formEmitter.emit({points: this.getCircles(), interpolation: this.form.interpolation});
       this.initMutationObserver();
+    }
+  }
+
+  private getCurve() {
+    switch (this.form.interpolation) {
+      case CurveKind.Basis:
+        return d3.curveBasis;
+      case CurveKind.Linear:
+        return d3.curveLinear;
+      case CurveKind.Step:
+        return d3.curveStep;
+      case CurveKind.CatMull:
+        return d3.curveCatmullRom
     }
   }
 
@@ -215,8 +196,8 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     const container = this.document.getElementById(this.id);
     const node = container.querySelector('g');
     this.observer = new MutationObserver((mutations) => {
-      this.oldRpsMax = 100;
-      this.oldDuration = 100;
+      this.oldRpsMax = getMaxValue();
+      this.oldDuration = getMaxValue();
       this.renameRpsTicks();
       this.renameDurationTicks();
     });
@@ -225,8 +206,8 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
       attributes: true,
     });
 
-    this.oldRpsMax = 100;
-    this.oldDuration = 100;
+    this.oldRpsMax = getMaxValue();
+    this.oldDuration = getMaxValue();
     this.renameRpsTicks();
     this.renameDurationTicks();
   }
@@ -245,20 +226,15 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     textNodes.forEach(node => {
       const number = +(node.innerHTML.split(" ")[0]);
       let tick = Math.ceil(fn(number));
-      if (Math.abs(fn(number)) < 1) {
-        tick = round(fn(number),2);
+      if (Math.abs(fn(number)) < 5) {
+        tick = round(fn(number), 2);
       }
       node.innerHTML = tick + " " + unit;
     });
-
-    function round(value, precision) {
-      const multiplier = Math.pow(10, precision || 0);
-      return Math.round(value * multiplier) / multiplier;
-    }
   }
 
   private getCircles() {
-    const circles = [...this.document.querySelectorAll('circle')];
+    const circles = [...this.document.querySelectorAll(`[id="${this.id}"] circle`)];
     return circles.map(c => {
       return {
         x: c.getAttribute('cx'),
@@ -267,48 +243,36 @@ export class CurveEditorComponent implements AfterContentInit, AfterViewInit, On
     });
   }
 
-
-  private removeTicks() {
-    d3.selectAll(`[id="${this.id}"] .value-line`).remove();
-  }
-
-  private drawTick(x, y1, y2) {
-    const container = d3.select(`[id="${this.id}"] g`);
-    container.append('line')
-      .attr('x1', x)
-      .attr('y1', y1)
-      .attr('x2', x)
-      .attr('y2', y2)
-      .attr('class', 'value-line')
-      .attr('stroke', 'red')
-      .attr('stroke-width', '5');
-  }
-
-
-
-
   private debouncedRefresh = debounce(this.refreshValues, 500);
 
   private refreshValues() {
     if (this.editor) {
       const points = this.getCircles();
-      this.pointsEmitter.emit(points);
+      this.formEmitter.emit({points, interpolation: this.form.interpolation});
     }
   }
 
 
 }
 
-function getProps(duration, maxRps, curve) {
+function getProps(curve) {
   return {
-    range: {
-      x: new D3CE.Range(0, 100),
-      y: new D3CE.Range(0, 100),
-      z: new D3CE.Range(0, 1),
-    },
+    range: getRange(),
     curve: curve,
     stretch: true,
     fixedAxis: D3CE.Axes.list[1],
     margin: 60
   };
+}
+
+function getMaxValue() {
+  return 100;
+}
+
+function getRange() {
+  return {
+    x: new D3CE.Range(0, getMaxValue()),
+    y: new D3CE.Range(0, getMaxValue()),
+    z: new D3CE.Range(0, 1),
+  }
 }

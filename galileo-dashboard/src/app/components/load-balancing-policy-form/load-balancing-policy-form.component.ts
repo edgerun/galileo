@@ -12,11 +12,31 @@ import {NoneComponent} from "angular6-json-schema-form";
 export class LoadBalancingPolicyFormComponent implements OnInit {
 
   private isValid: boolean;
+  selectedPolicy: LoadBalancingPolicySchema;
+
+  @Input()
+  set policy(lb: LoadBalancingPolicy) {
+    if (lb) {
+      if (lb.config) {
+        this.selectedPolicy = {
+          policy: lb.policy,
+          schema: {
+            schema: this.policies.filter(v => v.policy == lb.policy)[0].schema.schema,
+            data: lb.config
+          }
+        };
+      } else {
+        this.selectedPolicy = {
+          policy: lb.policy
+        };
+      }
+      this.form.get('selectedPolicy').setValue(this.selectedPolicy);
+    }
+  }
+
 
   @Input()
   policies: LoadBalancingPolicySchema[];
-
-  selectedPolicy: LoadBalancingPolicySchema;
 
   @Output()
   update: EventEmitter<any> = new EventEmitter<LoadBalancingPolicy>();
@@ -31,18 +51,41 @@ export class LoadBalancingPolicyFormComponent implements OnInit {
 
   }
 
+  comparePolicies(one, two) {
+    if (one && two) {
+      return one.policy == two.policy;
+    } else {
+      return true;
+    }
+  }
+
   ngOnInit() {
     this.form = this.fb.group({
-      'selectedPolicy': [undefined, []]
+      'selectedPolicy': [this.selectedPolicy || undefined, []]
     });
 
     this.form.get('selectedPolicy').valueChanges.subscribe(v => {
-      if (v) {
+      if (v && this.selectedPolicy && v.policy != this.selectedPolicy.policy) {
 
         let value = {policy: v.policy};
-        if (v.config)  {
+        if (v.config) {
           value['config'] = v.config;
         }
+        if (v.schema) {
+          this.selectedPolicy = {
+            policy: v.policy,
+            schema: {
+              schema: v.schema.schema,
+              data: v.schema.data
+            }
+          };
+        } else {
+          this.selectedPolicy = {
+            policy: v.policy,
+          };
+        }
+
+        this.form.get('selectedPolicy').setValue(this.selectedPolicy);
         this.update.emit(value);
       }
     })
@@ -52,7 +95,6 @@ export class LoadBalancingPolicyFormComponent implements OnInit {
     this.isValid = valid;
   }
 
-
   changes($event: any) {
     console.info($event);
     const v = this.form.get('selectedPolicy').value;
@@ -60,6 +102,15 @@ export class LoadBalancingPolicyFormComponent implements OnInit {
       policy: v.policy,
       config: $event
     });
+
+    this.selectedPolicy = {
+      policy: v.policy,
+      schema: {
+        schema: v.schema.schema,
+        data: $event
+      }
+    };
+    this.form.get('selectedPolicy').setValue(this.selectedPolicy);
   }
 
 }

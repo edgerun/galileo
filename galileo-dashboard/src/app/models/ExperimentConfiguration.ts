@@ -1,7 +1,11 @@
+import {CurveForm} from "./ExperimentForm";
+import {LoadBalancingPolicy} from "./LoadBalancingPolicy";
+
 export interface ExperimentConfiguration {
   duration: string,
   interval: string
-  workloads: WorkloadConfiguration[]
+  workloads: WorkloadConfiguration[],
+  policy?: LoadBalancingPolicy
 }
 
 export interface WorkloadConfiguration {
@@ -9,5 +13,7 @@ export interface WorkloadConfiguration {
   client: string,
   ticks: number[],
   clients_per_host: number,
-  arrival_pattern: string
+  arrival_pattern: string,
+  maxRps?: number
+  curve?: CurveForm
 }

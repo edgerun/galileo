@@ -31,7 +31,13 @@ export function calculateNumberOfTicks(duration: Time, interval: Time) {
   return Math.ceil(durationSeconds / intervalSeconds);
 }
 
+export function round(value, precision) {
+  const multiplier = Math.pow(10, precision || 0);
+  return Math.round(value * multiplier) / multiplier;
+}
+
 export function calculateValues(duration: Time, interval: Time, maxRps: number, points: { x: number, y: number }[], path): number[] {
+  console.info(points);
   const max = points[points.length - 1];
   const min = points[0]; // we assume min.x = 0
 
