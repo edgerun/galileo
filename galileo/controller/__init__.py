@@ -3,7 +3,6 @@ import logging
 import math
 import re
 import sre_constants
-import time
 from typing import List
 
 import pymq
@@ -12,13 +11,18 @@ from redis import WatchError
 from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 
 from galileo.experiment.model import Experiment, ExperimentConfiguration
+from galileo.util import poll
 from galileo.worker.api import CreateClientGroupCommand, CloseClientGroupCommand, ClientConfig, RegisterWorkerEvent, \
-    UnregisterWorkerEvent, RegisterWorkerCommand, SetRpsCommand, StartClientsCommand
+    UnregisterWorkerEvent, RegisterWorkerCommand, SetRpsCommand, StartClientsCommand, StopClientsCommand
+from galileo.worker.client_group import ClientGroup
+from galileo.worker.daemon import WorkerDaemon
 
 logger = logging.getLogger(__name__)
 
 
 class ExperimentController:
+    # TODO: register client group in redis to avoid expensive RPC calls to all workers every time
+
     queue_key = 'galileo:experiments:queue'
     worker_key = 'galileo:workers'
 
@@ -26,10 +30,9 @@ class ExperimentController:
         super().__init__()
         self.rds = rds or redis.Redis(decode_responses=True)
         self.pubsub = None
-        self.infos = list()
 
-        pymq.subscribe(self._on_register_host)
-        pymq.subscribe(self._on_unregister_host)
+        pymq.subscribe(self._on_register_worker)
+        pymq.subscribe(self._on_unregister_worker)
 
     def queue(self, config: ExperimentConfiguration, exp: Experiment = None):
         """
@@ -40,11 +43,11 @@ class ExperimentController:
         """
         message = exp.__dict__ if exp else dict()
 
-        hosts = list(self.list_hosts())
-        if not hosts:
-            raise ValueError('No hosts to execute the experiment on')
+        workers = list(self.list_workers())
+        if not workers:
+            raise ValueError('No workers to execute the experiment on')
 
-        message['instructions'] = '\n'.join(create_instructions(config, hosts))
+        message['instructions'] = '\n'.join(create_instructions(config, workers))
         logger.debug('queuing experiment data: %s', message)
         self.rds.lpush(ExperimentController.queue_key, json.dumps(message))
 
@@ -71,55 +74,75 @@ class ExperimentController:
             logger.warning('WatchError cancelling experiment with id ' + exp_id)
             raise CancelError
 
-    def ping(self):
+    def discover(self):
         pymq.publish(RegisterWorkerCommand())
 
-    def info(self):
-        raise NotImplementedError  # TODO: create new info command
+    def ping(self):
+        return pymq.stub(WorkerDaemon.ping, multi=True, timeout=2)()
 
-    def get_infos(self):
-        return self.infos
+    def client_group_info(self):
+        return pymq.stub(ClientGroup.info, multi=True, timeout=2)()
 
-    def list_hosts(self, pattern: str = ''):
-        hosts = self.rds.smembers(self.worker_key)
+    def list_workers(self, pattern: str = ''):
+        workers = self.rds.smembers(self.worker_key)
 
         if not pattern:
-            return hosts
+            return workers
 
         try:
-            return [host for host in hosts if re.search('^%s$' % pattern, host)]
+            return [worker for worker in workers if re.search('^%s$' % pattern, worker)]
         except sre_constants.error as e:
             raise ValueError('Invalid pattern %s: %s' % (pattern, e))
 
-    def list_clients(self, host):
-        return self.rds.smembers('galileo:clients:%s' % host)
+    def list_hosts(self, pattern: str = ''):
+        return self.list_workers(pattern)
 
-    def spawn_client(self, host, service, num):
-        # FIXME: split into create/spawn command
-        pymq.publish(CreateClientGroupCommand(host, ClientConfig(service, service)))
-        time.sleep(1)
-        pymq.publish(StartClientsCommand(f'{host}:{service}:{service}', num))
+    def spawn_client(self, worker, service, num, client=None):
+        client = client or service
+        gid = f'{worker}:{service}:{client}'
 
-    def set_rps(self, host, service, rps):
-        return pymq.publish(SetRpsCommand(f'{host}:{service}:{service}', rps))
+        def gid_exists():
+            return gid in [info['gid'] for info in self.client_group_info()]
 
-    def close_runtime(self, host, service):
-        return pymq.publish(CloseClientGroupCommand(f'{host}:{service}:{service}'))
+        if not gid_exists():
+            self.create_client_group(worker, ClientConfig(service, client), gid=gid)
+            # wait for the client group to appear
+            poll(gid_exists, timeout=2)
 
-    def _on_register_host(self, event: RegisterWorkerEvent):
+        # start client process
+        self.start_client(gid, num)
+
+    def set_rps(self, worker, service, rps, client=None):
+        client = client or service
+        return pymq.publish(SetRpsCommand(f'{worker}:{service}:{client}', rps))
+
+    def close_runtime(self, worker, service, client=None):
+        client = client or service
+        self.close_client_group(f'{worker}:{service}:{client}')
+
+    def create_client_group(self, worker, cfg: ClientConfig, gid=None):
+        pymq.publish(CreateClientGroupCommand(worker, cfg, gid))
+
+    def start_client(self, gid, num=1):
+        pymq.publish(StartClientsCommand(gid, num))
+
+    def stop_client(self, gid, num=1):
+        pymq.publish(StopClientsCommand(gid, num))
+
+    def close_client_group(self, gid):
+        pymq.publish(CloseClientGroupCommand(gid))
+
+    def _on_register_worker(self, event: RegisterWorkerEvent):
         self.rds.sadd('galileo:workers', event.name)
 
-    def _on_unregister_host(self, event: UnregisterWorkerEvent):
+    def _on_unregister_worker(self, event: UnregisterWorkerEvent):
         self.rds.srem('galileo:workers', event.name)
         self.rds.delete('galileo:clients:%s' % event.name)
 
-    def _on_unregister_client(self, host, client):
-        self.rds.srem('galileo:clients:%s' % host, client)
-
 
 class ExperimentShell(Shell):
-    intro = 'Welcome to the interactive experiment controller Shell.'
-    prompt = 'exp> '
+    intro = 'Welcome to the interactive galileo Shell.'
+    prompt = 'galileo> '
 
     controller = None
 
@@ -131,95 +154,122 @@ class ExperimentShell(Shell):
         if not self.controller:
             raise RuntimeError('Controller not set')
 
+        self.controller.discover()
+
     @parsed
-    def do_hosts(self, pattern: str = ''):
+    def do_workers(self, pattern: str = ''):
         try:
-            for host in self.controller.list_hosts(pattern):
-                self.println(host)
+            for worker in self.controller.list_workers(pattern):
+                self.println(worker)
         except ValueError as e:
             raise ArgumentError(e)
 
-    def do_clients(self, host):
-        if host:
-            for client in self.controller.list_clients(host):
-                self.println(client)
+    @parsed
+    def do_client_groups(self, worker: str):
+        infos = self.controller.client_group_info()
+
+        if worker:
+            for info in infos:
+                if info['worker'] == worker:
+                    self.println(info['gid'])
         else:
-            for host in self.controller.list_hosts():
-                self.println('host:', host)
-                for client in self.controller.list_clients(host):
-                    self.println(' ', client)
+            for worker in self.controller.list_workers():
+                self.println('worker:', worker)
+                for info in infos:
+                    if info['worker'] == worker:
+                        self.println('  ', info['gid'])
 
     @parsed
     def do_info(self):
-        self.controller.info()
-        time.sleep(0.5)  # FIXME
-        print_tabular(self.controller.get_infos(), printer=self.println)
+        print_tabular(self.controller.client_group_info(), printer=self.println)
+
+    @parsed
+    def do_discover(self):
+        self.controller.discover()
 
     @parsed
     def do_ping(self):
-        self.controller.ping()
+        result = self.controller.ping()
+        for worker in result:
+            self.println(worker)
 
     @parsed
-    def do_spawn(self, host_pattern, service, num: int = 1):
+    def do_spawn(self, worker_pattern, service, num: int = 1, client: str = ''):
         """
-        Spawn a new client for the given service on the given host.
+        Spawn a new client for the given service on the given worker.
 
-        :param host_pattern: the host name or pattern (e.g., 'pico1' or 'pico[0-9]')
+        :param worker_pattern: the worker name or pattern (e.g., 'pico1' or 'pico[0-9]')
         :param service: the service name
         :param num: the number of clients
+        :param client: the client app name (optional, if not given will use service name)
         """
         try:
-            for host in self.controller.list_hosts(host_pattern):
-                self.controller.spawn_client(host, service, num)
+            for worker in self.controller.list_workers(worker_pattern):
+                try:
+                    self.controller.spawn_client(worker, service, num, client if client else None)
+                except TimeoutError:
+                    raise
         except ValueError as e:
             raise ArgumentError(e)
 
     @parsed
-    def do_rps(self, host_pattern, service, rps: float):
+    def do_rps(self, worker_pattern, service, rps: float, client: str = ''):
         try:
-            for host in self.controller.list_hosts(host_pattern):
-                self.controller.set_rps(host, service, rps)
+            for worker in self.controller.list_workers(worker_pattern):
+                self.controller.set_rps(worker, service, rps, client if client else None)
         except ValueError as e:
             raise ArgumentError(e)
 
     @parsed
-    def do_close(self, host_pattern, service):
+    def do_close(self, worker_pattern, service, client: str = ''):
         try:
-            for host in self.controller.list_hosts(host_pattern):
-                self.controller.close_runtime(host, service)
+            for worker in self.controller.list_workers(worker_pattern):
+                self.controller.close_runtime(worker, service, client if client else None)
         except ValueError as e:
             raise ArgumentError(e)
 
 
-def create_instructions(cfg: ExperimentConfiguration, hosts: List[str]) -> List[str]:
+def create_instructions(cfg: ExperimentConfiguration, workers: List[str]) -> List[str]:
     commands = list()
 
     for workload in cfg.workloads:
-        for host in hosts:
-            commands.append(f'spawn {host} {workload.service} {workload.clients_per_host}')
+        for worker in workers:
+            if workload.client:
+                commands.append(f'spawn {worker} {workload.service} {workload.clients_per_host} {workload.client}')
+            else:
+                commands.append(f'spawn {worker} {workload.service} {workload.clients_per_host}')
 
     ticks = int(math.ceil(cfg.duration / cfg.interval))
 
     for t in range(ticks):
         for workload in cfg.workloads:
             service_rps = workload.ticks[t]
-            host_rps = [0] * len(hosts)
+            worker_rps = [0] * len(workers)
 
-            # distribute service rps across hosts
+            # distribute service rps across workers
             for i in range(service_rps):
-                host_rps[i % len(hosts)] += 1
+                worker_rps[i % len(workers)] += 1
 
-            for i in range(len(hosts)):
-                commands.append(f'rps {hosts[i]} {workload.service} {host_rps[i]}')
+            for i in range(len(workers)):
+                if workload.client:
+                    commands.append(f'rps {workers[i]} {workload.service} {worker_rps[i]} {workload.client}')
+                else:
+                    commands.append(f'rps {workers[i]} {workload.service} {worker_rps[i]}')
 
         commands.append('sleep %d' % cfg.interval)
 
     for workload in cfg.workloads:
-        for host in hosts:
-            commands.append(f'rps {host} {workload.service} 0')
+        for worker in workers:
+            if workload.client:
+                commands.append(f'rps {worker} {workload.service} 0 {workload.client}')
+            else:
+                commands.append(f'rps {worker} {workload.service} 0')
     for workload in cfg.workloads:
-        for host in hosts:
-            commands.append(f'close {host} {workload.service}')
+        for worker in workers:
+            if workload.client:
+                commands.append(f'close {worker} {workload.service} {workload.client}')
+            else:
+                commands.append(f'close {worker} {workload.service}')
 
     return commands
 

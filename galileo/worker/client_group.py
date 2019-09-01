@@ -40,6 +40,8 @@ class RequestGenerator:
         self.factory = factory
 
         self._closed = False
+
+        self.rps = (0, 'none')
         self._gen = None
         self._gen_lock = threading.Condition()
 
@@ -54,6 +56,8 @@ class RequestGenerator:
         with self._gen_lock:
             if self._closed:
                 return
+
+            self.rps = (value, dist)
 
             if value is None or value <= 0:
                 # pauses the request generator
@@ -150,12 +154,23 @@ class ClientGroup:
 
     def run(self):
         logger.debug('Starting ClientGroup %s in process %s', self.gid, os.getpid())
-        self.eventbus.subscribe(self._on_start_clients_command)
-        self.eventbus.subscribe(self._on_set_rps_command)
+        with self._lock:
+            self.eventbus.subscribe(self._on_start_clients_command)
+            self.eventbus.subscribe(self._on_set_rps_command)
+            self.eventbus.expose(self.info)
 
         self._generator.run()
 
         logger.debug('ClientGroup %s exitting', self.gid)
+
+    def info(self):
+        return {
+            'worker': self.ctx.worker_name,
+            'gid': self.gid,
+            'clients': len(self._clients),
+            'rps': self._generator.rps,
+            'queued_requests': self.request_queue.qsize()
+        }
 
     def close(self):
         logger.debug('attempting to close client group %s', self.gid)

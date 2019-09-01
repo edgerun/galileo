@@ -48,9 +48,5 @@ class UnregisterWorkerEvent(NamedTuple):
     name: str
 
 
-class PingWorkerCommand(NamedTuple):
-    pass
-
-
 class RegisterWorkerCommand(NamedTuple):
     pass

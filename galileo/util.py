@@ -1,5 +1,6 @@
 import os
 import re
+import time
 from datetime import timedelta
 from inspect import signature
 from typing import List
@@ -72,3 +73,18 @@ def to_seconds(time_str: str) -> int:
         kwargs[_time_units[unit]] = int(value)
 
     return round(timedelta(**kwargs).total_seconds())
+
+
+def poll(condition, timeout=None, interval=0.5):
+    remaining = 0
+    if timeout is not None:
+        remaining = timeout
+
+    while not condition():
+        if timeout is not None:
+            remaining -= interval
+
+            if remaining <= 0:
+                raise TimeoutError('gave up waiting after %s seconds' % timeout)
+
+        time.sleep(interval)

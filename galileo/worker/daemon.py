@@ -7,7 +7,7 @@ import pymq
 
 import galileo.worker.client_group as client_group
 from galileo.worker.api import CreateClientGroupCommand, CloseClientGroupCommand, ClientConfig, RegisterWorkerEvent, \
-    UnregisterWorkerEvent, RegisterWorkerCommand, PingWorkerCommand
+    UnregisterWorkerEvent, RegisterWorkerCommand
 from galileo.worker.context import Context
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class WorkerDaemon:
         self.eventbus.subscribe(self._on_close_client_group_command)
         self.eventbus.subscribe(self._on_create_client_group_command)
         self.eventbus.subscribe(self._on_register_command)
-        self.eventbus.expose(self._on_ping_command)
+        self.eventbus.expose(self.ping)
 
         logger.debug('WorkerDaemon %s running...', self.name)
         with self._lock:
@@ -49,6 +49,9 @@ class WorkerDaemon:
         finally:
             self._unregister_worker()
             logger.debug('WorkerDaemon %s exitting', self.name)
+
+    def ping(self):
+        return self.name
 
     def create_client_group(self, gid, cfg: ClientConfig):
         with self._lock:
@@ -129,6 +132,3 @@ class WorkerDaemon:
     def _on_register_command(self, _: RegisterWorkerCommand):
         logger.info('received registration command')
         self._register_worker()
-
-    def _on_ping_command(self, _: PingWorkerCommand):
-        return self.name
