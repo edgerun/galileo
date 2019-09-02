@@ -30,7 +30,7 @@ def create_context() -> AppContext:
     context.ectrl = ExperimentController(context.rds)
     context.exp_db = create_experiment_database_from_env()
     context.exp_service = SimpleExperimentService(context.exp_db)
-    context.repository = Repository('/home/thomas/workspace/mc2/galileo-client-repository')
+    context.repository = Repository(os.getenv('galileo_apps_repo_dir', os.path.abspath('./apps-repo')))
 
     return context
 
