@@ -1,5 +1,6 @@
 <app-experiment-form
   (add)="submitExperiment($event)"
+  [clientApps]="clientApps$ | async"
   [services]="services$ | async"
   [lbPolicies]="lbPolicies$ | async"
   [successMessage]="_success | async"

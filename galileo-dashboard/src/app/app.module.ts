@@ -30,6 +30,7 @@ import {Bootstrap4FrameworkModule} from "angular6-json-schema-form";
 import {LoadBalancingPolicyService, MockLoadBalancingPolicyService} from "./services/load-balancing-policy.service";
 import {LoadBalancingPolicyFormComponent} from './components/load-balancing-policy-form/load-balancing-policy-form.component';
 import {TimeoutInterceptor} from "./interceptors/TimeoutInterceptor";
+import {ClientAppService, HttpClientAppService, MockClientAppService} from "./services/client-app.service";
 
 
 @NgModule({
@@ -65,6 +66,7 @@ import {TimeoutInterceptor} from "./interceptors/TimeoutInterceptor";
   ],
   providers: [
     {provide: ServiceService, useClass: MockServiceService},
+    {provide: ClientAppService, useClass: MockClientAppService},
     {provide: ExperimentService, useClass: MockExperimentService},
     {provide: LoadBalancingPolicyService, useClass: MockLoadBalancingPolicyService},
     {provide: 'BASE_API_URL', useValue: environment.apiUrl},

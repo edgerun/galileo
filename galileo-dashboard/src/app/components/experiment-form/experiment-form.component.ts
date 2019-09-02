@@ -2,6 +2,7 @@ import {Component, EventEmitter, Inject, Input, OnInit, Output} from '@angular/c
 import {convertToSeconds, Time, TimeUnit, timeUnits} from "../../models/TimeUnit";
 import {CurveForm, Point} from "../../models/ExperimentForm";
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
+import {ClientApp} from "../../models/ClientApp";
 import {Service} from "../../models/Service";
 import * as d3 from 'd3';
 import {Submission} from "../../models/Submission";
@@ -18,6 +19,9 @@ import {calculateNumberOfTicks, calculateValues} from "../../utils/calculator";
   styleUrls: ['./experiment-form.component.css']
 })
 export class ExperimentFormComponent implements OnInit {
+
+  @Input()
+  clientApps: ClientApp[];
 
   @Input()
   services: Service[];
@@ -63,7 +67,7 @@ export class ExperimentFormComponent implements OnInit {
 
     let id = uuid();
     this.workloads.push([id, {
-      clients_per_host: 3, service: "", ticks: [], arrival_pattern: ""
+      clients_per_host: 3, service: "", client: "", ticks: [], arrival_pattern: ""
     }]);
 
     this.calculatedWorkloads.set(id, this.workloads[0][1]);
@@ -184,6 +188,12 @@ export class ExperimentFormComponent implements OnInit {
         return a;
       }
 
+      const clientApp = workload.client && workload.client !== '';
+      if (!clientApp) {
+        const a: [boolean, string[]] = [false, ["No clientApp chosen."]]
+        return a;
+      }
+
       const ticks = workload.ticks.length != 0;
       if (ticks) {
         const onlyZeros = workload.ticks.every(val => val === 0);
@@ -275,7 +285,7 @@ export class ExperimentFormComponent implements OnInit {
     const id = uuid();
     console.log(id);
     const workload = {
-      clients_per_host: 3, service: "", ticks: [], arrival_pattern: ""
+      clients_per_host: 3, service: "", client: "", ticks: [], arrival_pattern: ""
     };
     this.workloads.push([id, workload]);
 
