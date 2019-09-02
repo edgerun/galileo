@@ -39,13 +39,10 @@ def setup(api: falcon.API, context: AppContext):
 
 class ServicesResource:
     def on_get(self, req, resp):
-        # TODO: load dynamically, currently these are the ones started on the host
+        # TODO: rethink this
         services = [
             {
-                'name': 'squeezenet'
-            },
-            {
-                'name': 'alexnet'
+                'name': 'mxnet-model-server'
             }
         ]
 
