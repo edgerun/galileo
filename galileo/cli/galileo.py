@@ -47,7 +47,7 @@ def zipdir(path, zfd):
 @click.option('--path', required=True, help='The path to the deployable app')
 def deploy_app(path):
     if path.endswith('.zip'):
-        app_info = client.post_app(path)
+        app_info = client.apps_post(path)
         click.echo(app_info)
         return 0
 
