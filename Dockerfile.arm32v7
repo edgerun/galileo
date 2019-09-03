@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:experimental
+#############
+### build ###
+#############
+FROM arm32v7/python:3.7-slim as base
+COPY --from=multiarch/qemu-user-static:x86_64-arm /usr/bin/qemu-* /usr/bin
+
+FROM base as builder
+RUN apt-get update
+
+ENV SODIUM_INSTALL system pip install pynacl
+
+RUN apt-get -y --no-install-recommends install build-essential \
+ libffi-dev libssl-dev python3-dev libpq-dev libsodium-dev git make ssh
+
+RUN pip install setuptools pynacl cryptography paramiko
+
+# install galileo dependencies
+COPY requirements.txt ./requirements.txt
+RUN pip install -r ./requirements.txt
+
+############
+### prod ###
+############
+FROM base
+COPY --from=builder  /usr/local /usr/local
+COPY --from=multiarch/qemu-user-static:x86_64-arm /usr/bin/qemu-* /usr/bin
+
+RUN mkdir /app
+WORKDIR /app
+
+COPY galileo galileo
