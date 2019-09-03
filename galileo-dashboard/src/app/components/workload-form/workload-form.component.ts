@@ -1,9 +1,8 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
-import {CurveForm} from "../../models/ExperimentForm";
-import {convertToSeconds, Time, TimeUnit, timeUnits} from "../../models/TimeUnit";
-import * as d3 from 'd3';
-import {ExperimentConfiguration, WorkloadConfiguration} from "../../models/ExperimentConfiguration";
+import {CurveForm, Point} from "../../models/ExperimentForm";
+import {Time} from "../../models/TimeUnit";
+import {WorkloadConfiguration} from "../../models/ExperimentConfiguration";
 import {Service} from "../../models/Service";
 
 @Component({
@@ -38,6 +37,10 @@ export class WorkloadFormComponent implements OnInit {
 
   @Input()
   services: Service[];
+
+  @Output()
+  pointsEmitted: EventEmitter<Point[]> = new EventEmitter<Point[]>();
+
   errorMessage: string;
 
   arrivalPatterns: string[] = [
@@ -61,6 +64,10 @@ export class WorkloadFormComponent implements OnInit {
     this.form.get('numberOfClients').valueChanges.subscribe(val => {
       this.handleCurveForm(this.calculatedForm);
     });
+
+    this.form.get('arrivalPattern').valueChanges.subscribe(val => {
+      this.handleCurveForm(this.calculatedForm);
+    })
   }
 
   ngOnInit(): void {
@@ -85,7 +92,7 @@ export class WorkloadFormComponent implements OnInit {
 
     const workload: WorkloadConfiguration = {
       service: getService(this.form.get('service').value),
-      ticks: this.calculatedForm.ticks,
+      ticks: [],
       clients_per_host: this.form.get('numberOfClients').value || 0,
       arrival_pattern: this.form.get('arrivalPattern').value || ""
     };

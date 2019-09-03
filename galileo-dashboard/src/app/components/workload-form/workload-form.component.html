@@ -7,6 +7,7 @@
         [maxRps]="form.get('maxRps').value"
         [form]="curveForm"
         [interval]="interval"
+        (pointsEmitter)="pointsEmitted.emit($event)"
         (formEmitter)="handleCurveForm($event)"
         [id]="id"
       ></app-curve-editor>
