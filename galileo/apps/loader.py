@@ -128,6 +128,8 @@ class AppRepositoryFallbackLoader(AppClientLoader):
 
         if self.repo.exists(name):
             self.repo.download_app(name, self.loader.root)
-            return self.loader.load(name, parameters)
+            app = self.loader.load(name, parameters)
+            logger.debug('successfully loaded app %s: %s', name, app)
+            return app
         else:
             raise ValueError('No app with name %s found' % name)

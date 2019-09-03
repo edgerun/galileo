@@ -10,5 +10,7 @@ services:
                       'galileo.webapp.wsgi:api'"
     restart: always
     network_mode: host
+    volumes:
+      - ./apps-repo:/app/apps-repo
     env_file:
       - 'webapp.env'

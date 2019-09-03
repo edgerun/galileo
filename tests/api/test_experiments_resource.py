@@ -4,7 +4,7 @@ from time import sleep
 import pymq
 
 from galileo.controller import ExperimentController
-from galileo.event import RegisterEvent
+from galileo.worker.api import RegisterWorkerEvent
 from galileo.experiment.model import Experiment
 from tests.api import ResourceTest
 
@@ -54,7 +54,7 @@ class TestExperimentsResource(ResourceTest):
             }
         }
 
-        pymq.publish(RegisterEvent('host1'))
+        pymq.publish(RegisterWorkerEvent('host1'))
         # sleep to publish events and add hosts to redis
         sleep(0.5)
 

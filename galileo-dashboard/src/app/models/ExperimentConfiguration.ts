@@ -6,6 +6,7 @@ export interface ExperimentConfiguration {
 
 export interface WorkloadConfiguration {
   service: string,
+  client: string,
   ticks: number[],
   clients_per_host: number,
   arrival_pattern: string

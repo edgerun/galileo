@@ -4,6 +4,7 @@ import {CurveForm, Point} from "../../models/ExperimentForm";
 import {Time} from "../../models/TimeUnit";
 import {WorkloadConfiguration} from "../../models/ExperimentConfiguration";
 import {Service} from "../../models/Service";
+import {ClientApp} from "../../models/ClientApp";
 
 @Component({
   selector: 'app-workload-form',
@@ -41,6 +42,9 @@ export class WorkloadFormComponent implements OnInit {
   @Output()
   pointsEmitted: EventEmitter<Point[]> = new EventEmitter<Point[]>();
 
+  @Input()
+  clientApps: ClientApp[];
+
   errorMessage: string;
 
   arrivalPatterns: string[] = [
@@ -52,6 +56,7 @@ export class WorkloadFormComponent implements OnInit {
   constructor(private fb: FormBuilder) {
     this.form = this.fb.group({
       maxRps: [1000, [Validators.required, Validators.pattern('[0-9]*')]],
+      clientApp: [undefined, Validators.required],
       service: [undefined, Validators.required],
       numberOfClients: [3, [Validators.required, Validators.pattern('[0-9]*')]],
       arrivalPattern: ['Constant', Validators.required]
@@ -81,6 +86,13 @@ export class WorkloadFormComponent implements OnInit {
   handleCurveForm(form: CurveForm) {
     this.calculatedForm = form;
 
+    function getClient(value: ClientApp) {
+      if (value) {
+        return value.name;
+      } else {
+        return "";
+      }
+    }
 
     function getService(value: Service) {
       if (value) {
@@ -91,6 +103,7 @@ export class WorkloadFormComponent implements OnInit {
     }
 
     const workload: WorkloadConfiguration = {
+      client: getClient(this.form.get('clientApp').value),
       service: getService(this.form.get('service').value),
       ticks: [],
       clients_per_host: this.form.get('numberOfClients').value || 0,

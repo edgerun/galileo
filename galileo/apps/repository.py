@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import tempfile
 import zipfile
 from typing import List, Optional
@@ -11,6 +12,25 @@ import yaml
 from galileo.apps import AppInfo
 
 logger = logging.getLogger(__name__)
+
+
+class RepositoryException(Exception):
+    pass
+
+
+class InvalidArchiveError(RepositoryException):
+    pass
+
+
+class InvalidManifestError(RepositoryException):
+    pass
+
+
+def validate_manifest(manifest):
+    if 'name' not in manifest:
+        raise InvalidManifestError('No name property found in manifest')
+
+    return manifest
 
 
 class Repository:
@@ -25,17 +45,24 @@ class Repository:
             if app.name == app_name:
                 return app
 
+    def add(self, zip_path) -> AppInfo:
+        manifest = self._get_manifest(zip_path)
+
+        # TODO: overwrite behavior?
+        archive_path = os.path.join(self.repo_path, '%s.zip' % manifest['name'])
+        shutil.copy(zip_path, archive_path)
+
+        return AppInfo(manifest['name'], manifest, archive_path)
+
     def list_apps(self) -> List[AppInfo]:
         archives = self.list_archives()
 
         modules = list()
         for archive in archives:
-            manifest = self._get_manifest(archive)
-            if not manifest:
-                continue
-
-            if 'name' not in manifest:
-                logger.debug('archive contains no manifest: %s', archive)
+            try:
+                manifest = self._get_manifest(archive)
+            except RepositoryException as e:
+                logger.debug('Error while reading archive %s: %s', archive, e)
                 continue
 
             info = AppInfo(manifest['name'], manifest, archive)
@@ -55,13 +82,14 @@ class Repository:
                 try:
                     zf.getinfo('manifest.yml')
                 except KeyError:
-                    return
+                    raise InvalidArchiveError('No manifest.yml found in archive %s' % archive)
 
                 read = zf.read('manifest.yml')
                 y = yaml.safe_load(read)
-                return y
-        except zipfile.BadZipFile:
-            return None
+
+                return validate_manifest(y)
+        except zipfile.BadZipFile as e:
+            raise InvalidArchiveError('Error extracting archive %s' % archive, e)
 
 
 class RepositoryResource:
@@ -79,6 +107,21 @@ class RepositoryResource:
         if not app:
             raise falcon.HTTPNotFound()
 
+        resp.media = {'name': app.name, 'manifest': app.manifest}
+
+    def on_post(self, req: falcon.Request, resp: falcon.Response):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            zip_path = os.path.join(tmpdir, 'app.zip')
+
+            with open(zip_path, 'wb') as fd:
+                fd.write(req.stream.read())
+
+            try:
+                app = self.repo.add(zip_path)
+            except RepositoryException as e:
+                raise falcon.HTTPBadRequest('Error processing upload', str(e))
+
+        resp.status = falcon.HTTP_201
         resp.media = {'name': app.name, 'manifest': app.manifest}
 
     def on_get_download(self, req, resp: falcon.Response, app_name):

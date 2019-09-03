@@ -31,6 +31,18 @@
 
       <div class="card-body">
         <form [formGroup]="form">
+
+          <div class="form-group">
+            <div class="input-group" [formGroup]="form">
+              <label class="input-group-text" for="clientAppSelect">Client App</label>
+              <select [ngClass]="{'is-invalid': !form.get('clientApp').value || form.get('clientApp').value == ''}" id="clientAppSelect"
+                      class="custom-select" required formControlName="clientApp">
+                <option *ngFor="let clientApp of clientApps" [ngValue]="clientApp">{{clientApp.name}}</option>
+              </select>
+            </div>
+
+          </div>
+
           <div class="form-group">
             <app-service-selection
               [form]="form"

@@ -2,11 +2,13 @@ import {Component, OnInit} from '@angular/core';
 import {ServiceService} from "../../services/service.service";
 import {Observable, Subject} from "rxjs";
 import {Service} from "../../models/Service";
+import {ClientApp} from "../../models/ClientApp";
 import {ExperimentService} from "../../services/experiment.service";
 import {Submission} from "../../models/Submission";
 import {debounceTime} from "rxjs/operators";
 import {LoadBalancingPolicyService} from "../../services/load-balancing-policy.service";
-import {LoadBalancingPolicySchema} from "../../models/LoadBalancingPolicy";
+import {LoadBalancingPolicy, LoadBalancingPolicySchema} from "../../models/LoadBalancingPolicy";
+import {ClientAppService} from "../../services/client-app.service";
 
 @Component({
   selector: 'app-experiment-creation',
@@ -16,17 +18,20 @@ import {LoadBalancingPolicySchema} from "../../models/LoadBalancingPolicy";
 export class ExperimentCreationComponent implements OnInit {
 
   services$: Observable<Service[]>;
+  clientApps$: Observable<ClientApp[]>;
   lbPolicies$: Observable<LoadBalancingPolicySchema[]>;
   _success = new Subject<string>();
   _error = new Subject<string>();
   loading: boolean = false;
-  constructor(private serviceService: ServiceService, private experimentService: ExperimentService,
-              private lbPolicyService: LoadBalancingPolicyService) {
+
+  constructor(private serviceService: ServiceService, private clientAppService: ClientAppService,
+              private experimentService: ExperimentService, private lbPolicyService: LoadBalancingPolicyService) {
   }
 
 
   ngOnInit() {
     this.services$ = this.serviceService.findAll();
+    this.clientApps$ = this.clientAppService.findAll();
     this.lbPolicies$ = this.lbPolicyService.findAll();
     this._success.pipe(
       debounceTime(3000)
