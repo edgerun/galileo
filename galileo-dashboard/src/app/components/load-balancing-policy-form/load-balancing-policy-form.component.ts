@@ -39,7 +39,7 @@ export class LoadBalancingPolicyFormComponent implements OnInit {
     this.form.get('selectedPolicy').valueChanges.subscribe(v => {
       if (v) {
 
-        let value = {name: v.name};
+        let value = {policy: v.policy};
         if (v.config)  {
           value['config'] = v.config;
         }
@@ -54,9 +54,10 @@ export class LoadBalancingPolicyFormComponent implements OnInit {
 
 
   changes($event: any) {
+    console.info($event);
     const v = this.form.get('selectedPolicy').value;
     this.update.emit({
-      name: v.name,
+      policy: v.policy,
       config: $event
     });
   }

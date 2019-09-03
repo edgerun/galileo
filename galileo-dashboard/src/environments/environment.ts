@@ -5,6 +5,7 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:5001/api',
+  symmetryUrl: 'http://localhost:5000/api',
   grafanaUrl: 'localhost:3000',
 };
 

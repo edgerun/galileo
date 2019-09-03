@@ -1,12 +1,42 @@
-import {Injectable} from '@angular/core';
+import {Inject, Injectable} from '@angular/core';
 import {Observable, of} from "rxjs";
-import {LoadBalancingPolicy, LoadBalancingPolicySchema} from "../models/LoadBalancingPolicy";
+import {LoadBalancingPolicySchema} from "../models/LoadBalancingPolicy";
+import {HttpClient} from "@angular/common/http";
+import {map} from "rxjs/operators";
 
 @Injectable({
   providedIn: 'root'
 })
 export abstract class LoadBalancingPolicyService {
   abstract findAll(): Observable<LoadBalancingPolicySchema[]>;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class HttpLoadBalancingPolicyService implements LoadBalancingPolicyService {
+
+  constructor(
+    @Inject('SYMMETRY_API_URL') private baseUrl: string,
+    private httpClient: HttpClient) {
+  }
+
+  findAll(): Observable<LoadBalancingPolicySchema[]> {
+    return this.httpClient.get<LoadBalancingPolicySchema[]>(this.baseUrl + "/policies/balancing")
+      .pipe(
+        map((e: LoadBalancingPolicySchema[]) => {
+          e.map(
+            t => {
+              t.schema = {
+                'schema': t.schema
+              };
+            }
+          );
+
+          return e;
+        })
+      );
+  }
 }
 
 @Injectable(
@@ -18,17 +48,17 @@ export class MockLoadBalancingPolicyService implements LoadBalancingPolicyServic
 
   readonly policies: LoadBalancingPolicySchema[] = [
     {
-      name: "Weighted",
+      policy: "Weighted",
       schema: weighted
     },
     {
-      name: "Round Robin"
+      policy: "Round Robin"
     },
     {
-      name: "Random"
+      policy: "Random"
     },
     {
-      name: "Pseudo",
+      policy: "Pseudo",
       schema: pseudo
     }
   ];
