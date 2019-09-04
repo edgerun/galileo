@@ -34,7 +34,6 @@ class ApiClient:
     def __init__(self, api=None) -> None:
         super().__init__()
         self.api = api or os.getenv('galileo_api_url', 'http://localhost:5001/api')
-        print(self.api)
 
     def apps_post(self, zip_path):
         with open(zip_path, 'rb') as fd:
