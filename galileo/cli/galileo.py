@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import shutil
@@ -7,11 +8,33 @@ import click
 import requests
 import yaml
 
-from galileo.apps.repository import validate_manifest
+
+def validate_manifest(manifest):
+    if 'name' not in manifest:
+        raise ValueError('No name property found in manifest')
+
+    return manifest
+
+
+def read_dotfile():
+    path = os.path.expanduser('~/.galileo-cli')
+    cfg = None
+
+    if os.path.isfile(path):
+        with open(path, 'r') as fd:
+            cfg = json.load(fd)
+
+    if cfg:
+        if 'api' in cfg:
+            os.environ['galileo_api_url'] = cfg['api']
 
 
 class ApiClient:
-    api = 'http://localhost:5001/api'
+
+    def __init__(self, api=None) -> None:
+        super().__init__()
+        self.api = api or os.getenv('galileo_api_url', 'http://localhost:5001/api')
+        print(self.api)
 
     def apps_post(self, zip_path):
         with open(zip_path, 'rb') as fd:
@@ -23,9 +46,6 @@ class ApiClient:
 
     def _url(self, param):
         return self.api + param
-
-
-client = ApiClient()
 
 
 @click.group()
@@ -81,7 +101,12 @@ def list_apps():
         click.echo(app)
 
 
+client: ApiClient
+
+
 def main(*args, **kwargs):
+    read_dotfile()
+
     global client
     client = ApiClient()
     galileo(*args, **kwargs)
