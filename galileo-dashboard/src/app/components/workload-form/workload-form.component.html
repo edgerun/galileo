@@ -7,7 +7,6 @@
         [maxRps]="form.get('maxRps').value"
         [form]="curveForm"
         [interval]="interval"
-        (pointsEmitter)="pointsEmitted.emit($event)"
         (formEmitter)="handleCurveForm($event)"
         [id]="id"
       ></app-curve-editor>
@@ -33,11 +32,14 @@
         <form [formGroup]="form">
 
           <div class="form-group">
-            <div class="input-group" [formGroup]="form">
+            <div class="input-group">
               <label class="input-group-text" for="clientAppSelect">Client App</label>
-              <select [ngClass]="{'is-invalid': !form.get('clientApp').value || form.get('clientApp').value == ''}" id="clientAppSelect"
+              <select [ngClass]="{'is-invalid': !form.get('clientApp').value || form.get('clientApp').value == ''}"
+                      id="clientAppSelect"
                       class="custom-select" required formControlName="clientApp">
-                <option *ngFor="let clientApp of clientApps" [ngValue]="clientApp">{{clientApp.name}}</option>
+                <option selected *ngIf="!form.get('clientApp').value"></option>
+                <option [selected]="form.get('clientApp').value == clientApp.name" *ngFor="let clientApp of clientApps"
+                >{{clientApp.name}}</option>
               </select>
             </div>
 

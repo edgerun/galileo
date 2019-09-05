@@ -1,8 +1,9 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
 import {FormBuilder, FormGroup, Validators} from "@angular/forms";
 import {CurveForm, Point} from "../../models/ExperimentForm";
-import {Time} from "../../models/TimeUnit";
-import {WorkloadConfiguration} from "../../models/ExperimentConfiguration";
+import {convertToSeconds, Time} from "../../models/TimeUnit";
+import * as d3 from 'd3';
+import {ExperimentConfiguration, WorkloadConfiguration} from "../../models/ExperimentConfiguration";
 import {Service} from "../../models/Service";
 import {ClientApp} from "../../models/ClientApp";
 
@@ -15,6 +16,7 @@ export class WorkloadFormComponent implements OnInit {
 
 
   private _initCurveForm: CurveForm;
+  curveForm: CurveForm;
   form: FormGroup;
   calculatedForm: CurveForm;
 
@@ -34,18 +36,13 @@ export class WorkloadFormComponent implements OnInit {
   interval: Time;
 
   @Input()
-  curveForm: CurveForm;
-
-  @Input()
   services: Service[];
 
-  @Output()
-  pointsEmitted: EventEmitter<Point[]> = new EventEmitter<Point[]>();
+  @Input()
+  initWorkload: WorkloadConfiguration;
 
   @Input()
   clientApps: ClientApp[];
-
-  errorMessage: string;
 
   arrivalPatterns: string[] = [
     'Constant',
@@ -54,12 +51,15 @@ export class WorkloadFormComponent implements OnInit {
 
 
   constructor(private fb: FormBuilder) {
+  }
+
+  ngOnInit(): void {
     this.form = this.fb.group({
-      maxRps: [1000, [Validators.required, Validators.pattern('[0-9]*')]],
-      clientApp: [undefined, Validators.required],
-      service: [undefined, Validators.required],
-      numberOfClients: [3, [Validators.required, Validators.pattern('[0-9]*')]],
-      arrivalPattern: ['Constant', Validators.required]
+      maxRps: [this.initWorkload.maxRps, [Validators.required, Validators.pattern('[0-9]*')]],
+      service: [this.initWorkload.service || "", Validators.required],
+      numberOfClients: [this.initWorkload.clients_per_host, [Validators.required, Validators.pattern('[0-9]*')]],
+      arrivalPattern: [this.initWorkload.arrival_pattern, Validators.required],
+      clientApp: [this.initWorkload.client || "", Validators.required]
     });
 
     this.form.get('service').valueChanges.subscribe(val => {
@@ -72,15 +72,20 @@ export class WorkloadFormComponent implements OnInit {
 
     this.form.get('arrivalPattern').valueChanges.subscribe(val => {
       this.handleCurveForm(this.calculatedForm);
-    })
-  }
+    });
 
-  ngOnInit(): void {
+    this.form.get('clientApp').valueChanges.subscribe(val => {
+      this.handleCurveForm(this.calculatedForm);
+    });
+
+
+    this.curveForm = this.initWorkload.curve;
+
     this._initCurveForm = {
-      curve: this.curveForm.curve,
-      ticks: this.curveForm.ticks,
-      points: this.curveForm.points
-    }
+      interpolation: this.initWorkload.curve.interpolation,
+      ticks: this.initWorkload.curve.ticks.map(t => t),
+      points: this.initWorkload.curve.points.map(t => t)
+    };
   }
 
   handleCurveForm(form: CurveForm) {
@@ -103,11 +108,13 @@ export class WorkloadFormComponent implements OnInit {
     }
 
     const workload: WorkloadConfiguration = {
-      client: getClient(this.form.get('clientApp').value),
-      service: getService(this.form.get('service').value),
+      client: this.form.get('clientApp').value,
+      service: this.form.get('service').value,
       ticks: [],
       clients_per_host: this.form.get('numberOfClients').value || 0,
-      arrival_pattern: this.form.get('arrivalPattern').value || ""
+      arrival_pattern: this.form.get('arrivalPattern').value || "",
+      maxRps: +this.form.get('maxRps').value,
+      curve: this.calculatedForm,
     };
 
     this.workloadSubmission.emit(workload);
@@ -115,7 +122,7 @@ export class WorkloadFormComponent implements OnInit {
 
   reset() {
     this.curveForm = {
-      curve: this._initCurveForm.curve,
+      interpolation: this._initCurveForm.interpolation,
       ticks: this._initCurveForm.ticks.map(t => t),
       points: this._initCurveForm.points.map(p => p)
     }

@@ -1,34 +1,37 @@
-import {TimeUnit} from "./TimeUnit";
+import {Time, TimeUnitKind} from "./TimeUnit";
+import {WorkloadConfiguration} from "./ExperimentConfiguration";
+import {LoadBalancingPolicy} from "./LoadBalancingPolicy";
 import {Service} from "./Service";
 
+
 export interface ExperimentForm {
-  id: string,
-  name: string,
-  creator: string,
-  interval: TimeUnit,
-  duration: TimeUnit,
-  service: Service,
+  experiment: { name?: string, creator?: string },
+  workloads: Map<string, WorkloadConfiguration>,
+  policy?: LoadBalancingPolicy,
+  duration: Time,
+  interval: Time,
 }
 
 export interface UnvalidatedExperimentForm {
   id?: string,
   name?: string,
   creator?: string,
-  interval?: TimeUnit,
-  duration?: TimeUnit,
+  interval?: TimeUnitKind,
+  duration?: TimeUnitKind,
   service?: Service,
 }
 
 export interface CurveForm {
   points: Point[],
-  curve: CurveKind,
-  ticks: number[]
+  interpolation: CurveKind,
+  ticks?: number[]
 }
 
 export enum CurveKind {
-  Basis,
-  Linear,
-  Step
+  Basis = "Basis",
+  Linear = "Linear",
+  Step = "Step",
+  CatMull = "CatMullRom"
 }
 
 export interface Point {

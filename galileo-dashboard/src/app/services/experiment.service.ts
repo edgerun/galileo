@@ -79,8 +79,10 @@ export class MockExperimentService implements ExperimentService {
 
 
   submit(submission: Submission): Observable<string> {
-    console.info('submitted');
-    console.info(submission);
+    console.debug('submitted');
+    console.debug(submission);
+    console.debug('prepared');
+    console.debug(prepareSubmission(submission));
     return of('fakeid');
   }
 
@@ -110,7 +112,8 @@ export class HttpExperimentService implements ExperimentService {
   }
 
   submit(submission: Submission): Observable<string> {
-    return this.httpClient.post<string>(this.baseUrl + "/experiments", submission);
+    const prepared = prepareSubmission(submission);
+    return this.httpClient.post<string>(this.baseUrl + "/experiments", prepared);
   }
 
   delete(id: string): Observable<string> {
@@ -124,4 +127,35 @@ export class HttpExperimentService implements ExperimentService {
   }
 
 
+}
+
+function prepareSubmission(sub: Submission): Submission {
+  let copy = {
+    experiment: sub.experiment,
+    configuration: {
+      duration: sub.configuration.duration,
+      interval: sub.configuration.interval,
+      workloads: sub.configuration.workloads.map(u => removeUnknownAttributes(u, unknownWorkloadConfigAttributes))
+    }
+  };
+
+  return removeUnknownAttributes(copy, unknownExpConfigAttributes);
+}
+
+const unknownExpConfigAttributes = [
+  'policy'
+];
+
+const unknownWorkloadConfigAttributes = [
+  'maxRps',
+  'curve'
+];
+
+function removeUnknownAttributes<A>(obj: A, unknownAttributes: string[]): A {
+  const copy = {
+    ...obj
+  };
+
+  unknownAttributes.forEach(a => delete copy[a])
+  return copy;
 }

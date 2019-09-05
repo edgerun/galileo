@@ -2,7 +2,7 @@
 
   <div class="form-group" [formGroup]="form">
     <label for="lb">Load Balancing Policy</label>
-    <select formControlName="selectedPolicy" id="lb" class="custom-select">
+    <select formControlName="selectedPolicy" id="lb" class="custom-select" [compareWith]="comparePolicies">
       <option [ngValue]="policy" *ngFor="let policy of policies">
         {{policy.policy}}
       </option>

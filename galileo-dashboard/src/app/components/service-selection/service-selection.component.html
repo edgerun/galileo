@@ -2,6 +2,7 @@
   <label class="input-group-text" for="serviceSelect">Service</label>
   <select [ngClass]="{'is-invalid': !form.get('service').value || form.get('service').value == ''}" id="serviceSelect"
           class="custom-select" required formControlName="service">
-    <option *ngFor="let service of services" [ngValue]="service">{{service.name}}</option>
+    <option selected *ngIf="!form.get('service').value"></option>
+    <option [selected]="form.get('service').value == service.name" *ngFor="let service of services">{{service.name}}</option>
   </select>
 </div>
