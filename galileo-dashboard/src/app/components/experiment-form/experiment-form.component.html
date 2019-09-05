@@ -54,12 +54,15 @@
             <button (click)="submit()" type="submit" class="btn btn-danger mr-3">
               <i class="fa fa-play"></i> Run Experiment
             </button>
-            <button (click)="export(content)" type="submit" class="btn btn-primary btn-primary mr-3">
-              <i class="fa fa-download"></i> Export
-            </button>
-            <button (click)="openImportModal(importModal)" type="submit" class="btn btn-primary btn-success">
-              <i class="fas fa-file-import"></i> Import
-            </button>
+
+            <div class="float-right">
+              <button (click)="export(content)" type="submit" class="btn btn-outline-secondary mr-3">
+                <i class="fa fa-download"></i> Export
+              </button>
+              <button (click)="openImportModal(importModal)" type="submit" class="btn btn-outline-secondary">
+                <i class="fas fa-file-import"></i> Import
+              </button>
+            </div>
           </div>
 
           <ng-template #calculatingInProgress>
@@ -67,22 +70,19 @@
               <i class="fa fa-play"></i> Run experiment
               <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
               <span class="sr-only">Run experiment</span>
-
             </button>
-            <button (click)="export(content)" disabled type="submit" class="btn btn-primary btn-primary">
-              <i class="fa fa-download"></i> Export
 
-              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-              <span class="sr-only">Export</span>
-
-            </button>
-            <button type="submit" disabled class="btn btn-primary btn-success">
-              <i class="fas fa-file-import"></i> Import
-
-
-              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-              <span class="sr-only">Impoort</span>
-            </button>
+            <div class="float-right">
+              <button (click)="export(content)" disabled type="submit" class="btn btn-outline-secondary mr-3">
+                <i class="fa fa-download"></i> Export
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span class="sr-only">Export</span>
+              </button>
+              <button type="submit" disabled class="btn btn-outline-secondary">
+                <i class="fas fa-file-import"></i> Import
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              </button>
+            </div>
           </ng-template>
           <hr>
           <app-text-input

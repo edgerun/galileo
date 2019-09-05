@@ -3,17 +3,20 @@
     <div class="card-header" [id]="exp.id">
       <h2 class="mb-0">
         <button data-toggle="collapse" class="btn btn-link" type="button" (click)="toggle(exp.id)">
-          ID: {{exp.id}}
+          <span *ngIf="exp.name">Name: {{exp.name}}</span><span *ngIf="!exp.name">ID: {{exp.id}}</span>
         </button>
+
+        <!-- cancel button for 'queued' items -->
         <div *ngIf="exp.status.toLowerCase() === 'queued'">
           <button *ngIf="!loading.get(exp.id); else loadingInProgress" (click)="cancelExperiment(exp.id)"
-                  class="btn btn-danger">Cancel
+                  class="btn btn-sm btn-danger">
+            <i class="fa fa-ban"></i>
           </button>
           <ng-template #loadingInProgress>
             <button [disabled]="loadingInProgress"
                     class="btn btn-danger">
               <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-              Cancelling...
+              <i class="fa fa-ban"></i>
               <span class="sr-only">Cancelling</span>
             </button>
           </ng-template>
