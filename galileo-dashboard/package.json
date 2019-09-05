@@ -29,6 +29,7 @@
     "d3-curve-editor": "^0.2.1",
     "deep-equal": "^1.0.1",
     "lodash-es": "^4.17.15",
+    "ngx-logger": "^4.0.4",
     "rxjs": "~6.4.0",
     "ts-debounce": "^1.0.0",
     "tslib": "^1.9.0",

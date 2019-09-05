@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
-import {Experiment} from "../../models/Experiment";
+import {Experiment} from '../../models/Experiment';
 
 @Component({
   selector: 'app-experiments-overview-component',

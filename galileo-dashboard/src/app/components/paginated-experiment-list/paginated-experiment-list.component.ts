@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
-import {Experiment} from "../../models/Experiment";
+import {Experiment} from '../../models/Experiment';
 
 @Component({
   selector: 'app-paginated-experiment-list',
@@ -17,9 +17,9 @@ export class PaginatedExperimentListComponent implements OnInit {
   @Output()
   deleteExperiment: EventEmitter<string> = new EventEmitter<string>();
 
-  pageSize: number = 8;
+  pageSize = 8;
 
-  page: number = 1;
+  page = 1;
 
   constructor() {
   }

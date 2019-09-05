@@ -1,11 +1,11 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
-import {FormBuilder, FormGroup, Validators} from "@angular/forms";
-import {CurveForm, Point} from "../../models/ExperimentForm";
-import {convertToSeconds, Time} from "../../models/TimeUnit";
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {CurveForm, Point} from '../../models/ExperimentForm';
+import {convertToSeconds, Time} from '../../models/TimeUnit';
 import * as d3 from 'd3';
-import {ExperimentConfiguration, WorkloadConfiguration} from "../../models/ExperimentConfiguration";
-import {Service} from "../../models/Service";
-import {ClientApp} from "../../models/ClientApp";
+import {ExperimentConfiguration, WorkloadConfiguration} from '../../models/ExperimentConfiguration';
+import {Service} from '../../models/Service';
+import {ClientApp} from '../../models/ClientApp';
 
 @Component({
   selector: 'app-workload-form',
@@ -56,10 +56,10 @@ export class WorkloadFormComponent implements OnInit {
   ngOnInit(): void {
     this.form = this.fb.group({
       maxRps: [this.initWorkload.maxRps, [Validators.required, Validators.pattern('[0-9]*')]],
-      service: [this.initWorkload.service || "", Validators.required],
+      service: [this.initWorkload.service || '', Validators.required],
       numberOfClients: [this.initWorkload.clients_per_host, [Validators.required, Validators.pattern('[0-9]*')]],
       arrivalPattern: [this.initWorkload.arrival_pattern, Validators.required],
-      clientApp: [this.initWorkload.client || "", Validators.required]
+      clientApp: [this.initWorkload.client || '', Validators.required]
     });
 
     this.form.get('service').valueChanges.subscribe(val => {
@@ -95,7 +95,7 @@ export class WorkloadFormComponent implements OnInit {
       if (value) {
         return value.name;
       } else {
-        return "";
+        return '';
       }
     }
 
@@ -103,7 +103,7 @@ export class WorkloadFormComponent implements OnInit {
       if (value) {
         return value.name;
       } else {
-        return "";
+        return '';
       }
     }
 
@@ -112,7 +112,7 @@ export class WorkloadFormComponent implements OnInit {
       service: this.form.get('service').value,
       ticks: [],
       clients_per_host: this.form.get('numberOfClients').value || 0,
-      arrival_pattern: this.form.get('arrivalPattern').value || "",
+      arrival_pattern: this.form.get('arrivalPattern').value || '',
       maxRps: +this.form.get('maxRps').value,
       curve: this.calculatedForm,
     };
@@ -125,10 +125,10 @@ export class WorkloadFormComponent implements OnInit {
       interpolation: this._initCurveForm.interpolation,
       ticks: this._initCurveForm.ticks.map(t => t),
       points: this._initCurveForm.points.map(p => p)
-    }
+    };
   }
 
   remove() {
-    this.removeWorkload.emit()
+    this.removeWorkload.emit();
   }
 }

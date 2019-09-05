@@ -1,8 +1,9 @@
 import {Inject, Injectable} from '@angular/core';
-import {Submission} from "../models/Submission";
-import {Observable, of} from "rxjs";
-import {HttpClient} from "@angular/common/http";
-import {Experiment} from "../models/Experiment";
+import {Submission} from '../models/Submission';
+import {Observable, of} from 'rxjs';
+import {HttpClient} from '@angular/common/http';
+import {Experiment} from '../models/Experiment';
+import {NGXLogger} from 'ngx-logger';
 
 @Injectable({
   providedIn: 'root'
@@ -26,7 +27,7 @@ export class MockExperimentService implements ExperimentService {
 
   experiments: Experiment[];
 
-  constructor() {
+  constructor(private logger: NGXLogger) {
     const finishedExperiments = [];
     for (let i = 0; i < 3; i++) {
       finishedExperiments.push(
@@ -79,15 +80,15 @@ export class MockExperimentService implements ExperimentService {
 
 
   submit(submission: Submission): Observable<string> {
-    console.debug('submitted');
-    console.debug(submission);
-    console.debug('prepared');
-    console.debug(prepareSubmission(submission));
+    this.logger.debug('submitted');
+    this.logger.debug(submission);
+    this.logger.debug('prepared');
+    this.logger.debug(prepareSubmission(submission));
     return of('fakeid');
   }
 
   delete(id: string): Observable<string> {
-    console.info('deleting', id);
+    this.logger.info('deleting', id);
     this.experiments = this.experiments.filter(e => e.id !== id);
     return of(id);
   }
@@ -108,38 +109,25 @@ export class HttpExperimentService implements ExperimentService {
 
   constructor(
     @Inject('BASE_API_URL') private baseUrl: string,
-    private httpClient: HttpClient) {
+    private httpClient: HttpClient, private logger: NGXLogger) {
   }
 
   submit(submission: Submission): Observable<string> {
     const prepared = prepareSubmission(submission);
-    return this.httpClient.post<string>(this.baseUrl + "/experiments", prepared);
+    return this.httpClient.post<string>(this.baseUrl + '/experiments', prepared);
   }
 
   delete(id: string): Observable<string> {
-    const url = this.baseUrl + "/experiments/" + id;
-    console.log('calling delete on ', url);
+    const url = this.baseUrl + '/experiments/' + id;
+    this.logger.log('calling delete on ', url);
     return this.httpClient.delete<string>(url);
   }
 
   findAll(): Observable<Experiment[]> {
-    return this.httpClient.get<Experiment[]>(this.baseUrl + "/experiments");
+    return this.httpClient.get<Experiment[]>(this.baseUrl + '/experiments');
   }
 
 
-}
-
-function prepareSubmission(sub: Submission): Submission {
-  let copy = {
-    experiment: sub.experiment,
-    configuration: {
-      duration: sub.configuration.duration,
-      interval: sub.configuration.interval,
-      workloads: sub.configuration.workloads.map(u => removeUnknownAttributes(u, unknownWorkloadConfigAttributes))
-    }
-  };
-
-  return removeUnknownAttributes(copy, unknownExpConfigAttributes);
 }
 
 const unknownExpConfigAttributes = [
@@ -151,11 +139,24 @@ const unknownWorkloadConfigAttributes = [
   'curve'
 ];
 
+function prepareSubmission(sub: Submission): Submission {
+  const copy = {
+    experiment: sub.experiment,
+    configuration: {
+      duration: sub.configuration.duration,
+      interval: sub.configuration.interval,
+      workloads: sub.configuration.workloads.map(u => removeUnknownAttributes(u, unknownWorkloadConfigAttributes))
+    }
+  };
+
+  return removeUnknownAttributes(copy, unknownExpConfigAttributes);
+}
+
 function removeUnknownAttributes<A>(obj: A, unknownAttributes: string[]): A {
   const copy = {
     ...obj
   };
 
-  unknownAttributes.forEach(a => delete copy[a])
+  unknownAttributes.forEach(a => delete copy[a]);
   return copy;
 }

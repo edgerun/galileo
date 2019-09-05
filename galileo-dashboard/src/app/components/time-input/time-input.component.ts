@@ -1,6 +1,6 @@
 import {Component, Input, OnInit} from '@angular/core';
-import {timeUnits} from "../../models/TimeUnit";
-import {FormGroup} from "@angular/forms";
+import {timeUnits} from '../../models/TimeUnit';
+import {FormGroup} from '@angular/forms';
 
 @Component({
   selector: 'app-time-input',

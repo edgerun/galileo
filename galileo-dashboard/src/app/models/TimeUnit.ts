@@ -3,13 +3,13 @@ export class Time {
   }
 
   equals(other: Time): boolean {
-    return other.value == this.value && other.kind == this.kind;
+    return other.value === this.value && other.kind === this.kind;
   }
 }
 
 export enum TimeUnitKind {
-  Second = "s",
-  Minute = "min"
+  Second = 's',
+  Minute = 'min'
 }
 
 export const timeUnits: TimeUnitKind[] = [
@@ -33,12 +33,12 @@ export function convertTimeToSeconds(time: Time): number {
     case TimeUnitKind.Second:
       return time.value;
     default:
-      console.error("Should not happen. Time was: " + time.kind + " " + time.value)
+      console.error('Should not happen. Time was: ' + time.kind + ' ' + time.value);
   }
 }
 
 export function convertSecondsToTime(time: string): Time {
-  const seconds = parseInt(time.replace('s', ''));
+  const seconds = parseInt(time.replace('s', ''), 10);
   return new Time(seconds, TimeUnitKind.Second);
 }
 

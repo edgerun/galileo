@@ -1,9 +1,9 @@
 export interface LoadBalancingPolicySchema {
-  policy: string,
-  schema?: any
+  policy: string;
+  schema?: any;
 }
 
 export interface LoadBalancingPolicy {
-  policy: string,
-  config: any
+  policy: string;
+  config: any;
 }

@@ -1,7 +1,7 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
-import {ExperimentService} from "../../services/experiment.service";
-import {Observable} from "rxjs";
-import {Experiment} from "../../models/Experiment";
+import {ExperimentService} from '../../services/experiment.service';
+import {Observable} from 'rxjs';
+import {Experiment} from '../../models/Experiment';
 
 @Component({
   selector: 'app-experiments-overview',
@@ -30,7 +30,7 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.interval && this.interval != -1) {
+    if (this.interval && this.interval !== -1) {
       clearInterval(this.interval);
       this.interval = -1;
     }
@@ -56,7 +56,7 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
     }, (error: Error) => {
       this.changeErrorMessage(error.message);
       this.loading = false;
-    })
+    });
   }
 
   private changeErrorMessage(text: string) {
@@ -64,7 +64,7 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
     this.error = text;
     this.timeout = setTimeout(() => {
       this.error = null;
-    }, 3000)
+    }, 3000);
   }
 
   private changeSuccessMessage(text: string) {
@@ -72,7 +72,7 @@ export class ExperimentsOverviewComponent implements OnInit, OnDestroy {
     this.success = text;
     this.timeout = setTimeout(() => {
       this.success = null;
-    }, 3000)
+    }, 3000);
   }
 
   deleteExperiment(id: string) {

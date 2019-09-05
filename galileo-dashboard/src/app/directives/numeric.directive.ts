@@ -3,7 +3,7 @@ import {Directive, ElementRef, HostListener, Input} from '@angular/core';
 @Directive({
   selector: '[numeric]'
 })
-//source: https://gist.github.com/ahmeti/5ca97ec41f6a48ef699ee6606560d1f7
+// source: https://gist.github.com/ahmeti/5ca97ec41f6a48ef699ee6606560d1f7
 export class NumericDirective {
 
   @Input('numericType') numericType: string; // number | decimal
@@ -29,8 +29,8 @@ export class NumericDirective {
     }
     // Do not use event.keycode this is deprecated.
     // See: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode
-    let current: string = this.el.nativeElement.value;
-    let next: string = current.concat(event.key);
+    const current: string = this.el.nativeElement.value;
+    const next: string = current.concat(event.key);
     if (next && !String(next).match(this.regex[this.numericType])) {
       event.preventDefault();
     }

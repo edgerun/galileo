@@ -1,6 +1,6 @@
 import {Component, Input, OnInit} from '@angular/core';
-import {Service} from "../../models/Service";
-import {FormGroup} from "@angular/forms";
+import {Service} from '../../models/Service';
+import {FormGroup} from '@angular/forms';
 
 @Component({
   selector: 'app-service-selection',
