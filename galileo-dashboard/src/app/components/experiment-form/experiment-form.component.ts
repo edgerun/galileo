@@ -93,7 +93,7 @@ export class ExperimentFormComponent implements OnInit {
       intervalUnit: [expForm.interval.kind, Validators.required],
       duration: [expForm.duration.value, [Validators.required, Validators.pattern('[0-9]*')]],
       durationUnit: [expForm.duration.kind, Validators.required],
-      lbPolicy: [expForm.policy || undefined, Validators.required]
+      lbPolicy: [expForm.policy || undefined]
     });
     [...expForm.workloads.keys()].forEach(id => this.recalculate.set(id, true));
 
@@ -218,7 +218,7 @@ export class ExperimentFormComponent implements OnInit {
   }
 
   private configurationsAreValid(): [boolean, string[]] {
-    console.log('validate configurations');
+    console.info('validating configurations');
     if (this.calculatedWorkloads.size == 0) {
       const a: [boolean, string[]] = [false, ["No workloads defined"]];
       return a;
