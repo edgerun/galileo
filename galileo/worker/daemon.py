@@ -119,7 +119,8 @@ class WorkerDaemon:
 
     def _on_create_client_group_command(self, command: CreateClientGroupCommand):
         if command.host != self.name:
-            raise ValueError('Host mismatch %s != %s' % (command.host, self.name))
+            logger.debug('ignoring create client group command sent to %s' % command.host)
+            return
 
         gid = command.gid if command.gid else self._create_client_group_id(command)
         logger.debug('creating client group with gid = %s', gid)
