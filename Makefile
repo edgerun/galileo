@@ -24,7 +24,7 @@ test: venv
 	$(VENV_ACTIVATE); python setup.py test
 
 pytest: venv
-	$(VENV_ACTIVATE); pytest --cov galileo/
+	$(VENV_ACTIVATE); pytest tests/ --cov galileo/
 
 dist: venv
 	$(VENV_ACTIVATE); python setup.py sdist
