@@ -1,3 +1,4 @@
+import atexit
 import logging
 import os
 import time
@@ -87,10 +88,14 @@ class Context:
 
         if router_type == 'SymmetryServiceRouter':
             rtable = ReadOnlyListeningRedisRoutingTable(rds)
+            rtable.start()
+            atexit.register(rtable.stop, timeout=2)
             balancer = WeightedRandomBalancer(rtable)
             return SymmetryServiceRouter(balancer)
         elif router_type == 'SymmetryHostRouter':
             rtable = ReadOnlyListeningRedisRoutingTable(rds)
+            rtable.start()
+            atexit.register(rtable.stop, timeout=2)
             balancer = WeightedRandomBalancer(rtable)
             return SymmetryHostRouter(balancer)
         elif router_type == 'StaticRouter':
