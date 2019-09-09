@@ -3,6 +3,7 @@ import logging
 import math
 import re
 import sre_constants
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import List
 
 import pymq
@@ -111,6 +112,7 @@ class ExperimentController:
 
         # start client process
         self.start_client(gid, num)
+        return gid
 
     def set_rps(self, worker, service, rps, client=None):
         client = client or service
@@ -203,12 +205,23 @@ class ExperimentShell(Shell):
         :param num: the number of clients
         :param client: the client app name (optional, if not given will use service name)
         """
+
+        def spawn_client(worker):
+            try:
+                gid = self.controller.spawn_client(worker, service, num, client if client else None)
+                self.println('%s: OK (%s)' % (worker, gid))
+                return gid
+            except Exception as ex:
+                self.println('%s: ERROR (%s)' % (worker, str(ex)))
+                return None
+
         try:
-            for worker in self.controller.list_workers(worker_pattern):
-                try:
-                    self.controller.spawn_client(worker, service, num, client if client else None)
-                except TimeoutError:
-                    raise
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                workers = self.controller.list_workers(worker_pattern)
+                self.println('spawning clients on %d workers' % len(workers))
+                for _ in executor.map(spawn_client, workers):
+                    pass  # iterator blocks until all are commands have returned
+
         except ValueError as e:
             raise ArgumentError(e)
 
