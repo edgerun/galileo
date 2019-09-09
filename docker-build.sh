@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=0.0.1
+VERSION=$(grep "version" setup.py | cut -d'=' -f 2 | sed 's/[",]//g')
 
 # registry/group/repository/image
 IMAGE=git.dsg.tuwien.ac.at:5005/mc2/galileo/galileo
