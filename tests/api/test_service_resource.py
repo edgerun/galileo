@@ -7,10 +7,7 @@ class TestServiceResource(ResourceTest):
     def test_get_services(self):
         services = [
             {
-                'name': 'squeezenet'
-            },
-            {
-                'name': 'alexnet'
+                'name': 'mxnet-model-server'
             }
         ]
 
