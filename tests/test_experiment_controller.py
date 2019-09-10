@@ -1,4 +1,3 @@
-import json
 import logging
 import unittest
 
@@ -6,7 +5,7 @@ import pymq
 from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
-from galileo.experiment.model import ExperimentConfiguration, WorkloadConfiguration
+from galileo.experiment.model import ExperimentConfiguration, WorkloadConfiguration, QueuedExperiment, Experiment
 from tests.testutils import RedisResource
 
 logging.basicConfig(level=logging.DEBUG)
@@ -27,32 +26,42 @@ class TestExperimentDaemon(unittest.TestCase):
         pymq.shutdown()
         self.redis_resource.tearDown()
 
-    def test_submit(self):
+    def test_queue(self):
         self.rds.sadd(ExperimentController.worker_key, 'host1')
 
-        load = ExperimentConfiguration(2, 1, [WorkloadConfiguration('aservice', [1, 2], 2, 'constant')])
-        self.ectl.queue(load)
+        exp = Experiment(name='my-experiment', creator='unittest')
+        config = ExperimentConfiguration(2, 1, [WorkloadConfiguration('aservice', [1, 2], 2, 'constant')])
+        self.ectl.queue(config, exp)
 
-        message = self.rds.lpop(ExperimentController.queue_key)
-        expected = {
-            'instructions': 'spawn host1 aservice 2\nrps host1 aservice 1\nsleep 1\nrps host1 aservice 2\nsleep 1\nrps host1 aservice 0\nclose host1 aservice'
-        }
-        actual = json.loads(message)
-        self.assertEqual(expected, actual)
+        queue = pymq.queue(ExperimentController.queue_key)
+
+        self.assertEqual(1, queue.qsize())
+        self.assertEqual(1, self.ectl.experiment_queue.qsize())
+
+        queued_experiment: QueuedExperiment = queue.get()
+        self.assertEqual(config, queued_experiment.configuration)
+        self.assertEqual('my-experiment', queued_experiment.experiment.name)
+        self.assertEqual('unittest', queued_experiment.experiment.creator)
 
     def test_cancel(self):
-        exp_id = 'abcd'
-        exp = {
-            'id': exp_id,
-            'instructions': 'spawn host1 aservice 2\nrps host1 aservice 1\nsleep 1\nrps host1 aservice 2\nsleep 1\nrps host1 aservice 0\nclose host1 aservice'
-        }
-        self.rds.lpush(ExperimentController.queue_key, json.dumps(exp))
+        self.rds.sadd(ExperimentController.worker_key, 'host1')
 
+        exp_id = 'abcd'
+        exp = Experiment(id=exp_id, name='my-experiment', creator='unittest')
+        config = ExperimentConfiguration(2, 1, [])
+        self.ectl.queue(config, exp)
+
+        exp = Experiment(id='abcdef', name='my-experiment-2', creator='unittest')
+        config = ExperimentConfiguration(2, 1, [])
+        self.ectl.queue(config, exp)
+
+        self.assertEqual(2, self.ectl.experiment_queue.qsize())
         cancelled = self.ectl.cancel(exp_id)
         self.assertTrue(cancelled)
-        queued = self.rds.lrange(ExperimentController.queue_key, 0, -1)
-        self.assertEqual(len(queued), 0)
-        pass
+        self.assertEqual(1, self.ectl.experiment_queue.qsize())
+
+        queued = self.ectl.experiment_queue.get()
+        self.assertEqual('abcdef', queued.experiment.id, 'expected to find experiment that was not cancelled')
 
     def init_rds(self):
         self.redis_resource.setUp()

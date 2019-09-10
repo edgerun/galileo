@@ -1,4 +1,4 @@
-import json
+import logging
 import logging
 import math
 import re
@@ -8,10 +8,11 @@ from typing import List
 
 import pymq
 import redis
+from pymq.provider.redis import RedisQueue
 from redis import WatchError
 from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 
-from galileo.experiment.model import Experiment, ExperimentConfiguration
+from galileo.experiment.model import Experiment, ExperimentConfiguration, QueuedExperiment
 from galileo.util import poll
 from galileo.worker.api import CreateClientGroupCommand, CloseClientGroupCommand, ClientConfig, RegisterWorkerEvent, \
     UnregisterWorkerEvent, RegisterWorkerCommand, SetRpsCommand, StartClientsCommand, StopClientsCommand
@@ -19,6 +20,53 @@ from galileo.worker.client_group import ClientGroup
 from galileo.worker.daemon import WorkerDaemon
 
 logger = logging.getLogger(__name__)
+
+
+class ExperimentQueue:
+    queue: RedisQueue
+
+    def __init__(self, queue) -> None:
+        super().__init__()
+        if not isinstance(queue, RedisQueue):
+            raise ValueError
+
+        self.queue = queue
+
+    def __getattr__(self, item):
+        if hasattr(self.queue, item):
+            return getattr(self.queue, item)
+        raise AttributeError
+
+    def remove(self, experiment_id, retries=3):
+        queue = self.queue
+        key = queue._key
+        rds = queue._rds
+
+        for i in range(retries):
+            try:
+                with rds.pipeline() as pipe:
+                    pipe.watch(key)
+                    workloads = pipe.lrange(key, 0, -1)
+                    pipe.multi()
+                    index = -1
+                    for idx, entry in enumerate(workloads):
+                        item: QueuedExperiment = queue._deserialize(entry)
+                        if item.experiment.id == experiment_id:
+                            index = idx
+                            break
+
+                    if index == -1:
+                        return False
+
+                    pipe.lset(key, index, 'DELETE')
+                    pipe.lrem(key, 1, 'DELETE')
+                    pipe.execute()
+                    return True
+            except WatchError:
+                logger.warning('WatchError cancelling experiment with id %s (try %d)', experiment_id, i)
+                continue
+
+        raise CancelError
 
 
 class ExperimentController:
@@ -34,6 +82,7 @@ class ExperimentController:
 
         pymq.subscribe(self._on_register_worker)
         pymq.subscribe(self._on_unregister_worker)
+        self.experiment_queue = ExperimentQueue(pymq.queue(self.queue_key))
 
     def queue(self, config: ExperimentConfiguration, exp: Experiment = None):
         """
@@ -42,38 +91,15 @@ class ExperimentController:
         :param exp: the experiment metadata (optional, as all parameters could be generated)
         :return:
         """
-        message = exp.__dict__ if exp else dict()
-
-        workers = list(self.list_workers())
-        if not workers:
+        if not self.list_workers():
             raise ValueError('No workers to execute the experiment on')
 
-        message['instructions'] = '\n'.join(create_instructions(config, workers))
-        logger.debug('queuing experiment data: %s', message)
-        self.rds.lpush(ExperimentController.queue_key, json.dumps(message))
+        element = QueuedExperiment(exp, config)
+        logger.debug('queuing experiment data: %s', element)
+        self.experiment_queue.put(element)
 
     def cancel(self, exp_id: str) -> bool:
-        try:
-            with self.rds.pipeline() as pipe:
-                pipe.watch(ExperimentController.queue_key)
-                workloads = pipe.lrange(ExperimentController.queue_key, 0, -1)
-                pipe.multi()
-                index = -1
-                for idx, entry in enumerate(workloads):
-                    body = json.loads(entry)
-                    if body['id'] == exp_id:
-                        index = idx
-                if index == -1:
-                    return False
-
-                pipe.lset(ExperimentController.queue_key, index, 'DELETE')
-                pipe.lrem(ExperimentController.queue_key, 1, 'DELETE')
-                pipe.execute()
-                return True
-        except WatchError:
-            # TODO maybe retry here and break out after too many retries
-            logger.warning('WatchError cancelling experiment with id ' + exp_id)
-            raise CancelError
+        return self.experiment_queue.remove(exp_id)
 
     def discover(self):
         pymq.publish(RegisterWorkerCommand())
@@ -244,6 +270,9 @@ class ExperimentShell(Shell):
 
 def create_instructions(cfg: ExperimentConfiguration, workers: List[str]) -> List[str]:
     commands = list()
+
+    if cfg.interval <= 0:
+        raise ValueError('interval has to be a non-zero positive integer')
 
     for workload in cfg.workloads:
         for worker in workers:
