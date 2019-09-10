@@ -1,4 +1,4 @@
 export interface ClientApp {
-  name: string
-  manifest: object
+  name: string;
+  manifest: object;
 }

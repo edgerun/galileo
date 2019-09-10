@@ -1,3 +1,3 @@
 export interface Service {
-  name: string
+  name: string;
 }

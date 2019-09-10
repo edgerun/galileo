@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
-import {Experiment} from "../../models/Experiment";
+import {Experiment} from '../../models/Experiment';
 
 @Component({
   selector: 'app-experiment-list',
@@ -17,7 +17,7 @@ export class ExperimentListComponent implements OnInit {
   @Output()
   deleteExperiment: EventEmitter<string> = new EventEmitter<string>();
 
-  collapsed: string = "";
+  collapsed = '';
 
 
   constructor() { }
@@ -27,8 +27,8 @@ export class ExperimentListComponent implements OnInit {
 
   toggle(id: string) {
     console.log(id);
-    if (this.collapsed == id) {
-      this.collapsed = ""
+    if (this.collapsed === id) {
+      this.collapsed = '';
     } else {
       this.collapsed = id;
     }

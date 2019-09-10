@@ -1,7 +1,7 @@
 import {Inject, Injectable} from '@angular/core';
-import {Observable, of} from "rxjs";
-import {Service} from "../models/Service";
-import {HttpClient} from "@angular/common/http";
+import {Observable, of} from 'rxjs';
+import {Service} from '../models/Service';
+import {HttpClient} from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
@@ -49,7 +49,7 @@ export class HttpServiceService implements ServiceService {
   }
 
   findAll(): Observable<Service[]> {
-    return this.httpClient.get<Service[]>(this.baseUrl + "/services")
+    return this.httpClient.get<Service[]>(this.baseUrl + '/services');
   }
 
 }

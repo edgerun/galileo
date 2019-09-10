@@ -1,16 +1,17 @@
 import {Component, EventEmitter, Inject, Input, OnInit, Output} from '@angular/core';
-import {convertSecondsToTime, convertToSeconds, Time, TimeUnitKind} from "../../models/TimeUnit";
-import {CurveForm, CurveKind, ExperimentForm, Point} from "../../models/ExperimentForm";
-import {FormBuilder, FormGroup, Validators} from "@angular/forms";
-import {ClientApp} from "../../models/ClientApp";
-import {Service} from "../../models/Service";
-import {Submission} from "../../models/Submission";
-import {ExperimentConfiguration, WorkloadConfiguration} from "../../models/ExperimentConfiguration";
+import {convertSecondsToTime, convertToSeconds, Time, TimeUnitKind} from '../../models/TimeUnit';
+import {CurveForm, CurveKind, ExperimentForm, Point} from '../../models/ExperimentForm';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {ClientApp} from '../../models/ClientApp';
+import {Service} from '../../models/Service';
+import {Submission} from '../../models/Submission';
+import {ExperimentConfiguration, WorkloadConfiguration} from '../../models/ExperimentConfiguration';
 import * as uuid from 'uuid/v4';
-import {LoadBalancingPolicy, LoadBalancingPolicySchema} from "../../models/LoadBalancingPolicy";
+import {LoadBalancingPolicy, LoadBalancingPolicySchema} from '../../models/LoadBalancingPolicy';
 import {NgbModal} from '@ng-bootstrap/ng-bootstrap';
-import {DOCUMENT} from "@angular/common";
-import {calculateNumberOfTicks, calculateValues, round} from "../../utils/calculator";
+import {DOCUMENT} from '@angular/common';
+import {calculateNumberOfTicks, calculateValues, round} from '../../utils/calculator';
+import {NGXLogger} from 'ngx-logger';
 
 @Component({
   selector: 'app-experiment-form',
@@ -18,6 +19,31 @@ import {calculateNumberOfTicks, calculateValues, round} from "../../utils/calcul
   styleUrls: ['./experiment-form.component.css']
 })
 export class ExperimentFormComponent implements OnInit {
+
+  constructor(private fb: FormBuilder, private modalService: NgbModal, @Inject(DOCUMENT) private document,
+              private logger: NGXLogger) {
+  }
+
+  get hasWorkloadChanged(): boolean {
+    for (const v of this.recalculate.values()) {
+      if (v) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  get duration(): Time {
+    const durationValue: number = this.form.get('duration').value;
+    const durationUnit: TimeUnitKind = this.form.get('durationUnit').value;
+    return new Time(durationValue, durationUnit);
+  }
+
+  get interval(): Time {
+    const intervalValue: number = this.form.get('interval').value;
+    const intervalUnit: TimeUnitKind = this.form.get('intervalUnit').value;
+    return new Time(intervalValue, intervalUnit);
+  }
 
   @Input()
   clientApps: ClientApp[];
@@ -44,14 +70,13 @@ export class ExperimentFormComponent implements OnInit {
 
   workloads: [string, WorkloadConfiguration][];
   calculatedWorkloads: Map<string, WorkloadConfiguration>;
-  calculating: boolean = false;
+  calculating = false;
   private lbPolicy: LoadBalancingPolicy;
   recalculate: Map<string, boolean>;
   durationTime: Time;
   intervalTime: Time;
 
-  constructor(private fb: FormBuilder, private modalService: NgbModal, @Inject(DOCUMENT) private document) {
-  }
+  experimentAsJson = JSON.stringify({});
 
   ngOnInit() {
     this.recalculate = new Map();
@@ -64,7 +89,7 @@ export class ExperimentFormComponent implements OnInit {
       clients_per_host: 3,
       service: undefined,
       ticks: [],
-      arrival_pattern: "Constant",
+      arrival_pattern: 'Constant',
       maxRps: 1000,
       curve: this.initCurveForm(100),
       client: ''
@@ -140,17 +165,14 @@ export class ExperimentFormComponent implements OnInit {
         this.add.emit(submission);
         this.calculating = false;
       });
-      console.info('hereeeeeeeeeee');
     } else {
       this.calculating = false;
-      this.errorMessage = configValidation[1][0] || "Form is invalid";
+      this.errorMessage = configValidation[1][0] || 'Form is invalid';
       setTimeout(() => {
         this.errorMessage = '';
-      }, 2000)
+      }, 2000);
     }
   }
-
-  experimentAsJson = JSON.stringify({});
 
   export(content) {
     const configuration = this.getConfiguration();
@@ -171,7 +193,6 @@ export class ExperimentFormComponent implements OnInit {
       this.calculatedWorkloads = r;
       const duration = +submission.configuration.duration.replace('s', '');
       submission.configuration.workloads = this.normalizePointsOfWorkloads(duration, this.calculatedWorkloads);
-      console.info(this.normalizePointsOfWorkloads(duration, this.calculatedWorkloads));
       this.calculating = false;
 
       this.experimentAsJson = JSON.stringify(submission, null, 2);
@@ -208,8 +229,8 @@ export class ExperimentFormComponent implements OnInit {
       copiedWorkload.curve.points = workload.curve.points.map(point => {
         return {
           x: map(map(point.x, 0, width, 0, maxX), 0, maxX, 0, 100),
-          y: map(map(point.y, 0, height, maxY, 0), maxY, 0, 100,0)
-        }
+          y: map(map(point.y, 0, height, maxY, 0), maxY, 0, 100, 0)
+        };
       });
 
       return copiedWorkload;
@@ -218,43 +239,36 @@ export class ExperimentFormComponent implements OnInit {
   }
 
   private configurationsAreValid(): [boolean, string[]] {
-    console.info('validating configurations');
-    if (this.calculatedWorkloads.size == 0) {
-      const a: [boolean, string[]] = [false, ["No workloads defined"]];
-      return a;
+    if (this.calculatedWorkloads.size === 0) {
+      return [false, ['No workloads defined']] as [boolean, string[]];
     }
-    const errors = [...this.calculatedWorkloads.values()].map(workload => {
-      const clients = workload.clients_per_host && workload.clients_per_host != 0;
+
+    return [...this.calculatedWorkloads.values()].map(workload => {
+      const clients = workload.clients_per_host && workload.clients_per_host !== 0;
       if (!clients) {
-        const a: [boolean, string[]] = [false, ["Number of clients is empty/0."]];
-        return a;
+        return [false, ['Number of clients is empty/0.']] as [boolean, string[]];
       }
 
       const service = workload.service && workload.service !== '';
       if (!service) {
-        const a: [boolean, string[]] = [false, ["No service chosen."]]
-        return a;
+        return [false, ['No service chosen.']] as [boolean, string[]];
       }
 
       const clientApp = workload.client && workload.client !== '';
       if (!clientApp) {
-        const a: [boolean, string[]] = [false, ["No clientApp chosen."]]
-        return a;
+        return [false, ['No clientApp chosen.']] as [boolean, string[]];
       }
 
-      const ticks = workload.ticks.length != 0;
+      const ticks = workload.ticks.length !== 0;
       if (ticks) {
         const onlyZeros = workload.ticks.every(val => val === 0);
         if (onlyZeros) {
-          const a: [boolean, string []] = [false, ["Workload is empty."]];
-          return a;
+          return [false, ['Workload is empty.']] as [boolean, string[]];
         }
       }
 
-      const a: [boolean, string[]] = [true, []];
-      return a;
+      return [true, []] as [boolean, string[]];
     }).reduce((a, b) => [a[0] && b[0], a[1].concat(b[1])], [true, []]);
-    return errors;
   }
 
 
@@ -273,7 +287,7 @@ export class ExperimentFormComponent implements OnInit {
       experiment = {
         ...experiment,
         name: this.form.get('name').value
-      }
+      };
     }
 
     if (this.form.get('creator').value.length > 0) {
@@ -287,7 +301,7 @@ export class ExperimentFormComponent implements OnInit {
   }
 
   handleWorkloadSubmission(i: string, workload: WorkloadConfiguration) {
-    console.info('handleWorkloadSubmission');
+    this.logger.debug(`handleWorkloadSubmission: ${workload}`);
     this.recalculate.set(i, true);
     const updated = {
       ...workload,
@@ -321,12 +335,11 @@ export class ExperimentFormComponent implements OnInit {
 
   addWorkload() {
     const id = uuid();
-    console.log(id);
     const workload = {
       clients_per_host: 3,
-      service: "",
+      service: '',
       ticks: [],
-      arrival_pattern: "Constant",
+      arrival_pattern: 'Constant',
       maxRps: 1000,
       curve: this.initCurveForm(100),
       client: ''
@@ -337,15 +350,8 @@ export class ExperimentFormComponent implements OnInit {
 
   }
 
-  get hasWorkloadChanged(): boolean {
-    for (let v of this.recalculate.values()) {
-      if (v) return true;
-    }
-    return false;
-  }
-
   private calculateWorkloads(): Promise<Map<string, WorkloadConfiguration>> {
-    console.info('calculate');
+    this.logger.debug('calculate');
 
     return new Promise<Map<string, WorkloadConfiguration>>((resolve, reject) => {
       if (!this.hasWorkloadChanged) {
@@ -362,7 +368,7 @@ export class ExperimentFormComponent implements OnInit {
       }
 
 
-    })
+    });
   }
 
   private calculateValues() {
@@ -388,24 +394,8 @@ export class ExperimentFormComponent implements OnInit {
     return a;
   }
 
-  get duration(): Time {
-    const durationValue: number = this.form.get('duration').value;
-    const durationUnit: TimeUnitKind = this.form.get('durationUnit').value;
-    return new Time(durationValue, durationUnit);
-  }
-
-  get interval(): Time {
-    const intervalValue: number = this.form.get('interval').value;
-    const intervalUnit: TimeUnitKind = this.form.get('intervalUnit').value;
-    return new Time(intervalValue, intervalUnit);
-  }
-
   copyToClipboard(experimentAsJson: string) {
-    navigator.clipboard.writeText(experimentAsJson).then(function () {
-      console.debug('Async: Copying to clipboard was successful!');
-    }, function (err) {
-      console.error('Async: Could not copy text: ', err);
-    });
+    navigator.clipboard.writeText(experimentAsJson).finally();
   }
 
   handlePolicyUpdate(policy: LoadBalancingPolicy) {
@@ -424,7 +414,7 @@ export class ExperimentFormComponent implements OnInit {
     try {
       const submission: Submission = JSON.parse(config);
       const workloads: Map<string, WorkloadConfiguration> = new Map();
-      for (let workload of submission.configuration.workloads) {
+      for (const workload of submission.configuration.workloads) {
         workload.curve.ticks = [];
         workloads.set(uuid(), workload);
       }
@@ -436,9 +426,8 @@ export class ExperimentFormComponent implements OnInit {
         policy: submission.configuration.policy,
       };
       this.initForm(expConfig);
-      console.info(submission.configuration.duration)
     } catch (e) {
-      //TODO show error message to user
+      // TODO show error message to user
     }
 
   }

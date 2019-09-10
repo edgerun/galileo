@@ -1,5 +1,5 @@
 import {Component, EventEmitter, Inject, Input, OnInit, Output} from '@angular/core';
-import {Experiment} from "../../models/Experiment";
+import {Experiment} from '../../models/Experiment';
 
 @Component({
   selector: 'app-simple-experiment-list-item',
@@ -42,7 +42,7 @@ export class SimpleExperimentListItemComponent implements OnInit {
   }
 
   delete() {
-    if (confirm("Are you sure to delete experiment " + this.experiment.id)) {
+    if (confirm('Are you sure to delete experiment ' + this.experiment.id)) {
       this.deleteEvent.emit(this.experiment.id);
     }
   }

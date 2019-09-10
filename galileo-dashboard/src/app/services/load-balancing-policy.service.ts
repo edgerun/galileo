@@ -1,8 +1,8 @@
 import {Inject, Injectable} from '@angular/core';
-import {Observable, of} from "rxjs";
-import {LoadBalancingPolicySchema} from "../models/LoadBalancingPolicy";
-import {HttpClient} from "@angular/common/http";
-import {map} from "rxjs/operators";
+import {Observable, of} from 'rxjs';
+import {LoadBalancingPolicySchema} from '../models/LoadBalancingPolicy';
+import {HttpClient} from '@angular/common/http';
+import {map} from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
@@ -22,13 +22,13 @@ export class HttpLoadBalancingPolicyService implements LoadBalancingPolicyServic
   }
 
   findAll(): Observable<LoadBalancingPolicySchema[]> {
-    return this.httpClient.get<LoadBalancingPolicySchema[]>(this.baseUrl + "/policies/balancing")
+    return this.httpClient.get<LoadBalancingPolicySchema[]>(this.baseUrl + '/policies/balancing')
       .pipe(
         map((e: LoadBalancingPolicySchema[]) => {
           e.map(
             t => {
               t.schema = {
-                'schema': t.schema
+                schema: t.schema
               };
             }
           );
@@ -46,96 +46,97 @@ export class HttpLoadBalancingPolicyService implements LoadBalancingPolicyServic
 )
 export class MockLoadBalancingPolicyService implements LoadBalancingPolicyService {
 
+  private readonly weighted = {
+    schema: {
+      type: 'object',
+      properties: {
+        round_robin: {
+          type: 'boolean'
+        },
+        weights: {
+          type: 'object',
+          properties: {
+            heisenberg: {
+              type: 'number'
+            },
+            einstein: {
+              type: 'number'
+            },
+            planck: {
+              type: 'number'
+            },
+            tesla: {
+              type: 'number',
+            },
+          },
+          required: ['heisenberg', 'tesla', 'planck', 'einstein'],
+        },
+      }
+    },
+    data: {
+      round_robin: true,
+      weights: {
+        einstein: 2,
+        tesla: 2,
+        planck: 2,
+        heisenberg: 2,
+      }
+    }
+  };
+
+  private readonly pseudo = {
+    'schema:': {
+      type: 'object',
+      properties: {
+        nodes: {
+          type: 'object',
+          properties: {
+            heisenberg: {
+              type: 'boolean'
+            },
+            einstein: {
+              type: 'boolean'
+            },
+            planck: {
+              type: 'boolean'
+            },
+            tesla: {
+              type: 'boolean'
+            }
+          }
+        }
+      }
+    },
+    data: {
+      heisenberg: false,
+      planck: false,
+      tesla: true,
+      einstein: false
+    }
+  };
+
+
   readonly policies: LoadBalancingPolicySchema[] = [
     {
-      policy: "Weighted",
-      schema: weighted
+      policy: 'Weighted',
+      schema: this.weighted
     },
     {
-      policy: "Round Robin"
+      policy: 'Round Robin'
     },
     {
-      policy: "Random"
+      policy: 'Random'
     },
     {
-      policy: "Pseudo",
-      schema: pseudo
+      policy: 'Pseudo',
+      schema: this.pseudo
     }
   ];
 
   findAll(): Observable<LoadBalancingPolicySchema[]> {
-    console.info(this.policies);
     return of(this.policies);
   }
 
 }
 
 
-const weighted = {
-  "schema": {
-    "type": "object",
-    "properties": {
-      "round_robin": {
-        "type": "boolean"
-      },
-      "weights": {
-        "type": "object",
-        "properties": {
-          "heisenberg": {
-            "type": "number"
-          },
-          "einstein": {
-            "type": "number"
-          },
-          "planck": {
-            "type": "number"
-          },
-          "tesla": {
-            "type": "number",
-          },
-        },
-        "required": ["heisenberg", "tesla", "planck", "einstein"],
-      },
-    }
-  },
-  "data": {
-    "round_robin": true,
-    "weights": {
-      "einstein": 2,
-      "tesla": 2,
-      "planck": 2,
-      "heisenberg": 2,
-    }
-  }
-};
-
-const pseudo = {
-  "schema:": {
-    "type": "object",
-    "properties": {
-      "nodes": {
-        "type": "object",
-        "properties": {
-          "heisenberg": {
-            "type": "boolean"
-          },
-          "einstein": {
-            "type": "boolean"
-          },
-          "planck": {
-            "type": "boolean"
-          },
-          "tesla": {
-            "type": "boolean"
-          }
-        }
-      }
-    }
-  },
-  "data": {
-    "heisenberg": false,
-    "planck": false,
-    "tesla": true,
-    "einstein": false
-  }
-};

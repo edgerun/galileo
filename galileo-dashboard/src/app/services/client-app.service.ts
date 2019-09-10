@@ -1,8 +1,8 @@
 import {Inject, Injectable} from '@angular/core';
-import {Observable, of} from "rxjs";
-import {Service} from "../models/Service";
-import {HttpClient} from "@angular/common/http";
-import {ClientApp} from "../models/ClientApp";
+import {Observable, of} from 'rxjs';
+import {Service} from '../models/Service';
+import {HttpClient} from '@angular/common/http';
+import {ClientApp} from '../models/ClientApp';
 
 @Injectable({
   providedIn: 'root'
@@ -48,7 +48,7 @@ export class HttpClientAppService implements ClientAppService {
   }
 
   findAll(): Observable<ClientApp[]> {
-    return this.httpClient.get<ClientApp[]>(this.baseUrl + "/apps")
+    return this.httpClient.get<ClientApp[]>(this.baseUrl + '/apps');
   }
 
 }
