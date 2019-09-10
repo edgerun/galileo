@@ -9,14 +9,14 @@ from datetime import datetime
 from json import JSONDecodeError
 from typing import Callable
 
+import pymq
 import redis
 from symmetry.telemetry.recorder import TelemetryRecorder
 
-from galileo.controller import ExperimentController, ExperimentShell
-from galileo.experiment.model import Experiment, Instructions
+from galileo.controller import ExperimentController, ExperimentShell, create_instructions
+from galileo.experiment.model import Experiment, Instructions, QueuedExperiment
 from galileo.experiment.service.experiment import ExperimentService
 from galileo.experiment.service.instructions import InstructionService
-from galileo.util import subdict
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,7 @@ class ExperimentBatchShell(ExperimentShell):
 
 
 class ExperimentDaemon:
+    POISON = '__POISON__'
 
     def __init__(self, rds: redis.Redis, create_recorder: Callable[[str], TelemetryRecorder],
                  exp_controller: ExperimentController, exp_service: ExperimentService,
@@ -62,35 +63,33 @@ class ExperimentDaemon:
         self.exp_controller = exp_controller
         self.exp_service = exp_service
         self.ins_service = ins_service
-        self.cancelled = False
+        self.closed = False
 
-    def cancel(self):
-        self.cancelled = True
-        self.rds.lpush(ExperimentController.queue_key, '')
+        self.queue = None
+
+    def close(self):
+        self.closed = True
+        if self.queue:
+            self.queue.put_nowait(self.POISON)
 
     def run(self) -> None:
-        rds = self.rds
-        logger.info('Listening for incoming experiment instructions...')
+        self.queue = pymq.queue(ExperimentController.queue_key)
+
         try:
-            while self.cancelled is False:
-                message = rds.brpop(ExperimentController.queue_key)
-                if not message or not message[1]:
-                    print('empty message, skipping')
-                    continue
+            logger.info('Listening for incoming experiment instructions...')
+            while not self.closed:
+                item = self.queue.get()
 
-                body = None
+                if item == self.POISON:
+                    break
+
+                exp = None
                 try:
-                    body = self._get_json_body(message)
-                    if body is None:
-                        logger.warning('Error parsing message to JSON. Message was: %s', message)
-                        return
-
-                    logger.debug('experiment payload: %s', body)
-
-                    exp, ins = self.load_experiment(body)
+                    logger.debug('got queued experiment %s', item)
+                    exp, ins = self.load_experiment(item)
                 except Exception as e:
-                    if body is not None and body['id']:
-                        exp = self.exp_service.find(body['id'])
+                    if exp and exp.id:
+                        exp = self.exp_service.find(exp.id)
                         if exp is not None:
                             exp.status = 'FAILED'
                             self.exp_service.save(exp)
@@ -130,15 +129,15 @@ class ExperimentDaemon:
             # shell.stdout.getvalue() will return whatever the shell would have written to sysout
             # may be useful for logging the result
 
-    def load_experiment(self, body) -> (Experiment, Instructions):
-        exp = self.exp_service.find(body['id']) if 'id' in body else None
+    def load_experiment(self, queued: QueuedExperiment) -> (Experiment, Instructions):
+        exp = self.exp_service.find(queued.experiment.id) if queued.experiment.id else None
 
         if exp:
             ins = self.ins_service.find(exp.id)
             if ins is not None:
                 return exp, ins
 
-        exp = Experiment(**subdict(body, ['id', 'name', 'creator', 'status', 'created']))
+        exp = queued.experiment
 
         if not exp.id:
             exp.id = generate_experiment_id()
@@ -149,7 +148,12 @@ class ExperimentDaemon:
         if not exp.created:
             exp.created = time.time()
 
-        ins = Instructions(exp.id, body['instructions'])
+        workers = list(self.exp_controller.list_workers())
+        if not workers:
+            raise ValueError('no workers to execute the experiment on')
+
+        instructions = '\n'.join(create_instructions(queued.configuration, workers))
+        ins = Instructions(exp.id, instructions)
 
         return exp, ins
 

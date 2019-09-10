@@ -1,11 +1,9 @@
-import json
-from time import sleep
-
 import pymq
 
 from galileo.controller import ExperimentController
-from galileo.worker.api import RegisterWorkerEvent
 from galileo.experiment.model import Experiment
+from galileo.util import poll
+from galileo.worker.api import RegisterWorkerEvent
 from tests.api import ResourceTest
 
 
@@ -55,8 +53,8 @@ class TestExperimentsResource(ResourceTest):
         }
 
         pymq.publish(RegisterWorkerEvent('host1'))
-        # sleep to publish events and add hosts to redis
-        sleep(0.5)
+        # wait for host to become available
+        poll(lambda: ExperimentController(self.redis_resource.rds).list_workers('host1'), timeout=2, interval=0.1)
 
         result = self.simulate_post('/api/experiments', json=payload)
         self.assertIsNotNone(result.json, 'Response must not be none')
@@ -68,10 +66,10 @@ class TestExperimentsResource(ResourceTest):
         self.assertEqual(exp.status, 'QUEUED')
         self.assertIsNotNone(exp.created)
 
-        load = self.redis_resource.rds.brpop(ExperimentController.queue_key)
+        load = pymq.queue(ExperimentController.queue_key).get(timeout=2)
 
         # TODO test workload translation?
         self.assertIsNotNone(load)
-        self.assertEqual(json.loads(load[1])['id'], exp.id)
+        self.assertEqual(exp.id, load.experiment.id)
 
     # TODO test with no hosts available

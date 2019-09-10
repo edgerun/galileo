@@ -21,6 +21,9 @@ class Experiment:
         self.created = created
         self.status = status
 
+    def __repr__(self):
+        return self.__str__()
+
     def __str__(self) -> str:
         return 'Experiment%s' % self.__dict__
 
@@ -54,6 +57,11 @@ class ExperimentConfiguration(NamedTuple):
     duration: int
     interval: int
     workloads: List[WorkloadConfiguration]
+
+
+class QueuedExperiment(NamedTuple):
+    experiment: Experiment
+    configuration: ExperimentConfiguration
 
 
 class ServiceRequestTrace(NamedTuple):
