@@ -84,16 +84,15 @@ class Context:
 
     def create_router(self):
         router_type = self.env.get('galileo_router_type', 'SymmetryServiceRouter')
-        rds = self.create_redis()
 
         if router_type == 'SymmetryServiceRouter':
-            rtable = ReadOnlyListeningRedisRoutingTable(rds)
+            rtable = ReadOnlyListeningRedisRoutingTable(self.create_redis())
             rtable.start()
             atexit.register(rtable.stop, timeout=2)
             balancer = WeightedRandomBalancer(rtable)
             return SymmetryServiceRouter(balancer)
         elif router_type == 'SymmetryHostRouter':
-            rtable = ReadOnlyListeningRedisRoutingTable(rds)
+            rtable = ReadOnlyListeningRedisRoutingTable(self.create_redis())
             rtable.start()
             atexit.register(rtable.stop, timeout=2)
             balancer = WeightedRandomBalancer(rtable)
