@@ -21,10 +21,12 @@ export class MockServiceService implements ServiceService {
 
   readonly services: Service[] = [
     {
-      name: 'MXNet'
+      id: 'id1',
+      name: 'MXNet',
     },
     {
-      name: 'AlexNet'
+      id: 'id2',
+      name: 'AlexNet',
     }
   ];
 
@@ -44,7 +46,7 @@ export class MockServiceService implements ServiceService {
 export class HttpServiceService implements ServiceService {
 
   constructor(
-    @Inject('BASE_API_URL') private baseUrl: string,
+    @Inject('SYMMETRY_API_URL') private baseUrl: string,
     private httpClient: HttpClient) {
   }
 
