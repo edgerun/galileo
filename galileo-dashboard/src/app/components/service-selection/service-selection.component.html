@@ -1,8 +1,19 @@
-<div class="input-group" [formGroup]="form">
+<div class="input-group">
   <label class="input-group-text" for="serviceSelect">Service</label>
-  <select [ngClass]="{'is-invalid': !form.get('service').value || form.get('service').value == ''}" id="serviceSelect"
-          class="custom-select" required formControlName="service">
-    <option selected *ngIf="!form.get('service').value"></option>
-    <option [selected]="form.get('service').value == service.name" *ngFor="let service of services">{{service.name}}</option>
-  </select>
+  <input
+    [ngClass]="{'is-invalid': !form.get('service').value || form.get('service').value == ''}"
+    id="serviceSelect"
+    type="text"
+    class="form-control"
+    [(ngModel)]="model"
+    (ngModelChange)="change($event)"
+    [ngbTypeahead]="search"
+    (focus)="focus$.next($event.target.value)"
+    (click)="click$.next($event.target.value)"
+    #instance="ngbTypeahead"
+  />
+  <div class="input-group-append">
+    <button class="btn btn-outline-secondary" (click)="clear()" type="button" id="button-addon2"><i
+      class="fas fa-times"></i></button>
+  </div>
 </div>
