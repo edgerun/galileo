@@ -50,7 +50,7 @@ export class ServiceSelectionComponent implements OnInit {
   change($event: any) {
     const result = this.services.find(v => v.name === $event);
     if (result) {
-      this.form.get('service').setValue(result);
+      this.form.get('service').setValue(result.name);
     }
   }
 }
