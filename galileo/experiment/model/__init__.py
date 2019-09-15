@@ -28,15 +28,6 @@ class Experiment:
         return 'Experiment%s' % self.__dict__
 
 
-class Instructions:
-    exp_id: str
-    instructions: str
-
-    def __init__(self, exp_id=None, instructions=None):
-        self.exp_id = exp_id
-        self.instructions = instructions
-
-
 class Telemetry(NamedTuple):
     timestamp: float
     metric: str

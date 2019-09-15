@@ -1,7 +1,7 @@
 import abc
 
 from galileo.experiment.db.sql import ExperimentSQLDatabase, SqlAdapter
-from galileo.experiment.model import Experiment, Instructions, Telemetry
+from galileo.experiment.model import Experiment, Telemetry
 
 
 class AbstractTestSqlDatabase(abc.ABC):
@@ -83,15 +83,6 @@ class AbstractTestSqlDatabase(abc.ABC):
         self.assertEqual(self.db.get_experiment('expid8').status, 'finished')
         self.assertEqual(self.db.get_experiment('expid8').end, 100)
 
-    def test_save_and_get_instructions(self):
-        expected = Instructions('expid1', 'inst1\ninst2\ninst3')
-        self.db.save_instructions(expected)
-
-        actual = self.db.get_instructions('expid1')
-
-        self.assertEqual('expid1', actual.exp_id)
-        self.assertEqual('inst1\ninst2\ninst3', actual.instructions)
-
     def test_save_telemetry(self):
         telemetry = [
             Telemetry(1, 'cpu', 'n1', 32, 'expid1'),
@@ -108,26 +99,21 @@ class AbstractTestSqlDatabase(abc.ABC):
         exp_id = 'expid10'
         exp_id_control = 'expid11'
         self.db.save_experiment(Experiment(exp_id, 'test_experiment', 'unittest', 10, 100, 1, 'finished'))
-        self.db.save_instructions(Instructions(exp_id, 'inst1\ninst2\ninst3'))
         self.db.save_telemetry([Telemetry(1, 'cpu', 'n1', 32, exp_id)])
 
         self.db.save_experiment(Experiment(exp_id_control, 'test_experiment', 'unittest', 10, 100, 1, 'finished'))
-        self.db.save_instructions(Instructions(exp_id_control, 'inst1\ninst2\ninst3'))
         self.db.save_telemetry([Telemetry(1, 'cpu', 'n1', 32, exp_id_control)])
 
         self.assertIsNotNone(self.db.get_experiment(exp_id))
-        self.assertIsNotNone(self.db.get_instructions(exp_id))
         telemetry_rows = self.db.db.fetchall('SELECT * FROM telemetry WHERE EXP_ID = "%s"' % exp_id)
         self.assertEqual(1, len(telemetry_rows))
 
         self.db.delete_experiment(exp_id)
 
         self.assertIsNone(self.db.get_experiment(exp_id))
-        self.assertIsNone(self.db.get_instructions(exp_id))
         telemetry_rows = self.db.db.fetchall('SELECT * FROM telemetry WHERE EXP_ID = "%s"' % exp_id)
         self.assertEqual(0, len(telemetry_rows))
 
         self.assertIsNotNone(self.db.get_experiment(exp_id_control))
-        self.assertIsNotNone(self.db.get_instructions(exp_id_control))
         telemetry_rows = self.db.db.fetchall('SELECT * FROM telemetry WHERE EXP_ID = "%s"' % exp_id_control)
         self.assertEqual(1, len(telemetry_rows))

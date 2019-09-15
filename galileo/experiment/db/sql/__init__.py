@@ -4,7 +4,7 @@ import threading
 from typing import Tuple, List, Dict
 
 from galileo.experiment.db import ExperimentDatabase
-from galileo.experiment.model import Experiment, Instructions, Telemetry, ServiceRequestTrace
+from galileo.experiment.model import Experiment, Telemetry, ServiceRequestTrace
 
 logger = logging.getLogger(__name__)
 
@@ -148,11 +148,6 @@ class SqlAdapter(abc.ABC):
 
 class ExperimentSQLDatabase(ExperimentDatabase):
     SCHEMA = '''
-    CREATE TABLE IF NOT EXISTS instructions
-    (
-        EXP_ID       VARCHAR(255) NOT NULL,
-        INSTRUCTIONS TEXT         NOT NULL
-    );
 
     CREATE TABLE IF NOT EXISTS experiments
     (
@@ -219,7 +214,6 @@ class ExperimentSQLDatabase(ExperimentDatabase):
         stmts = [
             "DELETE FROM `telemetry` WHERE EXP_ID = " + self.db.placeholder,
             "DELETE FROM `traces` WHERE EXP_ID = " + self.db.placeholder,
-            "DELETE FROM `instructions` WHERE EXP_ID = " + self.db.placeholder,
             "DELETE FROM `experiments` WHERE EXP_ID = " + self.db.placeholder,
         ]
 
@@ -247,21 +241,6 @@ class ExperimentSQLDatabase(ExperimentDatabase):
         sql = 'UPDATE `traces` SET `EXP_ID` = ? WHERE CREATED >= ? AND CREATED <= ?'
         sql = sql.replace('?', self.db.placeholder)
         self.db.execute(sql, (experiment.id, experiment.start, experiment.end))
-
-    def save_instructions(self, instructions: Instructions):
-        data = dict(instructions.__dict__)
-        self.db.insert_one('instructions', data)
-
-    def get_instructions(self, exp_id: str) -> Instructions:
-        sql = 'SELECT * FROM `instructions` WHERE `EXP_ID` = ?'.replace('?', self.db.placeholder)
-
-        entry = self.db.fetchone(sql, (exp_id,))
-
-        if entry:
-            row = tuple(entry)
-            return Instructions(*row)
-        else:
-            return None
 
     def save_telemetry(self, telemetry: List[Telemetry]):
         self.db.insert_many('telemetry', Telemetry._fields, telemetry)

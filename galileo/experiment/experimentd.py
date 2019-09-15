@@ -7,18 +7,26 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime
 from json import JSONDecodeError
-from typing import Callable
+from typing import Callable, List
 
 import pymq
 import redis
 from symmetry.telemetry.recorder import TelemetryRecorder
 
 from galileo.controller import ExperimentController, ExperimentShell, create_instructions
-from galileo.experiment.model import Experiment, Instructions, QueuedExperiment
+from galileo.experiment.model import Experiment, QueuedExperiment, ExperimentConfiguration
 from galileo.experiment.service.experiment import ExperimentService
-from galileo.experiment.service.instructions import InstructionService
 
 logger = logging.getLogger(__name__)
+
+
+class Instructions:
+    exp_id: str
+    instructions: List[str]
+
+    def __init__(self, exp_id=None, instructions=None):
+        self.exp_id = exp_id
+        self.instructions = instructions
 
 
 def generate_experiment_id():
@@ -56,13 +64,11 @@ class ExperimentDaemon:
     POISON = '__POISON__'
 
     def __init__(self, rds: redis.Redis, create_recorder: Callable[[str], TelemetryRecorder],
-                 exp_controller: ExperimentController, exp_service: ExperimentService,
-                 ins_service: InstructionService) -> None:
+                 exp_controller: ExperimentController, exp_service: ExperimentService) -> None:
         self.rds = rds
         self.create_recorder = create_recorder
         self.exp_controller = exp_controller
         self.exp_service = exp_service
-        self.ins_service = ins_service
         self.closed = False
 
         self.queue = None
@@ -117,9 +123,8 @@ class ExperimentDaemon:
         exp.status = 'IN_PROGRESS'
         exp.start = time.time()
         self.exp_service.save(exp)
-        self.ins_service.save(ins)
 
-        lines = ins.instructions.splitlines()
+        lines = ins.instructions
 
         with managed_recorder(self.create_recorder, exp.id):
             logger.info("start experiment %s", exp.id)
@@ -132,12 +137,8 @@ class ExperimentDaemon:
     def load_experiment(self, queued: QueuedExperiment) -> (Experiment, Instructions):
         exp = self.exp_service.find(queued.experiment.id) if queued.experiment.id else None
 
-        if exp:
-            ins = self.ins_service.find(exp.id)
-            if ins is not None:
-                return exp, ins
-
-        exp = queued.experiment
+        if not exp:
+            exp = queued.experiment
 
         if not exp.id:
             exp.id = generate_experiment_id()
@@ -148,14 +149,15 @@ class ExperimentDaemon:
         if not exp.created:
             exp.created = time.time()
 
+        return exp, self.create_instructions(exp.id, queued.configuration)
+
+    def create_instructions(self, experiment_id, config: ExperimentConfiguration) -> Instructions:
         workers = list(self.exp_controller.list_workers())
         if not workers:
             raise ValueError('no workers to execute the experiment on')
 
-        instructions = '\n'.join(create_instructions(queued.configuration, workers))
-        ins = Instructions(exp.id, instructions)
-
-        return exp, ins
+        instructions = create_instructions(config, workers)
+        return Instructions(experiment_id, instructions)
 
     @staticmethod
     def _get_json_body(message):

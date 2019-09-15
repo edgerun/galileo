@@ -11,7 +11,6 @@ from galileo.experiment.db.sql import ExperimentSQLDatabase
 from galileo.experiment.experimentd import ExperimentDaemon
 from galileo.experiment.model import QueuedExperiment, Experiment, ExperimentConfiguration, WorkloadConfiguration
 from galileo.experiment.service.experiment import SimpleExperimentService
-from galileo.experiment.service.instructions import SimpleInstructionService
 from galileo.experiment.service.telemetry import ExperimentTelemetryRecorder
 from galileo.util import poll
 from tests.testutils import RedisResource, SqliteResource
@@ -31,7 +30,6 @@ class TestExperimentDaemon(unittest.TestCase):
         self.recorder_factory = lambda exp_id: ExperimentTelemetryRecorder(self.rds, self.exp_db, exp_id)
         self.exp_ctrl = ExperimentController(self.rds)
         self.exp_service = SimpleExperimentService(self.exp_db)
-        self.ins_service = SimpleInstructionService(self.exp_db)
 
     def tearDown(self) -> None:
         pymq.shutdown()
@@ -42,7 +40,7 @@ class TestExperimentDaemon(unittest.TestCase):
     def test_integration(self, mocked_run_batch):
         self.rds.sadd(ExperimentController.worker_key, 'host1')  # create a worker
 
-        daemon = ExperimentDaemon(self.rds, self.recorder_factory, self.exp_ctrl, self.exp_service, self.ins_service)
+        daemon = ExperimentDaemon(self.rds, self.recorder_factory, self.exp_ctrl, self.exp_service)
 
         def inject_experiment():
             exp = Experiment('experiment_id', creator='unittest')
@@ -69,12 +67,6 @@ class TestExperimentDaemon(unittest.TestCase):
         self.assertEqual('FINISHED', exp.status)
         self.assertEqual('experiment_id', exp.id)
         self.assertEqual('experiment_id', exp.name)
-
-        # verify that instructions were set correctly
-        ins = self.exp_db.get_instructions(exp.id)
-        self.assertIsNotNone(ins)
-        self.assertIn('spawn host1 aservice 2', ins.instructions)
-        self.assertIn('close host1 aservice', ins.instructions)
 
         # verify that experiment daemon tried to run the commands
         self.assertTrue(mocked_run_batch.called, 'expected ExperimentDaemon to run commands on ExperimentShell')

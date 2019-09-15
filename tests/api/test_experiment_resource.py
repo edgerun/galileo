@@ -1,6 +1,6 @@
 from typing import List
 
-from galileo.experiment.model import Experiment, Telemetry, ServiceRequestTrace, Instructions
+from galileo.experiment.model import Experiment, Telemetry, ServiceRequestTrace
 from tests.api import ResourceTest
 
 
@@ -21,10 +21,8 @@ class TestExperimentResource(ResourceTest):
                                       Telemetry(2, 'metric2', 'node2', 2, exp_id)]
         traces: List[ServiceRequestTrace] = [ServiceRequestTrace('client1', 'service1', 'host1', 2, 2, 3),
                                              ServiceRequestTrace('client2', 'service2', 'host2', 6, 5, 4)]
-        instructions: Instructions = Instructions(exp_id, 'instructions')
         db = self.db_resource.db
         db.save_experiment(exp)
-        db.save_instructions(instructions)
         db.save_telemetry(telemetry)
         db.save_traces(traces)
         db.touch_traces(exp)
@@ -32,7 +30,6 @@ class TestExperimentResource(ResourceTest):
         self.simulate_delete('/api/experiments/id1')
 
         self.assertEqual(len(db.find_all()), 0)
-        self.assertEqual(db.get_instructions(exp_id), None)
 
         traces_fetched = db.db.fetchall('SELECT * FROM traces')
         telemetry_fetched = db.db.fetchall('SELECT * FROM telemetry')

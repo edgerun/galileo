@@ -2,7 +2,7 @@ import logging
 from abc import ABC
 from typing import List, Tuple
 
-from galileo.experiment.model import Experiment, Instructions, Telemetry
+from galileo.experiment.model import Experiment, Telemetry
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +36,6 @@ class ExperimentDatabase(ABC):
         raise NotImplementedError
 
     def touch_traces(self, experiment: Experiment):
-        raise NotImplementedError
-
-    def save_instructions(self, instructions: Instructions):
-        raise NotImplementedError
-
-    def get_instructions(self, exp_id: str) -> Instructions:
         raise NotImplementedError
 
     def save_telemetry(self, telemetry: List[Telemetry]):

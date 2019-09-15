@@ -11,7 +11,6 @@ from galileo.controller import ExperimentController
 from galileo.experiment.db.factory import create_experiment_database_from_env
 from galileo.experiment.experimentd import ExperimentDaemon
 from galileo.experiment.service.experiment import SimpleExperimentService
-from galileo.experiment.service.instructions import SimpleInstructionService
 from galileo.experiment.service.telemetry import ExperimentTelemetryRecorder
 
 logger = logging.getLogger(__name__)
@@ -43,10 +42,9 @@ def main():
 
     try:
         exp_controller = ExperimentController(rds)
-        ins_service = SimpleInstructionService(exp_db)
         exp_service = SimpleExperimentService(exp_db)
 
-        daemon = ExperimentDaemon(rds, recorder_factory, exp_controller, exp_service, ins_service)
+        daemon = ExperimentDaemon(rds, recorder_factory, exp_controller, exp_service)
         daemon.run()
     finally:
         exp_db.close()
