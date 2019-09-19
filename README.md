@@ -193,9 +193,11 @@ Run in `galileo-dashboard`:
         
 After building run the container with:
 
-    docker run -v ${PWD}:/app -v /app/node_modules -p 4201:4200 --name galileo-dashboard galileo/galileo-dashboard-dev
+    docker run -v ${PWD}:/app -v /app/node_modules -p 4201:4200 --name galileo-dashboard --env-file ./etc/local-dashboard.env galileo/galileo-dashboard-dev
         
 Making changes in the app will hot-reload the app.
+
+To use the HTTP Services, set the PRODUCTION variable in the env-file to 'true', otherwise mock services will be used.
 
 If you are done developing, stop the container with
     
