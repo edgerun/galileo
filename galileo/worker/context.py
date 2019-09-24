@@ -7,8 +7,8 @@ from typing import MutableMapping
 
 import redis
 import requests
-from symmetry.gateway import WeightedRandomBalancer, SymmetryServiceRouter, SymmetryHostRouter, StaticRouter, Router, \
-    ServiceRequest
+from symmetry.gateway import SymmetryServiceRouter, SymmetryHostRouter, StaticRouter, Router, \
+    ServiceRequest, WeightedRoundRobinBalancer
 from symmetry.routing import ReadOnlyListeningRedisRoutingTable
 
 from galileo.apps.loader import AppClientLoader, AppClientDirectoryLoader, AppRepositoryFallbackLoader
@@ -89,13 +89,13 @@ class Context:
             rtable = ReadOnlyListeningRedisRoutingTable(self.create_redis())
             rtable.start()
             atexit.register(rtable.stop, timeout=2)
-            balancer = WeightedRandomBalancer(rtable)
+            balancer = WeightedRoundRobinBalancer(rtable)
             return SymmetryServiceRouter(balancer)
         elif router_type == 'SymmetryHostRouter':
             rtable = ReadOnlyListeningRedisRoutingTable(self.create_redis())
             rtable.start()
             atexit.register(rtable.stop, timeout=2)
-            balancer = WeightedRandomBalancer(rtable)
+            balancer = WeightedRoundRobinBalancer(rtable)
             return SymmetryHostRouter(balancer)
         elif router_type == 'StaticRouter':
             host = self.env.get('galileo_router_static_host', 'http://localhost')
