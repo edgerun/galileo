@@ -1,5 +1,5 @@
 # you can also install it via pip install -e ../symmetry/
-mc2-symmetry==0.2.0
+mc2-symmetry==0.3.0
 falcon>=2.0.0
 requests==2.20.1
 redis==3.2.1
