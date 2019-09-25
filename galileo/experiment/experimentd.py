@@ -16,6 +16,7 @@ from symmetry.telemetry.recorder import TelemetryRecorder
 from galileo.controller import ExperimentController, ExperimentShell, create_instructions
 from galileo.experiment.model import Experiment, QueuedExperiment, ExperimentConfiguration
 from galileo.experiment.service.experiment import ExperimentService
+from galileo.worker.api import StartTracingCommand, PauseTracingCommand
 
 logger = logging.getLogger(__name__)
 
@@ -105,12 +106,14 @@ class ExperimentDaemon:
 
                 status = exp.status
                 try:
+                    pymq.publish(StartTracingCommand())
                     self.run_experiment(exp, ins)
                     status = 'FINISHED'
                 except Exception as e:
                     logger.error('Error while running experiment: %s', e)
                     status = 'FAILED'
                 finally:
+                    pymq.publish(PauseTracingCommand())
                     logger.info("finalizing experiment %s", exp.id)
                     self.exp_service.finalize_experiment(exp, status)
 

@@ -5,6 +5,7 @@ import tempfile
 import redislite
 
 from galileo.experiment.db.sql.sqlite import SqliteAdapter
+from galileo.util import poll
 from tests.test_experiment_db import AbstractTestSqlDatabase
 
 
@@ -51,3 +52,10 @@ class SqliteResource(AbstractTestSqlDatabase, TestResource):
     def tearDown(self) -> None:
         super().tearDown()
         os.remove(self.db_file)
+
+
+def assert_poll(condition, msg='Condition failed'):
+    try:
+        poll(condition, 2, 0.01)
+    except TimeoutError:
+        raise AssertionError(msg)

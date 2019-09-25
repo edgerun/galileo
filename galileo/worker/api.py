@@ -50,3 +50,11 @@ class UnregisterWorkerEvent(NamedTuple):
 
 class RegisterWorkerCommand(NamedTuple):
     pass
+
+
+class StartTracingCommand(NamedTuple):
+    pass
+
+
+class PauseTracingCommand(NamedTuple):
+    pass
