@@ -7,8 +7,9 @@ import pymq
 
 import galileo.worker.client_group as client_group
 from galileo.worker.api import CreateClientGroupCommand, CloseClientGroupCommand, ClientConfig, RegisterWorkerEvent, \
-    UnregisterWorkerEvent, RegisterWorkerCommand
+    UnregisterWorkerEvent, RegisterWorkerCommand, StartTracingCommand, PauseTracingCommand
 from galileo.worker.context import Context
+from galileo.worker.trace import START, PAUSE
 
 logger = logging.getLogger(__name__)
 
@@ -26,17 +27,22 @@ class WorkerDaemon:
         self.eventbus = eventbus or pymq
         self.name = self.ctx.worker_name
 
-        self.trace_queue = multiprocessing.Queue()
+        self.trace_queue = self._create_trace_queue()
         self._trace_logger = self.ctx.create_trace_logger(self.trace_queue)
 
         self._lock = threading.RLock()
         self._client_groups: Dict[str, multiprocessing.Process] = dict()
         self._closed = threading.Event()
 
+    def _create_trace_queue(self):
+        return multiprocessing.Queue()
+
     def run(self):
         self.eventbus.subscribe(self._on_close_client_group_command)
         self.eventbus.subscribe(self._on_create_client_group_command)
         self.eventbus.subscribe(self._on_register_command)
+        self.eventbus.subscribe(self._on_start_tracing)
+        self.eventbus.subscribe(self._on_pause_tracing)
         self.eventbus.expose(self.ping)
 
         logger.debug('WorkerDaemon %s running...', self.name)
@@ -133,3 +139,11 @@ class WorkerDaemon:
     def _on_register_command(self, _: RegisterWorkerCommand):
         logger.info('received registration command')
         self._register_worker()
+
+    def _on_start_tracing(self, _: StartTracingCommand):
+        logger.info(f'received start tracing command, tracing is activated')
+        self.trace_queue.put(START)
+
+    def _on_pause_tracing(self, _: PauseTracingCommand):
+        logger.info(f'received pause tracing command, tracing is deactivated')
+        self.trace_queue.put(PAUSE)

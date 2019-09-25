@@ -65,20 +65,20 @@ class Context:
     def worker_name(self):
         return self.env.get('galileo_worker_name', gethostname())
 
-    def create_trace_logger(self, trace_queue) -> TraceLogger:
+    def create_trace_logger(self, trace_queue, start=True) -> TraceLogger:
         trace_logging = self.env.get('galileo_trace_logging')
 
         logger.debug('trace logging: %s', trace_logging or 'None')
 
         # careful when passing state to the TraceLogger: it's a new process
         if not trace_logging:
-            return TraceLogger(trace_queue)
+            return TraceLogger(trace_queue, start)
         elif trace_logging == 'file':
-            return TraceFileLogger(trace_queue, host_name=self.worker_name)
+            return TraceFileLogger(trace_queue, host_name=self.worker_name, start=start)
         elif trace_logging == 'redis':
-            return TraceRedisLogger(trace_queue, rds=self.create_redis())
+            return TraceRedisLogger(trace_queue, rds=self.create_redis(), start=start)
         elif trace_logging == 'sql':
-            return TraceDatabaseLogger(trace_queue, experiment_db=self.create_exp_db())
+            return TraceDatabaseLogger(trace_queue, experiment_db=self.create_exp_db(), start=start)
         else:
             raise ValueError('Unknown trace logging type %s' % trace_logging)
 

@@ -16,18 +16,20 @@ from galileo.experiment.model import ServiceRequestTrace
 logger = logging.getLogger(__name__)
 
 POISON = "__POISON__"
+START = "__START__"
+PAUSE = "__PAUSE__"
+FLUSH = '__FLUSH__'
 
 
 class TraceLogger(Process):
-    FLUSH = '__FLUSH__'
-
     flush_interval = 20
 
-    def __init__(self, trace_queue: Queue) -> None:
+    def __init__(self, trace_queue: Queue, start=True) -> None:
         super().__init__()
         self.traces = trace_queue
         self.closed = False
         self.buffer = list()
+        self.running = start
 
     def run(self):
         try:
@@ -65,12 +67,22 @@ class TraceLogger(Process):
                     logger.debug('poison received, setting closed to true')
                     self.closed = True
                     break
-                elif trace == self.FLUSH:
+                elif trace == FLUSH:
                     logger.debug('flush command received, flushing buffer')
                     self.flush()
                     continue
+                elif trace == START:
+                    logger.debug('start received')
+                    self.running = True
+                    continue
+                elif trace == PAUSE:
+                    logger.debug('pause received, flushing remaining traces')
+                    self.running = False
+                    self.flush()
+                    continue
 
-                self.buffer.append(trace)
+                if self.running:
+                    self.buffer.append(trace)
 
                 if len(self.buffer) >= self.flush_interval:
                     logger.debug('flush interval reached, flushing buffer')
@@ -89,8 +101,8 @@ class TraceLogger(Process):
 class TraceRedisLogger(TraceLogger):
     key = 'galileo:results:traces'
 
-    def __init__(self, trace_queue: Queue, rds: redis.Redis) -> None:
-        super().__init__(trace_queue)
+    def __init__(self, trace_queue: Queue, rds: redis.Redis, start=True) -> None:
+        super().__init__(trace_queue, start)
         self.rds = rds
 
     def _do_flush(self, buffer: Iterable[ServiceRequestTrace]):
@@ -106,8 +118,8 @@ class TraceRedisLogger(TraceLogger):
 
 class TraceDatabaseLogger(TraceLogger):
 
-    def __init__(self, trace_queue: Queue, experiment_db: ExperimentDatabase) -> None:
-        super().__init__(trace_queue)
+    def __init__(self, trace_queue: Queue, experiment_db: ExperimentDatabase, start=True) -> None:
+        super().__init__(trace_queue, start)
         self.experiment_db = experiment_db
 
     def run(self):
@@ -124,8 +136,8 @@ class TraceDatabaseLogger(TraceLogger):
 
 class TraceFileLogger(TraceLogger):
 
-    def __init__(self, trace_queue: Queue, host_name, target_dir='/tmp/mc2/exp') -> None:
-        super().__init__(trace_queue)
+    def __init__(self, trace_queue: Queue, host_name, target_dir='/tmp/mc2/exp', start=True) -> None:
+        super().__init__(trace_queue, start)
         self.target_dir = target_dir
         self.file_name = 'traces-%s.csv' % host_name
         self.file_path = os.path.join(self.target_dir, self.file_name)

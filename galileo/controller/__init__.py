@@ -15,7 +15,8 @@ from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 from galileo.experiment.model import Experiment, ExperimentConfiguration, QueuedExperiment
 from galileo.util import poll
 from galileo.worker.api import CreateClientGroupCommand, CloseClientGroupCommand, ClientConfig, RegisterWorkerEvent, \
-    UnregisterWorkerEvent, RegisterWorkerCommand, SetRpsCommand, StartClientsCommand, StopClientsCommand
+    UnregisterWorkerEvent, RegisterWorkerCommand, SetRpsCommand, StartClientsCommand, StopClientsCommand, \
+    StartTracingCommand, PauseTracingCommand
 from galileo.worker.client_group import ClientGroup
 from galileo.worker.daemon import WorkerDaemon
 
@@ -167,6 +168,13 @@ class ExperimentController:
         self.rds.srem('galileo:workers', event.name)
         self.rds.delete('galileo:clients:%s' % event.name)
 
+    def set_trace_logging(self, status: str):
+        if status == 'on':
+            pymq.publish(StartTracingCommand())
+
+        if status == 'off':
+            pymq.publish(PauseTracingCommand())
+
 
 class ExperimentShell(Shell):
     intro = 'Welcome to the interactive galileo Shell.'
@@ -214,6 +222,18 @@ class ExperimentShell(Shell):
     @parsed
     def do_discover(self):
         self.controller.discover()
+
+    @parsed
+    def do_logging(self, status: str):
+        """
+        Turn trace logging of workers on/off.
+
+        :param status: 'on' or 'off'
+        """
+        if status == 'on' or status == 'off':
+            self.controller.set_trace_logging(status)
+        else:
+            self.println("Wrong input, must be 'on' or 'off'.")
 
     @parsed
     def do_ping(self):

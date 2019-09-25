@@ -43,6 +43,11 @@ Start a worker with
 Compose files for arm32v7 are located in 
     
     docker/arm
+    
+Start a local dev environment, including: API, ExperimentDaemon, 1 worker, redis and database:
+
+    cd docker/dev
+    docker-compose up
  
 Preparing the Example Application
 ---------------------------------
