@@ -19,6 +19,7 @@ $(VENV_DIR)/bin/activate: requirements.txt requirements-dev.txt
 clean:
 	rm -rf build/
 	rm -rf .eggs/
+	find -iname "*.pyc" -delete
 
 test: venv
 	$(VENV_ACTIVATE); python setup.py test

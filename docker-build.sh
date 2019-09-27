@@ -4,6 +4,8 @@ VERSION=$(grep "version" setup.py | cut -d'=' -f 2 | sed 's/[",]//g')
 # registry/group/repository/image
 IMAGE=git.dsg.tuwien.ac.at:5005/mc2/galileo/galileo
 
+make clean
+
 docker run --rm --privileged multiarch/qemu-user-static:register --reset
 
 docker build -t ${IMAGE}:${VERSION}-amd64 -f Dockerfile.amd64 .
