@@ -183,3 +183,16 @@ Serve the app with gunicorn
     gunicorn -w 4 --preload -b 0.0.0.0:5001 \
         -c galileo/webapp/gunicorn.conf.py \
         galileo.webapp.wsgi:api
+
+Start the telemetry recorder
+----------------------------
+
+Execute the following command:
+
+    python -m galileo.cli.telemetry --name simple-recording --creator user
+    
+Following arguments can be passed, both can be omitted:
+* `creator` specifies the experiments's creator, 
+* `name` specifies the experiments's name, 
+
+To stop the recording enter `CTRL-C`.
