@@ -1,5 +1,10 @@
 #!/bin/bash
-VERSION=$(grep "version" setup.py | cut -d'=' -f 2 | sed 's/[",]//g')
+
+if [[ $1 ]]; then
+        VERSION="$1"
+else
+        VERSION=$(grep "version" setup.py | cut -d'=' -f 2 | sed 's/[",]//g')
+fi
 
 # registry/group/repository/image
 IMAGE=git.dsg.tuwien.ac.at:5005/mc2/galileo/galileo
