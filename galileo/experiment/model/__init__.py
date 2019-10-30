@@ -42,6 +42,7 @@ class WorkloadConfiguration(NamedTuple):
     clients_per_host: int
     arrival_pattern: str
     client: str = None
+    client_parameters: dict = dict()
 
 
 class ExperimentConfiguration(NamedTuple):
