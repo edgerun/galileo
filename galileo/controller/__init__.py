@@ -1,4 +1,4 @@
-import logging
+import json
 import logging
 import math
 import re
@@ -125,7 +125,7 @@ class ExperimentController:
     def list_hosts(self, pattern: str = ''):
         return self.list_workers(pattern)
 
-    def spawn_client(self, worker, service, num, client=None):
+    def spawn_client(self, worker, service, num, client=None, parameters: dict = None):
         client = client or service
         gid = f'{worker}:{service}:{client}'
 
@@ -133,7 +133,7 @@ class ExperimentController:
             return gid in [info['gid'] for info in self.client_group_info()]
 
         if not gid_exists():
-            self.create_client_group(worker, ClientConfig(service, client), gid=gid)
+            self.create_client_group(worker, ClientConfig(service, client, parameters), gid=gid)
             # wait for the client group to appear
             poll(gid_exists, timeout=2)
 
@@ -242,7 +242,7 @@ class ExperimentShell(Shell):
             self.println(worker)
 
     @parsed
-    def do_spawn(self, worker_pattern, service, num: int = 1, client: str = ''):
+    def do_spawn(self, worker_pattern, service, num: int = 1, client: str = '', client_parameters: str = '{}'):
         """
         Spawn a new client for the given service on the given worker.
 
@@ -250,11 +250,14 @@ class ExperimentShell(Shell):
         :param service: the service name
         :param num: the number of clients
         :param client: the client app name (optional, if not given will use service name)
+        :param client_parameters: parameters for the app (optional, e.g.: '{ "size": "small" }'
         """
 
         def spawn_client(worker):
             try:
-                gid = self.controller.spawn_client(worker, service, num, client if client else None)
+                parameters = json.loads(client_parameters)
+                gid = self.controller.spawn_client(worker, service, num, client if client else None,
+                                                   parameters=parameters)
                 self.println('%s: OK (%s)' % (worker, gid))
                 return gid
             except Exception as ex:
@@ -297,7 +300,11 @@ def create_instructions(cfg: ExperimentConfiguration, workers: List[str]) -> Lis
     for workload in cfg.workloads:
         for worker in workers:
             if workload.client:
-                commands.append(f'spawn {worker} {workload.service} {workload.clients_per_host} {workload.client}')
+                client_parameters = ""
+                if workload.client_parameters:
+                    client_parameters = json.dumps(workload.client_parameters)
+                commands.append(
+                    f"spawn {worker} {workload.service} {workload.clients_per_host} {workload.client} '{client_parameters}'")
             else:
                 commands.append(f'spawn {worker} {workload.service} {workload.clients_per_host}')
 

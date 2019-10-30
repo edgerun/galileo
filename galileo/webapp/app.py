@@ -85,7 +85,8 @@ class ExperimentsResource:
                 {
                     'service': 'alexnet',
                     'ticks': [1, 2, 3, 1, 1],  # len must be duration / interval
-                    'clients_per_host': 2  # optional, will be set to 3 by default
+                    'clients_per_host': 2  # optional, will be set to 3 by default,
+                    'client_parameters': {"size": "small", "type": "cat"} # optional
                 },
                 # ...
             ]
