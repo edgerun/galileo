@@ -13,7 +13,7 @@ from symmetry.gateway import ServiceRequest
 import galileo.worker.client as client
 from galileo import util
 from galileo.apps.app import AppClient
-from galileo.worker.api import ClientConfig, StartClientsCommand, SetRpsCommand
+from galileo.worker.api import ClientConfig, StartClientsCommand, SetRpsCommand, CloseClientGroupCommand
 from galileo.worker.context import Context
 
 logger = logging.getLogger(__name__)
@@ -179,8 +179,8 @@ class ClientGroup:
                 return
             self._closed = True
 
-            self.eventbus.unsubscribe(self._on_start_clients_command)
-            self.eventbus.unsubscribe(self._on_set_rps_command)
+            self.eventbus.unsubscribe(self._on_start_clients_command, channel=None)
+            self.eventbus.unsubscribe(self._on_set_rps_command, channel=None)
 
             logger.debug('closing ClientGroup %s', self.gid)
             for _ in range(len(self._clients)):
@@ -256,7 +256,11 @@ def run(gid: str, cfg: ClientConfig, trace_queue: Queue, ctx: Context = None):
     try:
         client_group = ClientGroup(gid, cfg, trace_queue, ctx=ctx, eventbus=bus)
     except Exception as e:
-        logger.exception('Error while creating client group %s', gid)
+        logger.exception('Error while creating client group %s, closing client group.', gid)
+        pymq.publish(CloseClientGroupCommand(gid))
+        logger.debug('shutting down eventbus')
+        bus.close()
+        bus_thread.join(2)
         raise e
 
     def handler(signum, frame):
