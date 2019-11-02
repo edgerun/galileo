@@ -52,6 +52,10 @@ class ExperimentBatchShell(ExperimentShell):
             self.cmdqueue.extend(lines)
             if lines[-1].strip() != 'exit':
                 self.cmdqueue.append('exit')
+
+            if logger.isEnabledFor(logging.DEBUG):
+                self.debug_cmdqueue()
+
             self.run()
         except Exception as e:
             logger.error('Error while executing experiment: %s', e)
@@ -59,6 +63,12 @@ class ExperimentBatchShell(ExperimentShell):
     def precmd(self, line):
         logger.debug('processing command: %s', line)
         return super().precmd(line)
+
+    def debug_cmdqueue(self):
+        lines = self.cmdqueue
+        logger.debug("executing %d experiment instructions:", len(lines))
+        for i in range(len(lines)):
+            logger.debug('line %d: %s', i, lines[i])
 
 
 class ExperimentDaemon:
@@ -130,7 +140,7 @@ class ExperimentDaemon:
         lines = ins.instructions
 
         with managed_recorder(self.create_recorder, exp.id):
-            logger.info("start experiment %s", exp.id)
+            logger.info("starting experiment %s", exp.id)
 
             shell = ExperimentBatchShell(self.exp_controller)
             shell.run_batch(lines)

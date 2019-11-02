@@ -300,11 +300,13 @@ def create_instructions(cfg: ExperimentConfiguration, workers: List[str]) -> Lis
     for workload in cfg.workloads:
         for worker in workers:
             if workload.client:
-                client_parameters = ""
                 if workload.client_parameters:
                     client_parameters = json.dumps(workload.client_parameters)
-                commands.append(
-                    f"spawn {worker} {workload.service} {workload.clients_per_host} {workload.client} '{client_parameters}'")
+                    commands.append(
+                        f"spawn {worker} {workload.service} {workload.clients_per_host} {workload.client} '{client_parameters}'")
+                else:
+                    commands.append(f"spawn {worker} {workload.service} {workload.clients_per_host} {workload.client}")
+
             else:
                 commands.append(f'spawn {worker} {workload.service} {workload.clients_per_host}')
 
