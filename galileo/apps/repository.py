@@ -46,6 +46,10 @@ class Repository:
                 return app
 
     def add(self, zip_path) -> AppInfo:
+        if not os.path.exists(self.repo_path):
+            logger.debug('repo path does not exist, creating directory')
+            os.mkdir(self.repo_path)
+
         manifest = self._get_manifest(zip_path)
 
         # TODO: overwrite behavior?
@@ -53,6 +57,14 @@ class Repository:
         shutil.copy(zip_path, archive_path)
 
         return AppInfo(manifest['name'], manifest, archive_path)
+
+    def delete_app(self, app_name) -> bool:
+        app = self.get_app(app_name)
+        if not app:
+            return False
+
+        os.remove(app.archive_path)
+        return True
 
     def list_apps(self) -> List[AppInfo]:
         archives = self.list_archives()
@@ -108,6 +120,9 @@ class RepositoryResource:
             raise falcon.HTTPNotFound()
 
         resp.media = {'name': app.name, 'manifest': app.manifest}
+
+    def on_delete_info(self, req, resp, app_name):
+        resp.media = self.repo.delete_app(app_name)
 
     def on_post(self, req: falcon.Request, resp: falcon.Response):
         with tempfile.TemporaryDirectory() as tmpdir:

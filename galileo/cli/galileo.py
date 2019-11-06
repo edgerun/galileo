@@ -40,6 +40,9 @@ class ApiClient:
             response = requests.post(self._url('/apps'), data=fd.read())
             return response.json()
 
+    def apps_delete(self, app_name):
+        return requests.delete(self._url(f'/apps/{app_name}')).json()
+
     def apps_list(self):
         return requests.get(self._url('/apps')).json()
 
@@ -105,8 +108,13 @@ def app_deploy(path):
 
 
 @app.command('rm', help='Remove a galileo app')
-def app_rm():
-    raise NotImplementedError
+@click.argument('app-name', type=str, required=True)
+def app_rm(app_name):
+    response = client.apps_delete(app_name)
+    if response:
+        click.echo(f'deleted {app_name}')
+    else:
+        click.echo(f'did not delete {app_name}')
 
 
 client: ApiClient
