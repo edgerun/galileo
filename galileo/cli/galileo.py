@@ -62,9 +62,21 @@ def zipdir(path, zfd):
             zfd.write(os.path.join(root, file))
 
 
-@galileo.command()
+@galileo.group()
+def app():
+    pass
+
+
+@app.command('ls', help='List all available galileo apps in the repository')
+def app_ls():
+    apps = client.apps_list()
+    for app in apps:
+        click.echo(app)
+
+
+@app.command('deploy', help='Package and deploy a galileo app to the repository')
 @click.option('--path', required=True, help='The path to the deployable app')
-def deploy_app(path):
+def app_deploy(path):
     if path.endswith('.zip'):
         app_info = client.apps_post(path)
         click.echo(app_info)
@@ -92,12 +104,9 @@ def deploy_app(path):
     click.echo(app_info)
 
 
-@galileo.command()
-def list_apps():
-    # TODO: better list command
-    apps = client.apps_list()
-    for app in apps:
-        click.echo(app)
+@app.command('rm', help='Remove a galileo app')
+def app_rm():
+    raise NotImplementedError
 
 
 client: ApiClient
