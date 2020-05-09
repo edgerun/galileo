@@ -1,9 +1,9 @@
 import logging
 
-from symmetry.telemetry.recorder import TelemetryRecorder
+from telemc import TelemetryRecorder, Telemetry
 
 from galileo.experiment.db import ExperimentDatabase
-from galileo.experiment.model import Telemetry
+from galileo.experiment.model import Telemetry as GalileoTelemetry
 
 logger = logging.getLogger(__name__)
 
@@ -29,19 +29,23 @@ class ExperimentTelemetryRecorder(TelemetryRecorder):
             logger.debug('closing ExperimentTelemetryRecorder for experiment %s', self.exp_id)
             self._flush()
 
-    def _record(self, timestamp, metric, node, value):
+    def _record(self, t: Telemetry):
         try:
-            val = float(value)
+            val = float(t.value)
         except ValueError:
             # the rationale is that this block will be executed rarely, and checking each time may be more expensive
             # than having the try/except block
-            if metric == 'status':
-                val = 1 if value == 'true' else 0
+            if t.metric == 'status':
+                val = 1 if t.value == 'true' else 0
             else:
-                logger.error('Could not convert value "%s" of metric "%s"', value, metric)
+                logger.error('Could not convert value "%s" of metric "%s"', t.value, t.metric)
                 return
 
-        self.buffer.append(Telemetry(float(timestamp), metric, node, val, self.exp_id))
+        metric = t.metric
+        if t.subsystem:
+            metric += '/' + t.subsystem
+
+        self.buffer.append(GalileoTelemetry(float(t.timestamp), t.metric, t.node, val, self.exp_id))
 
         self.i = (self.i + 1) % self.flush_every
         if self.i == 0:

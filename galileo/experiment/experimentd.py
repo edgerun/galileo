@@ -11,7 +11,7 @@ from typing import Callable, List
 
 import pymq
 import redis
-from symmetry.telemetry.recorder import TelemetryRecorder
+from telemc import TelemetryRecorder
 
 from galileo.controller import ExperimentController, ExperimentShell, create_instructions
 from galileo.experiment.model import Experiment, QueuedExperiment, ExperimentConfiguration
