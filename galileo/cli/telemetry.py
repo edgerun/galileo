@@ -9,8 +9,7 @@ import redis
 from pymq.provider.redis import RedisConfig
 
 from galileo.experiment.db.factory import create_experiment_database_from_env
-from galileo.experiment.experimentd import generate_experiment_id
-from galileo.experiment.model import Experiment
+from galileo.experiment.model import Experiment, generate_experiment_id
 from galileo.experiment.service.experiment import SimpleExperimentService
 from galileo.experiment.service.telemetry import ExperimentTelemetryRecorder
 

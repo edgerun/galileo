@@ -3,9 +3,7 @@ import json
 import logging
 import os
 import time
-import uuid
 from contextlib import contextmanager
-from datetime import datetime
 from json import JSONDecodeError
 from typing import Callable, List
 
@@ -14,7 +12,7 @@ import redis
 from telemc import TelemetryRecorder
 
 from galileo.controller import ExperimentController, ExperimentShell, create_instructions
-from galileo.experiment.model import Experiment, QueuedExperiment, ExperimentConfiguration
+from galileo.experiment.model import Experiment, QueuedExperiment, ExperimentConfiguration, generate_experiment_id
 from galileo.experiment.service.experiment import ExperimentService
 from galileo.worker.api import StartTracingCommand, PauseTracingCommand
 
@@ -28,12 +26,6 @@ class Instructions:
     def __init__(self, exp_id=None, instructions=None):
         self.exp_id = exp_id
         self.instructions = instructions
-
-
-def generate_experiment_id():
-    prefix = datetime.strftime(datetime.now(), '%Y%m%d%H%M')
-    suffix = str(uuid.uuid4())[:4]
-    return prefix + '-' + suffix
 
 
 class ExperimentBatchShell(ExperimentShell):

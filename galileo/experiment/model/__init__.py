@@ -1,4 +1,12 @@
+import uuid
+from datetime import datetime
 from typing import NamedTuple, List
+
+
+def generate_experiment_id():
+    prefix = datetime.strftime(datetime.now(), '%Y%m%d%H%M')
+    suffix = str(uuid.uuid4())[:4]
+    return prefix + '-' + suffix
 
 
 class Experiment:
