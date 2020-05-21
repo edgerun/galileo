@@ -1,0 +1,27 @@
+# syntax=docker/dockerfile:experimental
+#############
+### build ###
+#############
+FROM arm32v7/python:3.7-slim as base
+COPY --from=multiarch/qemu-user-static:x86_64-arm /usr/bin/qemu-* /usr/bin
+
+FROM base as builder
+RUN apt-get update
+
+# install galileo dependencies
+RUN pip install 'redis==3.2.1'
+RUN pip install 'pymq>=0.2.2'
+RUN pip install 'symmetry-py-telemc>=0.1.0'
+RUN pip install 'mysql-connector-python==8.0.16'
+
+############
+### prod ###
+############
+FROM base
+COPY --from=builder  /usr/local /usr/local
+COPY --from=multiarch/qemu-user-static:x86_64-arm /usr/bin/qemu-* /usr/bin
+
+RUN mkdir /app
+WORKDIR /app
+
+COPY galileo galileo
