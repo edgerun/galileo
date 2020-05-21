@@ -34,10 +34,10 @@ install: venv
 	$(VENV_ACTIVATE); python setup.py install
 
 docker:
-	docker build -f Dockerfile.amd64 -t galileo/galileo .
+	docker build -f docker/galileo/Dockerfile.amd64 -t galileo/galileo .
 
 docker-arm:
-	docker build -t galileo/galileo-arm32v7 -f Dockerfile.arm .
+	docker build -f docker/galileo/Dockerfile.arm -t galileo/galileo-arm32v7 .
 
 clean-dist: clean
 	rm -rf dist/
