@@ -56,6 +56,7 @@ def main():
     try:
         logger.info('Start TelemetryRecorder')
         recorder = ExperimentTelemetryRecorder(rds, exp_db, id)
+        recorder.save_nodeinfos()
         recorder.run()
     except KeyboardInterrupt:
         pass

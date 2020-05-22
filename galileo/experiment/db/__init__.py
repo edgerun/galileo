@@ -2,7 +2,7 @@ import logging
 from abc import ABC
 from typing import List, Tuple
 
-from galileo.experiment.model import Experiment, Telemetry
+from galileo.experiment.model import Experiment, Telemetry, NodeInfo
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,9 @@ class ExperimentDatabase(ABC):
         raise NotImplementedError
 
     def save_telemetry(self, telemetry: List[Telemetry]):
+        raise NotImplementedError
+
+    def save_nodeinfos(self, infos: List[NodeInfo]):
         raise NotImplementedError
 
     def find_all(self) -> List[Experiment]:

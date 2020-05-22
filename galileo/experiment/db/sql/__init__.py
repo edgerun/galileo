@@ -4,7 +4,7 @@ import threading
 from typing import Tuple, List, Dict
 
 from galileo.experiment.db import ExperimentDatabase
-from galileo.experiment.model import Experiment, Telemetry, ServiceRequestTrace
+from galileo.experiment.model import Experiment, Telemetry, ServiceRequestTrace, NodeInfo
 
 logger = logging.getLogger(__name__)
 
@@ -161,6 +161,14 @@ class ExperimentSQLDatabase(ExperimentDatabase):
         CONSTRAINT experiments_pk PRIMARY KEY (EXP_ID)
     );
 
+    CREATE TABLE IF NOT EXISTS nodeinfo
+    (
+        EXP_ID      VARCHAR(255) NOT NULL,
+        NODE        VARCHAR(255) NOT NULL,
+        INFO_KEY    VARCHAR(255),
+        INFO_VALUE  VARCHAR(255)
+    )
+
     CREATE TABLE IF NOT EXISTS traces
     (
         EXP_ID  VARCHAR(255),
@@ -244,6 +252,14 @@ class ExperimentSQLDatabase(ExperimentDatabase):
 
     def save_telemetry(self, telemetry: List[Telemetry]):
         self.db.insert_many('telemetry', Telemetry._fields, telemetry)
+
+    def save_nodeinfos(self, infos: List[NodeInfo]):
+        keys = ['exp_id', 'node', 'info_key', 'info_value']
+
+        def flatten(info: NodeInfo):
+            return [(info.exp_id, info.node, k, v) for k, v in info.data.items()]
+
+        self.db.insert_many('nodeinfo', keys, [flatten(info) for info in infos])
 
     def find_all(self) -> List[Experiment]:
         sql = 'SELECT * FROM `experiments`'

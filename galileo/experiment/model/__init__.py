@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Dict
 
 
 def generate_experiment_id():
@@ -41,6 +41,12 @@ class Telemetry(NamedTuple):
     metric: str
     node: str
     value: float
+    exp_id: str
+
+
+class NodeInfo(NamedTuple):
+    node: str
+    data: Dict[str, str]
     exp_id: str
 
 

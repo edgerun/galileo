@@ -1,9 +1,9 @@
 import logging
 
-from telemc import TelemetryRecorder, Telemetry
+from telemc import TelemetryRecorder, Telemetry, TelemetryController
 
 from galileo.experiment.db import ExperimentDatabase
-from galileo.experiment.model import Telemetry as GalileoTelemetry
+from galileo.experiment.model import Telemetry as GalileoTelemetry, NodeInfo
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,12 @@ class ExperimentTelemetryRecorder(TelemetryRecorder):
         finally:
             logger.debug('closing ExperimentTelemetryRecorder for experiment %s', self.exp_id)
             self._flush()
+
+    def save_nodeinfos(self):
+        ctrl = TelemetryController(self.rds)
+        infos = [NodeInfo(info.node, info.data, self.exp_id) for info in ctrl.get_node_infos()]
+        logger.debug('saving node infos %s', infos)
+        self.db.save_nodeinfos(infos)
 
     def _record(self, t: Telemetry):
         try:
