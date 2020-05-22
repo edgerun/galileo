@@ -1,6 +1,6 @@
 # you can also install it via pip install -e ../symmetry/
 mc2-symmetry>=0.5.0
-symmetry-py-telemc>=0.1.0
+symmetry-py-telemc>=0.2.0
 gunicorn==19.9.0
 falcon==2.0.0
 requests==2.20.1
