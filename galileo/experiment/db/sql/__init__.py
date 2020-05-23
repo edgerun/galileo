@@ -256,10 +256,12 @@ class ExperimentSQLDatabase(ExperimentDatabase):
     def save_nodeinfos(self, infos: List[NodeInfo]):
         keys = ['exp_id', 'node', 'info_key', 'info_value']
 
-        def flatten(info: NodeInfo):
-            return [(info.exp_id, info.node, k, v) for k, v in info.data.items()]
+        data = list()
+        for info in infos:
+            for k, v in info.data.items():
+                data.append((info.exp_id, info.node, k, v))
 
-        self.db.insert_many('nodeinfo', keys, [flatten(info) for info in infos])
+        self.db.insert_many('nodeinfo', keys, data)
 
     def find_all(self) -> List[Experiment]:
         sql = 'SELECT * FROM `experiments`'
