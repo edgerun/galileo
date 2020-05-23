@@ -167,7 +167,7 @@ class ExperimentSQLDatabase(ExperimentDatabase):
         NODE        VARCHAR(255) NOT NULL,
         INFO_KEY    VARCHAR(255),
         INFO_VALUE  VARCHAR(255)
-    )
+    );
 
     CREATE TABLE IF NOT EXISTS traces
     (
