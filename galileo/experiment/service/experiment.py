@@ -2,8 +2,7 @@ import time
 from abc import ABC
 from typing import List
 
-from galileo.experiment.db import ExperimentDatabase
-from galileo.experiment.model import Experiment
+from galileodb import Experiment, ExperimentDatabase
 
 
 class ExperimentService(ABC):

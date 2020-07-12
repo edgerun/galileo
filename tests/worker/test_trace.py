@@ -5,9 +5,9 @@ import unittest
 from time import sleep
 from unittest.mock import patch
 
+from galileodb.model import ServiceRequestTrace
 from timeout_decorator import timeout_decorator
 
-from galileo.experiment.model import ServiceRequestTrace
 from galileo.worker.trace import TraceLogger, POISON, TraceRedisLogger, TraceDatabaseLogger, TraceFileLogger, START, \
     PAUSE, FLUSH
 from tests.testutils import RedisResource, SqliteResource, assert_poll

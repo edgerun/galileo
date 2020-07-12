@@ -4,14 +4,14 @@ import unittest
 from unittest.mock import patch
 
 import pymq
+from galileodb import ExperimentDatabase
+from galileodb.model import QueuedExperiment, Experiment, ExperimentConfiguration, WorkloadConfiguration
+from galileodb.recorder import ExperimentTelemetryRecorder
 from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
-from galileo.experiment.db.sql import ExperimentSQLDatabase
 from galileo.experiment.experimentd import ExperimentDaemon
-from galileo.experiment.model import QueuedExperiment, Experiment, ExperimentConfiguration, WorkloadConfiguration
 from galileo.experiment.service.experiment import SimpleExperimentService
-from galileo.experiment.service.telemetry import ExperimentTelemetryRecorder
 from galileo.util import poll
 from tests.testutils import RedisResource, SqliteResource
 
@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class TestExperimentDaemon(unittest.TestCase):
-    exp_db: ExperimentSQLDatabase
+    exp_db: ExperimentDatabase
     redis_resource: RedisResource = RedisResource()
 
     def setUp(self) -> None:

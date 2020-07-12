@@ -3,10 +3,10 @@ import shutil
 import tempfile
 
 import redislite
+from galileodb.sql.adapter import ExperimentSQLDatabase, SqlAdapter
+from galileodb.sql.driver.sqlite import SqliteAdapter
 
-from galileo.experiment.db.sql.sqlite import SqliteAdapter
 from galileo.util import poll
-from tests.test_experiment_db import AbstractTestSqlDatabase
 
 
 class TestResource(object):
@@ -39,18 +39,20 @@ class RedisResource(TestResource):
         self.tmpfile = None
 
 
-class SqliteResource(AbstractTestSqlDatabase, TestResource):
+class SqliteResource(TestResource):
     db_file = None
+
+    sql: SqlAdapter
+    db: ExperimentSQLDatabase
 
     def setUp(self) -> None:
         self.db_file = tempfile.mktemp('.sqlite', 'galileo_test_')
-        super().setUp()
-
-    def _create_sql_adapter(self):
-        return SqliteAdapter(self.db_file)
+        self.sql = SqliteAdapter(self.db_file)
+        self.db = ExperimentSQLDatabase(self.sql)
+        self.db.open()
 
     def tearDown(self) -> None:
-        super().tearDown()
+        self.db.close()
         os.remove(self.db_file)
 
 

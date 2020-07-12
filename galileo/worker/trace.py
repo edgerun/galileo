@@ -7,11 +7,11 @@ from queue import Empty
 from typing import List, Iterable
 
 import redis
+from galileodb import ExperimentDatabase
+from galileodb.model import ServiceRequestTrace
+from galileodb.sql.adapter import ExperimentSQLDatabase
 
 from galileo import util
-from galileo.experiment.db import ExperimentDatabase
-from galileo.experiment.db.sql import ExperimentSQLDatabase
-from galileo.experiment.model import ServiceRequestTrace
 
 logger = logging.getLogger(__name__)
 

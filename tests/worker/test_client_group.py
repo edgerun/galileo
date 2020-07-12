@@ -9,13 +9,13 @@ from unittest.mock import patch
 
 import pymq
 import redis
+from galileodb.model import ServiceRequestTrace
 from pymq.exceptions import RemoteInvocationError
 from pymq.provider.redis import RedisConfig
 
 from galileo.apps import AppInfo
 from galileo.apps.app import AppClient, AppRequest
 from galileo.apps.loader import AppClientLoader
-from galileo.experiment.model import ServiceRequestTrace
 from galileo.util import poll
 from galileo.worker import client_group
 from galileo.worker.api import ClientConfig, SetRpsCommand, StartClientsCommand, CloseClientGroupCommand

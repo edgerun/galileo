@@ -2,10 +2,10 @@ import logging
 import unittest
 
 import pymq
+from galileodb.model import ExperimentConfiguration, WorkloadConfiguration, QueuedExperiment, Experiment
 from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
-from galileo.experiment.model import ExperimentConfiguration, WorkloadConfiguration, QueuedExperiment, Experiment
 from tests.testutils import RedisResource
 
 logging.basicConfig(level=logging.DEBUG)

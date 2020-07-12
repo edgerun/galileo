@@ -3,13 +3,12 @@ import time
 
 import falcon
 import redis
+from galileodb import ExperimentDatabase
+from galileodb.model import WorkloadConfiguration, ExperimentConfiguration, Experiment, generate_experiment_id
 from symmetry.webapp import ApiResource
 
 from galileo.apps.repository import Repository, RepositoryResource
 from galileo.controller import ExperimentController, CancelError
-from galileo.experiment.db import ExperimentDatabase
-from galileo.experiment.experimentd import generate_experiment_id
-from galileo.experiment.model import WorkloadConfiguration, ExperimentConfiguration, Experiment
 from galileo.experiment.service.experiment import ExperimentService
 from galileo.util import to_seconds
 

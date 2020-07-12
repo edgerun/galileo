@@ -7,14 +7,14 @@ from typing import MutableMapping
 
 import redis
 import requests
+from galileodb import ExperimentDatabase
+from galileodb.factory import create_experiment_database_from_env
 from symmetry.gateway import SymmetryServiceRouter, SymmetryHostRouter, StaticRouter, Router, \
     ServiceRequest, WeightedRoundRobinBalancer
 from symmetry.routing import ReadOnlyListeningRedisRoutingTable
 
 from galileo.apps.loader import AppClientLoader, AppClientDirectoryLoader, AppRepositoryFallbackLoader
 from galileo.apps.repository import RepositoryClient
-from galileo.experiment.db import ExperimentDatabase
-from galileo.experiment.db.factory import create_experiment_database_from_env
 from galileo.worker.trace import TraceLogger, TraceDatabaseLogger, TraceFileLogger, TraceRedisLogger
 
 logger = logging.getLogger(__name__)

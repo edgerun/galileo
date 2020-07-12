@@ -1,12 +1,13 @@
-import falcon
-import redis
 import unittest.mock
-from falcon import testing
+
+import falcon
 import pymq
+import redis
+from falcon import testing
+from galileodb.sql.adapter import ExperimentSQLDatabase
 from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
-from galileo.experiment.db.sql import ExperimentSQLDatabase
 from galileo.experiment.service.experiment import SimpleExperimentService
 from galileo.webapp.app import setup, CORSComponent, AppContext
 from tests.testutils import RedisResource, SqliteResource

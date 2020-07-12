@@ -9,10 +9,10 @@ from typing import Callable, List
 
 import pymq
 import redis
+from galileodb.model import Experiment, QueuedExperiment, ExperimentConfiguration, generate_experiment_id
 from telemc import TelemetryRecorder
 
 from galileo.controller import ExperimentController, ExperimentShell, create_instructions
-from galileo.experiment.model import Experiment, QueuedExperiment, ExperimentConfiguration, generate_experiment_id
 from galileo.experiment.service.experiment import ExperimentService
 from galileo.worker.api import StartTracingCommand, PauseTracingCommand
 

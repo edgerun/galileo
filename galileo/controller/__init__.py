@@ -8,11 +8,11 @@ from typing import List
 
 import pymq
 import redis
+from galileodb.model import Experiment, ExperimentConfiguration, QueuedExperiment
 from pymq.provider.redis import RedisQueue
 from redis import WatchError
 from symmetry.common.shell import Shell, parsed, ArgumentError, print_tabular
 
-from galileo.experiment.model import Experiment, ExperimentConfiguration, QueuedExperiment
 from galileo.util import poll
 from galileo.worker.api import CreateClientGroupCommand, CloseClientGroupCommand, ClientConfig, RegisterWorkerEvent, \
     UnregisterWorkerEvent, RegisterWorkerCommand, SetRpsCommand, StartClientsCommand, StopClientsCommand, \

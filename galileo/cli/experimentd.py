@@ -5,13 +5,13 @@ import signal
 
 import pymq
 import redis
+from galileodb.factory import create_experiment_database_from_env
+from galileodb.recorder import ExperimentTelemetryRecorder
 from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
-from galileo.experiment.db.factory import create_experiment_database_from_env
 from galileo.experiment.experimentd import ExperimentDaemon
 from galileo.experiment.service.experiment import SimpleExperimentService
-from galileo.experiment.service.telemetry import ExperimentTelemetryRecorder
 
 logger = logging.getLogger(__name__)
 

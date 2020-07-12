@@ -1,6 +1,7 @@
 from typing import List
 
-from galileo.experiment.model import Experiment, Telemetry, ServiceRequestTrace
+from galileodb.model import Experiment, Telemetry, ServiceRequestTrace
+
 from tests.api import ResourceTest
 
 

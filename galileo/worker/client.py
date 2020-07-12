@@ -5,8 +5,8 @@ from multiprocessing import Queue
 from queue import Full
 
 import requests
+from galileodb.model import ServiceRequestTrace
 
-from galileo.experiment.model import ServiceRequestTrace
 from galileo.worker.context import Context
 
 POISON = "__POISON__"
