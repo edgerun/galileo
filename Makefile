@@ -1,6 +1,6 @@
 .PHONY: usage clean clean-dist docker
 
-VENV_BIN = virtualenv -p python3.7
+VENV_BIN = python3 -m venv
 VENV_DIR ?= .venv
 
 VENV_ACTIVATE = . $(VENV_DIR)/bin/activate
