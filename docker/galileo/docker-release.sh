@@ -9,16 +9,18 @@ BASE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT=$(realpath "${BASE}/../..")
 cd $PROJECT_ROOT
 
+# get version and create basetag
 if [[ $1 ]]; then
     version="$1"
 else
     version=$(grep "version" setup.py | cut -d'=' -f 2 | sed 's/[",]//g')
 fi
-
 basetag="${image}:${version}"
 
+# remove any qemu builder container
 docker run --rm --privileged multiarch/qemu-user-static:register --reset
 
+# remove build pollution
 make clean-dist
 
 # build all the images
