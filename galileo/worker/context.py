@@ -117,6 +117,7 @@ class Context:
             'port': int(self.env.get('galileo_redis_port', '6379')),
             'decode_responses': True,
         }
+        logger.debug("establishing redis connection with params %s", params)
 
         return redis.Redis(**params)
 

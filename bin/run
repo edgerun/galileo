@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+
+THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+function usage() {
+	echo "run various galileo services"
+	echo ""
+	echo "Commands:"
+	echo "  api          start the API web server"
+	echo "  worker       start a galileo worker"
+	echo "  experimentd  start the experiment daemon"
+	echo "  shell        start the galileo shell"
+	echo "  help         show this message"
+	echo ""
+	echo "Usage:"
+	echo "  run [--envfile=filepath] <command> [<command-arguments> ...]"
+}
+
+function api() {
+    galileo_api_bind_addr=${galileo_api_bind_addr:-0.0.0.0:5001}
+
+    exec gunicorn -w 4 --preload -b ${galileo_api_bind_addr} \
+        -c galileo/webapp/gunicorn.conf.py \
+        'galileo.webapp.wsgi:api' "$@"
+}
+
+function worker() {
+    exec python -m galileo.cli.worker "$@"
+}
+
+function experimentd() {
+    exec python -m galileo.cli.experimentd "$@"
+}
+
+function shell() {
+    exec python -m galileo.cli.shell "$@"
+}
+
+function rtable() {
+    exec python -m symmetry.cli.rtable "$@"
+}
+
+function require_galileo() {
+    if `python -c "import galileo; import redis" &> /dev/null`; then
+        return 0
+    fi
+
+    if [[ ! -z ${VIRTUAL_ENV} ]]; then
+        echo "no galileo package, but already in virtual env $VIRTUAL_ENV"
+        exit 1
+    fi
+
+    # check if we can start venv
+    venv_dir=${THIS_DIR}/../.venv
+    if [[ -d ${venv_dir} ]]; then
+        source ${venv_dir}/bin/activate
+    fi
+}
+
+# some logic to invoke the correct command
+function main() {
+	if [[ $# -eq 0 ]]; then
+		usage
+		exit 1
+	fi
+
+	case ${1} in
+	    --envfile=*)
+            ENVFILE="${1#*=}"
+            shift
+        ;;
+	esac
+
+	cmd=$1
+	shift
+
+	case ${cmd} in
+	    "help")
+	        usage; exit 0 ;;
+		"api" | "worker" | "experimentd" | "shell" | "rtable")
+			;;
+		*)
+			usage; exit 1 ;;
+	esac
+
+	if ! declare -f "${cmd}" > /dev/null; then
+		usage; exit 1
+	fi
+
+    if [[ ! -z ${ENVFILE} ]]; then
+        if [[ ! -f ${ENVFILE} ]]; then
+            echo "${ENVFILE} is not a file"
+            exit 1
+        else
+            source ${ENVFILE}
+        fi
+    fi
+
+    if ! require_galileo; then
+        exit 1
+    fi
+
+	${cmd} "$@"
+	return $?
+}
+
+main "$@"
