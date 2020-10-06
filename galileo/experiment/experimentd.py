@@ -38,12 +38,16 @@ class ExperimentBatchShell(ExperimentShell):
         return False
 
     def run_batch(self, lines):
+        logger.debug('run batch with %s', lines)
+
         if not lines:
             raise ValueError('empty batch')
 
         try:
+            logger.debug('extending command queue')
             self.cmdqueue.extend(lines)
             if lines[-1].strip() != 'exit':
+                logger.debug('adding exit command')
                 self.cmdqueue.append('exit')
 
             if logger.isEnabledFor(logging.DEBUG):
@@ -136,6 +140,7 @@ class ExperimentDaemon:
             logger.info("starting experiment %s", exp.id)
 
             shell = ExperimentBatchShell(self.exp_controller)
+            logger.debug('running batch lines %s', lines)
             shell.run_batch(lines)
             # shell.stdout.getvalue() will return whatever the shell would have written to sysout
             # may be useful for logging the result

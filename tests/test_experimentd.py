@@ -8,6 +8,7 @@ from galileodb import ExperimentDatabase
 from galileodb.model import QueuedExperiment, Experiment, ExperimentConfiguration, WorkloadConfiguration
 from galileodb.recorder import ExperimentTelemetryRecorder
 from pymq.provider.redis import RedisConfig
+from timeout_decorator import timeout_decorator
 
 from galileo.controller import ExperimentController
 from galileo.experiment.experimentd import ExperimentDaemon
@@ -37,6 +38,7 @@ class TestExperimentDaemon(unittest.TestCase):
         self.db_resource.tearDown()
 
     @patch('galileo.experiment.experimentd.ExperimentBatchShell.run_batch')
+    @timeout_decorator.timeout(30)
     def test_integration(self, mocked_run_batch):
         self.rds.sadd(ExperimentController.worker_key, 'host1')  # create a worker
 
@@ -59,7 +61,7 @@ class TestExperimentDaemon(unittest.TestCase):
         # wait for the experiment to be created
         poll(lambda: self.exp_service.exists('experiment_id'), timeout=2, interval=0.1)
         # wait for the experiment to be finished
-        poll(lambda: self.exp_service.find('experiment_id').status == 'FINISHED', timeout=2, interval=0.1)
+        poll(lambda: self.exp_service.find('experiment_id').status == 'FINISHED', timeout=3, interval=0.1)
 
         # verify that the experiment parameters were set correctly
         exp = self.exp_service.find('experiment_id')
