@@ -42,6 +42,7 @@ class RequestGenerator:
         self._closed = False
 
         self.rps = (0, 'none')
+        self.counter = 0
         self._gen = None
         self._gen_lock = threading.Condition()
 
@@ -52,7 +53,7 @@ class RequestGenerator:
             self._gen_lock.notify_all()
 
     def set_rps(self, value, dist='constant', *args):
-        logger.debug('Setting RPS of generator: %s, %s, %s', value, dist, args)
+        logger.debug('setting RPS of generator: %s, %s, %s', value, dist, args)
         with self._gen_lock:
             if self._closed:
                 return
@@ -100,6 +101,7 @@ class RequestGenerator:
             except InterruptedError:
                 break
 
+            self.counter += 1
             queue.put(factory())
 
 
@@ -112,7 +114,12 @@ class AppClientRequestFactory:
 
     def create_request(self) -> ServiceRequest:
         req = self.client.next_request()
-        return ServiceRequest(self.service, req.endpoint, req.method, **req.kwargs)
+        service_request = ServiceRequest(self.service, req.endpoint, req.method, **req.kwargs)
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug('client %s created request %s', self.client.name, service_request.__dict__)
+
+        return service_request
 
     def __call__(self, *args, **kwargs):
         return self.create_request()
@@ -169,7 +176,8 @@ class ClientGroup:
             'gid': self.gid,
             'clients': len(self._clients),
             'rps': self._generator.rps,
-            'queued_requests': self.request_queue.qsize()
+            'queued': self.request_queue.qsize(),
+            'total': self._generator.counter
         }
 
     def close(self):
