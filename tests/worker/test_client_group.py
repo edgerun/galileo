@@ -23,7 +23,7 @@ from galileo.worker.client_group import ClientGroup
 from galileo.worker.context import Context
 from tests.testutils import RedisResource
 
-
+@unittest.skip
 def setup_context(rds) -> Context:
     app_info = AppInfo('mock_app', dict())
 

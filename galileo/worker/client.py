@@ -147,7 +147,10 @@ class Client:
         try:
             while True:
                 logger.debug("client %s waiting for next request", client_id)
-                request = next(rgen)
+                try:
+                    request = next(rgen)
+                except StopIteration:
+                    break
 
                 logger.debug('client %s processing request %s', client_id, request)
                 request.client_id = client_id

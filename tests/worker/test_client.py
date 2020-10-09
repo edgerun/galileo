@@ -2,13 +2,30 @@ import os
 import time
 import unittest
 from queue import Queue
+from typing import List
 
-import requests
 from symmetry.gateway import ServiceRequest
 from timeout_decorator import timeout_decorator
 
-import galileo.worker.client as client
+from galileo.worker.api import ClientDescription, ClientConfig
+from galileo.worker.client import Client
 from galileo.worker.context import Context, DebugRouter
+
+
+class StaticRequestGenerator:
+
+    def __init__(self, requests: List[ServiceRequest]) -> None:
+        super().__init__()
+        self.requests = requests
+
+    def run(self):
+        yield from self.requests
+
+    def close(self):
+        pass
+
+    def set_rps(self, *args, **kwargs):
+        pass
 
 
 class ClientTest(unittest.TestCase):
@@ -20,14 +37,19 @@ class ClientTest(unittest.TestCase):
 
         client_id = 'unittest_client'
         ctx = Context(env)
-        request_queue = Queue()
         trace_queue = Queue()
 
-        request_queue.put(ServiceRequest('aservice', path='/api/unittest'))
-        request_queue.put(ServiceRequest('aservice', path='/api/unittest'))
-        request_queue.put(client.POISON)
+        description = ClientDescription(client_id, 'unittest_worker', ClientConfig('aservice'))
+        # ctx: Context, trace_queue: Queue, description: ClientDescription
 
-        client.run(client_id, ctx, request_queue, trace_queue)
+        client = Client(ctx, trace_queue, description)
+
+        client.request_generator = StaticRequestGenerator([
+            ServiceRequest('aservice'),
+            ServiceRequest('aservice'),
+        ])
+
+        client.run()
 
         trace1 = trace_queue.get(timeout=2)
         trace2 = trace_queue.get(timeout=2)
@@ -45,7 +67,7 @@ class ClientTest(unittest.TestCase):
     @timeout_decorator.timeout(5)
     def test_with_router_fault(self):
         class FaultInjectingRouter(DebugRouter):
-            def request(self, req: ServiceRequest) -> requests.Response:
+            def request(self, req: ServiceRequest) -> 'requests.Response':
                 if req.path == '/api/nonexisting':
                     raise ValueError('some error')
 
@@ -56,14 +78,19 @@ class ClientTest(unittest.TestCase):
         ctx = Context()
         ctx.create_router = lambda: router
         client_id = 'unittest_client'
-        request_queue = Queue()
         trace_queue = Queue()
 
-        request_queue.put(ServiceRequest('aservice', path='/api/nonexisting'))
-        request_queue.put(ServiceRequest('aservice', path='/api/unittest'))
-        request_queue.put(client.POISON)
+        description = ClientDescription(client_id, 'unittest_worker', ClientConfig('aservice'))
+        # ctx: Context, trace_queue: Queue, description: ClientDescription
 
-        client.run(client_id, ctx, request_queue, trace_queue)
+        client = Client(ctx, trace_queue, description)
+
+        client.request_generator = StaticRequestGenerator([
+            ServiceRequest('aservice', path='/api/nonexisting'),
+            ServiceRequest('aservice', path='/api/unittest'),
+        ])
+
+        client.run()
 
         trace1 = trace_queue.get(timeout=2)
         trace2 = trace_queue.get(timeout=2)
