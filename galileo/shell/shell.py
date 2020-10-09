@@ -1,3 +1,4 @@
+import io
 import os
 import sys
 import time
@@ -5,6 +6,8 @@ from typing import List, Dict
 
 import pymq
 from pymq.provider.redis import RedisConfig
+from symmetry.api import RoutingRecord, RoutingTable
+from symmetry.routing import RedisRoutingTable
 
 from galileo.controller.cluster import ClusterController, RedisClusterController
 from galileo.worker.api import ClientConfig, ClientDescription, SetRpsCommand, CloseClientCommand
@@ -32,7 +35,7 @@ Functions:
 Objects:
   g             Galileo object that allows you to interact with the system
   show          Prints runtime information about the system to system out
-
+  rtbl          Symmetry routing table
 
 Type help(<function>) or help(<object>) to learn how to use the functions.
 '''
@@ -155,6 +158,92 @@ class Show:
             print(f'{k} = {v}')
 
 
+class RoutingTableHelper:
+    table: RoutingTable
+
+    def __init__(self, table) -> None:
+        super().__init__()
+        self.table = table
+
+    def record(self, service):
+        return self.table.get_routing(service)
+
+    def records(self):
+        return [self.table.get_routing(service) for service in self.table.list_services()]
+
+    def set(self, service: str, hosts: List[str], weights: List[float]):
+        record = RoutingRecord(service, hosts, weights)
+        self.table.set_routing(record)
+        return record
+
+    def update_weights(self, service, weights: List[float]):
+        record = self.table.get_routing(service)
+
+        if len(weights) != len(record.weights):
+            raise ValueError('invalid number of weights')
+
+        record.weights.clear()
+        record.weights.extend(weights)
+
+        self.table.set_routing(record)
+
+        return self
+
+    def append(self, service: str, host: str, weight: float):
+        try:
+            record = self.table.get_routing(service)
+        except ValueError:
+            return self.set(service, [host], [weight])
+
+        record.hosts.append(host)
+        record.weights.append(weight)
+        self.table.set_routing(record)
+
+        return self
+
+    def remove(self, service: str):
+        self.table.remove_service(service)
+        return self
+
+    def clear(self):
+        self.table.clear()
+        return self
+
+    def print(self):
+        print(self.dumps(self.table))
+
+    def __repr__(self):
+        return self.dumps(self.table)
+
+    @staticmethod
+    def dumps(table):
+        records = [table.get_routing(service) for service in table.list_services()]
+        output = io.StringIO()
+
+        w = [-25, 20, 9]  # TODO: read from records
+
+        sep = ['-' * abs(i) for i in w]
+        sep = '+-' + '-+-'.join(sep) + '-+'
+
+        row_fmt = ['%%%ds' % w[i] for i in range(len(w))]
+        row_fmt = '| ' + ' | '.join(row_fmt) + ' |'
+
+        header = ('Service', 'Hosts', 'Weights')
+
+        print(sep, file=output)
+        print(row_fmt % header, file=output)
+        print(sep, file=output)
+
+        for record in records:
+            for i in range(len(record.hosts)):
+                ls = (record.service if i == 0 else '', record.hosts[i], record.weights[i])
+                print(row_fmt % ls, file=output)
+            print(sep, file=output)
+
+        with output:
+            return output.getvalue().strip()
+
+
 def sleep(secs: float):
     """
     Delay execution for a given number of seconds. The argument may be a floating point number for subsecond precision.
@@ -207,10 +296,12 @@ def init(rds) -> Dict[str, object]:
 
     g = Galileo(RedisClusterController(rds))
     show = Show(g)
+    rtbl = RoutingTableHelper(RedisRoutingTable(rds))
 
     return {
         'g': g,
-        'show': show
+        'show': show,
+        'rtbl': rtbl,
     }
 
 
