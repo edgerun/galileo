@@ -1,4 +1,3 @@
-import io
 import json
 import logging
 import os
@@ -13,7 +12,7 @@ from galileodb.model import Experiment, QueuedExperiment, ExperimentConfiguratio
 from telemc import TelemetryRecorder
 
 from galileo.controller import ExperimentController
-from galileo.controller.shell import ExperimentShell, create_instructions
+from galileo.experiment import runner
 from galileo.experiment.service.experiment import ExperimentService
 from galileo.worker.api import StartTracingCommand, PauseTracingCommand
 
@@ -27,45 +26,6 @@ class Instructions:
     def __init__(self, exp_id=None, instructions=None):
         self.exp_id = exp_id
         self.instructions = instructions
-
-
-class ExperimentBatchShell(ExperimentShell):
-
-    def __init__(self, controller: ExperimentController):
-        super().__init__(controller, completekey=None, stdin=io.StringIO(), stdout=io.StringIO())
-
-    def istty(self):
-        return False
-
-    def run_batch(self, lines):
-        logger.debug('run batch with %s', lines)
-
-        if not lines:
-            raise ValueError('empty batch')
-
-        try:
-            logger.debug('extending command queue')
-            self.cmdqueue.extend(lines)
-            if lines[-1].strip() != 'exit':
-                logger.debug('adding exit command')
-                self.cmdqueue.append('exit')
-
-            if logger.isEnabledFor(logging.DEBUG):
-                self.debug_cmdqueue()
-
-            self.run()
-        except Exception as e:
-            logger.error('Error while executing experiment: %s', e)
-
-    def precmd(self, line):
-        logger.debug('processing command: %s', line)
-        return super().precmd(line)
-
-    def debug_cmdqueue(self):
-        lines = self.cmdqueue
-        logger.debug("executing %d experiment instructions:", len(lines))
-        for i in range(len(lines)):
-            logger.debug('line %d: %s', i, lines[i])
 
 
 class ExperimentDaemon:
@@ -100,7 +60,7 @@ class ExperimentDaemon:
                 exp = None
                 try:
                     logger.debug('got queued experiment %s', item)
-                    exp, ins = self.load_experiment(item)
+                    exp, cfg = self.load_experiment(item)
                 except Exception as e:
                     if exp and exp.id:
                         exp = self.exp_service.find(exp.id)
@@ -114,7 +74,7 @@ class ExperimentDaemon:
                 status = exp.status
                 try:
                     pymq.publish(StartTracingCommand())
-                    self.run_experiment(exp, ins)
+                    self.run_experiment(exp, cfg)
                     status = 'FINISHED'
                 except Exception as e:
                     logger.error('Error while running experiment: %s', e)
@@ -129,23 +89,16 @@ class ExperimentDaemon:
 
         logger.info('exiting experiment daemon loop')
 
-    def run_experiment(self, exp: Experiment, ins: Instructions):
+    def run_experiment(self, exp: Experiment, cfg: ExperimentConfiguration):
         exp.status = 'IN_PROGRESS'
         exp.start = time.time()
         self.exp_service.save(exp)
 
-        lines = ins.instructions
-
         with managed_recorder(self.create_recorder, exp.id):
             logger.info("starting experiment %s", exp.id)
+            runner.run_experiment(self.rds, cfg)
 
-            shell = ExperimentBatchShell(self.exp_controller)
-            logger.debug('running batch lines %s', lines)
-            shell.run_batch(lines)
-            # shell.stdout.getvalue() will return whatever the shell would have written to sysout
-            # may be useful for logging the result
-
-    def load_experiment(self, queued: QueuedExperiment) -> (Experiment, Instructions):
+    def load_experiment(self, queued: QueuedExperiment) -> (Experiment, ExperimentConfiguration):
         exp = self.exp_service.find(queued.experiment.id) if queued.experiment.id else None
 
         if not exp:
@@ -160,15 +113,7 @@ class ExperimentDaemon:
         if not exp.created:
             exp.created = time.time()
 
-        return exp, self.create_instructions(exp.id, queued.configuration)
-
-    def create_instructions(self, experiment_id, config: ExperimentConfiguration) -> Instructions:
-        workers = list(self.exp_controller.list_workers())
-        if not workers:
-            raise ValueError('no workers to execute the experiment on')
-
-        instructions = create_instructions(config, workers)
-        return Instructions(experiment_id, instructions)
+        return exp, queued.configuration
 
     @staticmethod
     def _get_json_body(message):

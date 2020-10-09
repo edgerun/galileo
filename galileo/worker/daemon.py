@@ -78,7 +78,7 @@ class WorkerDaemon:
     def create_client(self, cmd: CreateClientCommand) -> List[ClientDescription]:
         if cmd.host != self.name:
             logger.debug('ignoring CreateClientCommand sent to %s', cmd.host)
-            return None
+            return []
 
         # TODO: validate config
 
@@ -150,12 +150,12 @@ class WorkerDaemon:
     def _register_worker(self):
         logger.info('registering name %s', self.name)
         self.ctrl.register_worker(self.name)
-        pymq.publish(RegisterWorkerEvent(self.name))
+        self.eventbus.publish(RegisterWorkerEvent(self.name))
 
     def _unregister_worker(self):
         logger.info('unregistering name %s', self.name)
         self.ctrl.unregister_worker(self.name)
-        pymq.publish(UnregisterWorkerEvent(self.name))
+        self.eventbus.publish(UnregisterWorkerEvent(self.name))
 
     def _on_create_client_command(self, command: CreateClientCommand):
         if command.host != self.name:
