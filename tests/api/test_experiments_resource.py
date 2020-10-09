@@ -1,7 +1,7 @@
 import pymq
 from galileodb import Experiment
 
-from galileo.controller import ExperimentController
+from galileo.controller import ExperimentController, RedisClusterController
 from galileo.util import poll
 from galileo.worker.api import RegisterWorkerEvent
 from tests.api import ResourceTest
@@ -52,9 +52,7 @@ class TestExperimentsResource(ResourceTest):
             }
         }
 
-        pymq.publish(RegisterWorkerEvent('host1'))
-        # wait for host to become available
-        poll(lambda: ExperimentController(self.redis_resource.rds).list_workers('host1'), timeout=2, interval=0.1)
+        self.ctx.cctrl.register_worker('host1')
 
         result = self.simulate_post('/api/experiments', json=payload)
         self.assertIsNotNone(result.json, 'Response must not be none')

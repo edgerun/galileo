@@ -7,7 +7,7 @@ from falcon import testing
 from galileodb.sql.adapter import ExperimentSQLDatabase
 from pymq.provider.redis import RedisConfig
 
-from galileo.controller import ExperimentController
+from galileo.controller import ExperimentController, RedisClusterController
 from galileo.experiment.service.experiment import SimpleExperimentService
 from galileo.webapp.app import setup, CORSComponent, AppContext
 from tests.testutils import RedisResource, SqliteResource
@@ -15,12 +15,14 @@ from tests.testutils import RedisResource, SqliteResource
 
 class ResourceTest(testing.TestCase):
     redis_resource: RedisResource = RedisResource()
+    ctx: AppContext
 
     def setUp(self):
         super(ResourceTest, self).setUp()
         rds = self.init_rds()
         db = self.init_db()
-        self.app = self.create_api(db, rds)
+        self.ctx = self.init_context(db, rds)
+        self.app = self.create_api(self.ctx)
 
     def tearDown(self) -> None:
         super(ResourceTest, self).tearDown()
@@ -38,9 +40,9 @@ class ResourceTest(testing.TestCase):
         pymq.init(RedisConfig(self.redis_resource.rds))
         return self.redis_resource.rds
 
-    def create_api(self, db: ExperimentSQLDatabase, rds: redis.Redis) -> falcon.API:
+    def create_api(self, ctx) -> falcon.API:
         api = falcon.API(middleware=[CORSComponent()])
-        setup(api, self.init_context(db, rds))
+        setup(api, ctx)
         return api
 
     @staticmethod
@@ -49,6 +51,7 @@ class ResourceTest(testing.TestCase):
 
         context.rds = rds
 
+        context.cctrl = RedisClusterController(context.rds)
         context.ectrl = ExperimentController(context.rds)
         context.exp_db = db
         context.exp_service = SimpleExperimentService(context.exp_db)
