@@ -33,7 +33,7 @@ function experimentd() {
 }
 
 function shell() {
-    exec python -m galileo.cli.shell "$@"
+    exec python -i -m galileo.cli.shell "$@"
 }
 
 function rtable() {

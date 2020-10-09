@@ -2,7 +2,7 @@ import unittest
 
 from galileodb.model import ExperimentConfiguration, WorkloadConfiguration
 
-from galileo.controller.shell import create_instructions
+from galileo.shell.shell import create_instructions
 
 
 class TestTranslation(unittest.TestCase):
