@@ -66,82 +66,77 @@ Prepare the Experiment Worker Hosts
 
 The devices hosting the workers that generate load need to run the experiment controller host application.
 
-    python -m galileo.cli.worker
+    bin/run worker --logging=INFO
 
 All runtime parameters are controlled via `galileo_*` environment variables. Check `docker/galileo-worker/worker.env` for some examples.
-
-Run the Routing Table CLI
--------------------------
-
-The symmetry routing table CLI allows the user to set load balancing policies.
-
-```
-(.venv) pi@graviton:~/mc2/symmetry $ python -m symmetry.cli.rtable
-rtbl> help
-
-Documented commands (type help <topic>):
-========================================
-clear  date  help  set  sleep  source  unset
-
-Undocumented commands:
-======================
-echo  exit  flush  info  list  updates
-
-rtbl> 
-rtbl> help set
-
-Usage: set service hosts weights
-  
-  Set a routing record. For example
-  
-  set squeezenet heisenberg:8080,einstein:8080 1,2
-  
-  will set two hosts for the service squeezenet that are balanced at a ratio of 1 to 2
-  
-parameters:
-  service: the service name
-  hosts: a comma separated list of hosts
-  weights: a comma separated list of weights
-
-rtbl> 
-```
 
 
 Run the Experiment Controller Shell
 -----------------------------------
 
 ```
-(.venv) pi@graviton:~/mc2/galileo $ python -m galileo.cli.shell
+(.venv) pi@graviton:~/mc2/galileo $ bin/run shell
+                                   __  __
+ .-.,="``"=.          ____ _____ _/ (_) /__  ____
+ '=/_       \        / __ `/ __ `/ / / / _ \/ __ \
+  |  '=._    |      / /_/ / /_/ / / / /  __/ /_/ /
+   \     `=./`.     \__, /\__,_/_/_/_/\___/\____/
+    '=.__.=' `='   /____/
 
-Welcome to the interactive experiment controller Shell.
-exp> help
 
-Documented commands (type help <topic>):
-========================================
-close  date  help  hosts  info  ping  rps  sleep  source  spawn
+Welcome to the galileo shell!
 
-Undocumented commands:
-======================
-clients  echo  exit
+Type `usage` to list available functions
 
-exp> help spawn
+galileo> usage
+the galileo shell is an interactive python shell that provides the following commands
 
-Usage: spawn host_pattern service [num]
-  
-  Spawn a new client for the given service on the given worker host.
-  
-parameters:
-  host_pattern: the host name or pattern (e.g., 'pico1' or 'pico[0-9]')
-  service: the service name
-  num: the number of clients
+Commands:
+  usage         show this message
+  env           show environment variables
+  pwd           show the current working directory
 
-exp> help rps
+Functions:
+  sleep         time.sleep wrapper
 
-Usage: rps host_pattern service rps
+Objects:
+  g             Galileo object that allows you to interact with the system
+  show          Prints runtime information about the system to system out
+  exp           Galileo experiment
+  rtbl          Symmetry routing table
+
+Type help(<function>) or help(<object>) to learn how to use the functions.
+
+```
+
+
+
+Configure the routing table
+---------------------------
+
+The `rtbl` object in the shell allows you to set load balancing policies. Run `help(rtbl)` in the galileo shell.
+Here is an example of how to set a record for the service `myservice`.
+```
+galileo> rtbl.set('myservice', ['host1:8080', 'host2:8080'], [1,2])
+RoutingRecord(service='myservice', hosts=['host1:8080', 'host2:8080'], weights=[1, 2])
+galileo> rtbl
++---------------------------+----------------------+-----------+
+| Service                   |                Hosts |   Weights |
++---------------------------+----------------------+-----------+
+| myservice                 |           host1:8080 |       1.0 |
+|                           |           host2:8080 |       2.0 |
++---------------------------+----------------------+-----------+
+
 ```
 
 Run the Experiment Daemon
 -------------------------
+
+---
+
+**FIXME: THIS IS OUTDATED**  
+
+---
 
 The experiment daemon continuously reads from the blocking redis queue `galileo:experiments:instructions`.
 After receiving instructions, the controller will execute the commands and record the telemetry data
@@ -183,16 +178,3 @@ Serve the app with gunicorn
     gunicorn -w 4 --preload -b 0.0.0.0:5001 \
         -c galileo/webapp/gunicorn.conf.py \
         galileo.webapp.wsgi:api
-
-Start the telemetry recorder
-----------------------------
-
-Execute the following command:
-
-    python -m galileo.cli.telemetry --name simple-recording --creator user
-    
-Following arguments can be passed, both can be omitted:
-* `creator` specifies the experiments's creator, 
-* `name` specifies the experiments's name, 
-
-To stop the recording enter `CTRL-C`.
