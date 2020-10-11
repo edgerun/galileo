@@ -4,7 +4,7 @@ import os
 import time
 from contextlib import contextmanager
 from json import JSONDecodeError
-from typing import Callable, List
+from typing import Callable
 
 import pymq
 import redis
@@ -17,15 +17,6 @@ from galileo.experiment.service.experiment import ExperimentService
 from galileo.worker.api import StartTracingCommand, PauseTracingCommand
 
 logger = logging.getLogger(__name__)
-
-
-class Instructions:
-    exp_id: str
-    instructions: List[str]
-
-    def __init__(self, exp_id=None, instructions=None):
-        self.exp_id = exp_id
-        self.instructions = instructions
 
 
 class ExperimentDaemon:
@@ -50,7 +41,7 @@ class ExperimentDaemon:
         self.queue = pymq.queue(ExperimentController.queue_key)
 
         try:
-            logger.info('Listening for incoming experiment instructions...')
+            logger.info('listening for incoming experiment...')
             while not self.closed:
                 item = self.queue.get()
 
@@ -68,7 +59,7 @@ class ExperimentDaemon:
                             exp.status = 'FAILED'
                             self.exp_service.save(exp)
 
-                    logger.exception('Error while loading experiment from queue')
+                    logger.exception('error while loading experiment from queue')
                     continue
 
                 status = exp.status
@@ -77,7 +68,7 @@ class ExperimentDaemon:
                     self.run_experiment(exp, cfg)
                     status = 'FINISHED'
                 except Exception as e:
-                    logger.error('Error while running experiment: %s', e)
+                    logger.error('error while running experiment: %s', e)
                     status = 'FAILED'
                 finally:
                     pymq.publish(PauseTracingCommand())
@@ -85,7 +76,7 @@ class ExperimentDaemon:
                     self.exp_service.finalize_experiment(exp, status)
 
         except KeyboardInterrupt:
-            logger.info("Interrupted while listening")
+            logger.info("interrupted while listening")
 
         logger.info('exiting experiment daemon loop')
 
@@ -121,7 +112,7 @@ class ExperimentDaemon:
         try:
             return json.loads(message[1])
         except JSONDecodeError as e:
-            logger.warning("JSON Decoding error while parsing message body", e)
+            logger.warning("JSON decoding error while parsing message body", e)
             return None
 
 
