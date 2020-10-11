@@ -10,7 +10,7 @@ from galileo.controller.cluster import RedisClusterController
 from galileo.worker.api import RegisterWorkerEvent, UnregisterWorkerEvent, RegisterWorkerCommand, \
     StartTracingCommand, PauseTracingCommand, CreateClientCommand, CloseClientCommand, ClientDescription, ClientConfig
 from galileo.worker.context import Context
-from galileo.worker.trace import START, PAUSE
+from galileodb.trace import START, PAUSE
 
 logger = logging.getLogger(__name__)
 

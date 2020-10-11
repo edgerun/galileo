@@ -1,21 +1,21 @@
 import atexit
 import logging
 import os
-import time
 from socket import gethostname
 from typing import MutableMapping
 
 import redis
 import requests
-from galileodb import ExperimentDatabase
-from galileodb.factory import create_experiment_database_from_env
+import time
 from symmetry.gateway import SymmetryServiceRouter, SymmetryHostRouter, StaticRouter, Router, \
     ServiceRequest, WeightedRoundRobinBalancer
 from symmetry.routing import ReadOnlyListeningRedisRoutingTable
 
 from galileo.apps.loader import AppClientLoader, AppClientDirectoryLoader, AppRepositoryFallbackLoader
 from galileo.apps.repository import RepositoryClient
-from galileo.worker.trace import TraceLogger, TraceDatabaseLogger, TraceFileLogger, TraceRedisLogger
+from galileodb import ExperimentDatabase
+from galileodb.factory import create_experiment_database_from_env
+from galileodb.trace import TraceLogger, TraceDatabaseLogger, TraceFileLogger, TraceRedisLogger
 
 logger = logging.getLogger(__name__)
 
