@@ -9,7 +9,7 @@ from pymq.typing import deep_from_dict
 from redis import Redis
 
 from galileo.worker.api import RegisterWorkerCommand, ClientDescription, CreateClientCommand, ClientConfig, \
-    StartTracingCommand, PauseTracingCommand
+    StartTracingCommand, PauseTracingCommand, SetRpsCommand
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,9 @@ class ClusterController:
         raise NotImplementedError
 
     def stop_tracing(self):
+        raise NotImplementedError
+
+    def set_rps(self, client_id, n: float, dist: str = "constant", dist_args=None):
         raise NotImplementedError
 
 
@@ -183,6 +186,9 @@ class RedisClusterController(ClusterController):
 
     def stop_tracing(self):
         return self.eventbus.publish(PauseTracingCommand())
+
+    def set_rps(self, client_id, n: float, dist="constant", dist_args=None):
+        return self.eventbus.publish(SetRpsCommand(client_id, n, dist, dist_args))
 
 
 def serialize_client_description(obj: ClientDescription):
