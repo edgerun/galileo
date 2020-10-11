@@ -28,3 +28,15 @@ class PackTest(unittest.TestCase):
         }
 
         self.assertEqual(expected, result)
+
+    def test_pack_tie(self):
+        workers = ['a', 'b', 'c']
+        clients = [2, 1, 1]
+
+        result = pack(1, workers, clients)
+
+        expected = {
+            'b': 1,
+        }
+
+        self.assertEqual(expected, result)
