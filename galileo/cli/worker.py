@@ -28,10 +28,10 @@ def main():
     context = Context()
 
     redis = require_redis(context)
-    pymq.init(RedisConfig(redis))
+    eventbus = pymq.init(RedisConfig(redis))
 
-    # run host
-    worker = WorkerDaemon(context)
+    # run worker
+    worker = WorkerDaemon(context, eventbus=eventbus)
 
     try:
         logger.info('starting experiment worker %s', worker.name)

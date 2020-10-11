@@ -8,7 +8,7 @@ from galileodb.model import WorkloadConfiguration, ExperimentConfiguration, Expe
 from symmetry.webapp import ApiResource
 
 from galileo.apps.repository import Repository, RepositoryResource
-from galileo.controller import ExperimentController, CancelError
+from galileo.controller import ExperimentController, CancelError, ClusterController
 from galileo.experiment.service.experiment import ExperimentService
 from galileo.util import to_seconds
 
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class AppContext:
     rds: redis.Redis
+    cctrl: ClusterController
     ectrl: ExperimentController
     exp_db: ExperimentDatabase
     exp_service: ExperimentService
@@ -25,9 +26,10 @@ class AppContext:
 
 def setup(api: falcon.API, context: AppContext):
     api.add_route('/api', ApiResource(api))
-    api.add_route('/api/hosts', HostsResource(context.ectrl))
+    api.add_route('/api/worker', WorkerResource(context.cctrl))
+
     api.add_route('/api/services', ServicesResource())
-    api.add_route('/api/experiments', ExperimentsResource(context.ectrl, context.exp_service))
+    api.add_route('/api/experiments', ExperimentsResource(context.cctrl, context.ectrl, context.exp_service))
     api.add_route('/api/experiments/{exp_id}', ExperimentResource(context.exp_service, context.ectrl))
 
     repo = RepositoryResource(context.repository)
@@ -48,18 +50,19 @@ class ServicesResource:
         resp.media = services
 
 
-class HostsResource:
+class WorkerResource:
 
-    def __init__(self, ectrl: ExperimentController):
-        self.ectrl = ectrl
+    def __init__(self, ctrl: ClusterController):
+        self.ctrl = ctrl
 
     def on_get(self, req, resp):
-        resp.media = list(self.ectrl.list_hosts())
+        resp.media = list(self.ctrl.list_workers())
 
 
 class ExperimentsResource:
 
-    def __init__(self, ectrl: ExperimentController, exp_service: ExperimentService):
+    def __init__(self, cctrl: ClusterController, ectrl: ExperimentController, exp_service: ExperimentService):
+        self.cctrl = cctrl
         self.ectrl = ectrl
         self.exp_service = exp_service
 
@@ -94,7 +97,7 @@ class ExperimentsResource:
     """
 
     def on_post(self, req: falcon.Request, resp):
-        if not self.ectrl.list_hosts():
+        if not self.cctrl.list_workers():
             raise falcon.HTTPServiceUnavailable('no available hosts to execute the experiment')
 
         doc = req.media

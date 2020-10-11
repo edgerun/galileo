@@ -5,7 +5,7 @@ import pymq
 from galileodb.model import ExperimentConfiguration, WorkloadConfiguration, QueuedExperiment, Experiment
 from pymq.provider.redis import RedisConfig
 
-from galileo.controller import ExperimentController
+from galileo.controller import ClusterController, ExperimentController, RedisClusterController
 from tests.testutils import RedisResource
 
 logging.basicConfig(level=logging.DEBUG)
@@ -14,20 +14,22 @@ logging.basicConfig(level=logging.DEBUG)
 class TestExperimentDaemon(unittest.TestCase):
     redis_resource: RedisResource = RedisResource()
     ectl: ExperimentController
+    cctl: ClusterController
 
     def setUp(self) -> None:
         self.rds = self.init_rds()
         pymq.init(RedisConfig(self.rds))
         self.ectl = ExperimentController(self.rds)
-        self.rds.delete(ExperimentController.worker_key, ExperimentController.queue_key)
+        self.cctl = RedisClusterController(self.rds)
+        self.rds.delete(RedisClusterController.worker_key, ExperimentController.queue_key)
 
     def tearDown(self) -> None:
-        self.rds.delete(ExperimentController.worker_key, ExperimentController.queue_key)
+        self.rds.delete(RedisClusterController.worker_key, ExperimentController.queue_key)
         pymq.shutdown()
         self.redis_resource.tearDown()
 
     def test_queue(self):
-        self.rds.sadd(ExperimentController.worker_key, 'host1')
+        self.cctl.register_worker('host1')
 
         exp = Experiment(name='my-experiment', creator='unittest')
         config = ExperimentConfiguration(2, 1, [WorkloadConfiguration('aservice', [1, 2], 2, 'constant')])
@@ -44,7 +46,7 @@ class TestExperimentDaemon(unittest.TestCase):
         self.assertEqual('unittest', queued_experiment.experiment.creator)
 
     def test_cancel(self):
-        self.rds.sadd(ExperimentController.worker_key, 'host1')
+        self.cctl.register_worker('host1')
 
         exp_id = 'abcd'
         exp = Experiment(id=exp_id, name='my-experiment', creator='unittest')

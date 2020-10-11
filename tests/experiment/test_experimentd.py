@@ -10,7 +10,7 @@ from galileodb.recorder import ExperimentTelemetryRecorder
 from pymq.provider.redis import RedisConfig
 from timeout_decorator import timeout_decorator
 
-from galileo.controller import ExperimentController
+from galileo.controller import ExperimentController, RedisClusterController
 from galileo.experiment.experimentd import ExperimentDaemon
 from galileo.experiment.service.experiment import SimpleExperimentService
 from galileo.util import poll
@@ -30,6 +30,7 @@ class TestExperimentDaemon(unittest.TestCase):
 
         self.recorder_factory = lambda exp_id: ExperimentTelemetryRecorder(self.rds, self.exp_db, exp_id)
         self.exp_ctrl = ExperimentController(self.rds)
+        self.cctrl = RedisClusterController(self.rds)
         self.exp_service = SimpleExperimentService(self.exp_db)
 
     def tearDown(self) -> None:
@@ -37,10 +38,10 @@ class TestExperimentDaemon(unittest.TestCase):
         self.redis_resource.tearDown()
         self.db_resource.tearDown()
 
-    @patch('galileo.experiment.experimentd.ExperimentBatchShell.run_batch')
+    @patch('galileo.experiment.runner.run_experiment')
     @timeout_decorator.timeout(30)
-    def test_integration(self, mocked_run_batch):
-        self.rds.sadd(ExperimentController.worker_key, 'host1')  # create a worker
+    def test_integration(self, mocked_run_experiment):
+        self.cctrl.register_worker('host1')  # create a worker
 
         daemon = ExperimentDaemon(self.rds, self.recorder_factory, self.exp_ctrl, self.exp_service)
 
@@ -70,10 +71,8 @@ class TestExperimentDaemon(unittest.TestCase):
         self.assertEqual('experiment_id', exp.id)
         self.assertEqual('experiment_id', exp.name)
 
-        # verify that experiment daemon tried to run the commands
-        self.assertTrue(mocked_run_batch.called, 'expected ExperimentDaemon to run commands on ExperimentShell')
-        self.assertIn('spawn host1 aservice 2', mocked_run_batch.call_args[0][0])  # first call, first argument
-        self.assertIn('close host1 aservice', mocked_run_batch.call_args[0][0])
+        # verify that experiment daemon tried to run the experiment
+        self.assertTrue(mocked_run_experiment.called, 'expected ExperimentDaemon to use experiment runner')
 
     def init_rds(self):
         self.redis_resource.setUp()

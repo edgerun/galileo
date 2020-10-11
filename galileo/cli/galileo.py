@@ -120,12 +120,6 @@ def app_rm(app_name):
 client: ApiClient
 
 
-@galileo.command('shell', help='start the galileo shell')
-def shell():
-    import galileo.cli.shell as gsh
-    gsh.main()
-
-
 def main(*args, **kwargs):
     read_dotfile()
 
