@@ -1,9 +1,10 @@
+import multiprocessing
 import os
+from typing import List, Dict, NamedTuple
+import atexit
+import pymq
 import sys
 import time
-from typing import List, Dict
-
-import pymq
 from pymq.provider.redis import RedisConfig
 from symmetry.api import RoutingRecord, RoutingTable
 from symmetry.routing import RedisRoutingTable
@@ -11,6 +12,9 @@ from symmetry.routing import RedisRoutingTable
 from galileo.controller.cluster import ClusterController, RedisClusterController
 from galileo.shell.printer import sprint_routing_table, print_tabular, Stringer
 from galileo.worker.api import ClientConfig, ClientDescription, CloseClientCommand
+from galileodb.cli.recorder import run as run_recorder
+from galileodb.model import Event as ExperimentEvent
+from galileodb.reporter.events import RedisEventReporter as ExperimentEventReporter
 
 prompt = 'galileo> '
 
@@ -37,6 +41,7 @@ Functions:
 Objects:
   g             Galileo object that allows you to interact with the system
   show          Prints runtime information about the system to system out
+  exp           Galileo experiment
   rtbl          Symmetry routing table
 
 Type help(<function>) or help(<object>) to learn how to use the functions.
@@ -196,6 +201,64 @@ class Galileo:
         return ClientGroup(self.ctrl, clients, cfg)
 
 
+class ExperimentArguments(NamedTuple):
+    name: str = None
+    creator: str = None
+
+
+class Experiment:
+    event_reporter: ExperimentEventReporter
+
+    def __init__(self, rds) -> None:
+        super().__init__()
+        self.event_reporter = ExperimentEventReporter(rds)
+        self.experiment = None
+        self._atexit = False
+
+    def event(self, name: str, value: str = None):
+        """
+        Sends a galileo experiment event.
+
+        :param name: the event name
+        :param value: the optional event value
+        """
+        ts = time.time()
+        self.event_reporter.report(ExperimentEvent(ts, name, value))
+        if value:
+            print(f'%.3f: %s = %s' % (ts, name, value))
+        else:
+            print(f'%.3f: %s' % (ts, name))
+
+    def start(self, name=None, creator=None):
+        if self.experiment is not None:
+            raise ValueError('experiment already running')
+
+        if not self._atexit:
+            self._atexit = True
+            atexit.register(self.stop)
+
+        args = ExperimentArguments(name, creator)
+
+        # FIXME: i don't really like to re-use the cli module, but it was the easiest to get it working. plus we have
+        #  the experiment daemon, experiment runner, experiment recorder, ...
+        self.experiment = multiprocessing.Process(target=run_recorder, args=(args,), daemon=True)
+        self.experiment.start()
+
+        print('experiment started')
+
+    def stop(self, wait=5):
+        if self.experiment is None:
+            return
+
+        try:
+            self.experiment.terminate()
+            print('waiting for experiment to end...')
+            self.experiment.join(wait)
+            print('ok')
+        finally:
+            self.experiment = None
+
+
 class Show:
     g: Galileo
 
@@ -333,11 +396,13 @@ def init(rds) -> Dict[str, object]:
     g = Galileo(RedisClusterController(rds))
     show = Show(g)
     rtbl = RoutingTableHelper(RedisRoutingTable(rds))
+    exp = Experiment(rds)
 
     return {
         'g': g,
         'show': show,
         'rtbl': rtbl,
+        'exp': exp,
         'eventbus': eventbus,
     }
 
