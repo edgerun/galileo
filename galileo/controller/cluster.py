@@ -1,7 +1,9 @@
+import itertools
 import json
 import logging
 import re
 import sre_constants
+from collections import Counter
 from typing import List, Optional
 
 import pymq
@@ -59,6 +61,29 @@ class ClusterController:
         raise NotImplementedError
 
 
+def pack(n, workers, nr_clients):
+    """
+    Takes an input a list of workers, and a list of the current number of clients on each worker (same order). Returns a
+    dictionary {worker: nr}, where nr is the number of clients that should be spawned on the worker.
+
+    :param n: the number of new clients to distribute
+    :param workers: the list of workers
+    :param nr_clients: the number of current clients on each worker
+    :return: a dictionary {worker: nr}
+    """
+
+    def packer():
+        cur = list(nr_clients)
+
+        while True:
+            index_min = min(range(len(cur)), key=cur.__getitem__)
+            cur[index_min] += 1
+            yield workers[index_min]
+
+    target_workers = list(itertools.islice(packer(), n))
+    return dict(Counter(target_workers))
+
+
 class RedisClusterController(ClusterController):
     worker_key = 'galileo:workers'
     worker_clients_key = 'galileo:worker:%s:clients'
@@ -106,20 +131,19 @@ class RedisClusterController(ClusterController):
 
         result = stub(cmd)
         # TODO: error handling
-        return result
+        return [deep_from_dict(d, ClientDescription) for d in result]
 
     def create_clients(self, cfg: ClientConfig, num=1) -> List[ClientDescription]:
-        # TODO: this is essentially a scheduler, improve to balance clients between workers.
+        worker_client_count = self.count_worker_clients()
+        workers = list(worker_client_count.keys())
+        nr_clients = list(worker_client_count.values())
+
+        schedule = pack(num, workers, nr_clients)
 
         clients = list()
-        workers = list(self.list_workers())
-
-        for n in range(num):
-            i = n % len(workers)
-            worker = workers[i]
-
-            created = self.create_client(worker, cfg, 1)
-            clients.extend([deep_from_dict(d, ClientDescription) for d in created])
+        for worker, nr in schedule.items():
+            created = self.create_client(worker, cfg, nr)
+            clients.extend(created)
 
         return clients
 
@@ -189,6 +213,16 @@ class RedisClusterController(ClusterController):
 
     def set_rps(self, client_id, n: float, dist="constant", dist_args=None):
         return self.eventbus.publish(SetRpsCommand(client_id, n, dist, dist_args))
+
+    def count_worker_clients(self):
+        workers = self.list_workers()
+
+        pipe = self.rds.pipeline()
+        for worker in workers:
+            pipe.scard(self.worker_clients_key % worker)
+
+        nr_clients = pipe.execute()
+        return dict(zip(workers, nr_clients))
 
 
 def serialize_client_description(obj: ClientDescription):
