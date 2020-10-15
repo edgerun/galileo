@@ -9,7 +9,7 @@ import requests
 import time
 from symmetry.gateway import SymmetryServiceRouter, SymmetryHostRouter, StaticRouter, Router, \
     ServiceRequest, WeightedRoundRobinBalancer
-from symmetry.routing import ReadOnlyListeningRedisRoutingTable
+from symmetry.routing import ReadOnlyListeningRedisRoutingTable, RedisRoutingTable
 
 from galileo.apps.loader import AppClientLoader, AppClientDirectoryLoader, AppRepositoryFallbackLoader
 from galileo.apps.repository import RepositoryClient
@@ -82,16 +82,25 @@ class Context:
         else:
             raise ValueError('Unknown trace logging type %s' % trace_logging)
 
-    def create_router(self):
-        router_type = self.env.get('galileo_router_type', 'SymmetryHostRouter')
+    def create_router(self, router_type=None):
+        if router_type is None:
+            router_type = self.env.get('galileo_router_type', 'CachingSymmetryHostRouter')
 
         if router_type == 'SymmetryServiceRouter':
+            rtable = RedisRoutingTable(self.create_redis())
+            balancer = WeightedRoundRobinBalancer(rtable)
+            return SymmetryServiceRouter(balancer)
+        elif router_type == 'CachingSymmetryServiceRouter':
             rtable = ReadOnlyListeningRedisRoutingTable(self.create_redis())
             rtable.start()
             atexit.register(rtable.stop, timeout=2)
             balancer = WeightedRoundRobinBalancer(rtable)
             return SymmetryServiceRouter(balancer)
         elif router_type == 'SymmetryHostRouter':
+            rtable = RedisRoutingTable(self.create_redis())
+            balancer = WeightedRoundRobinBalancer(rtable)
+            return SymmetryHostRouter(balancer)
+        elif router_type == 'CachingSymmetryHostRouter':
             rtable = ReadOnlyListeningRedisRoutingTable(self.create_redis())
             rtable.start()
             atexit.register(rtable.stop, timeout=2)
