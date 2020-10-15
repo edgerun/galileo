@@ -13,6 +13,7 @@ from symmetry.routing import RedisRoutingTable
 from galileo.controller.cluster import ClusterController, RedisClusterController
 from galileo.shell.printer import sprint_routing_table, print_tabular, Stringer
 from galileo.worker.api import ClientConfig, ClientDescription, CloseClientCommand
+from galileo.worker.client import single_request
 from galileodb.cli.recorder import run as run_recorder
 from galileodb.model import Event as ExperimentEvent
 from galileodb.reporter.events import RedisEventReporter as ExperimentEventReporter
@@ -186,6 +187,16 @@ class Galileo:
             clients = [c for c in clients if c.client_id in client_ids]
 
         return ClientGroup(self.ctrl, clients)
+
+    def request(self, service, client: str = None, parameters: dict = None, router_type='SymmetryHostRouter'):
+        """
+        Send a request with the given configuration like a client would. See ``spawn`` for the parameters. An additional
+        parameter is the ``router_type`` which specifies which router to use (see `Context.create_router`)
+        """
+        cfg = ClientConfig(service, client=client, parameters=parameters)
+        resp = single_request(cfg, router_type=router_type)
+
+        return resp
 
     def spawn(self, service, num: int = 1, client: str = None, parameters: dict = None) -> ClientGroup:
         """

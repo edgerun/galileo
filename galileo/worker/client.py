@@ -12,7 +12,7 @@ from pymq.provider.redis import RedisEventBus
 from symmetry.gateway import ServiceRequest
 
 from galileo.apps.app import AppClient, DefaultAppClient
-from galileo.worker.api import ClientDescription, SetRpsCommand
+from galileo.worker.api import ClientDescription, SetRpsCommand, ClientConfig
 from galileo.worker.context import Context
 
 logger = logging.getLogger(__name__)
@@ -197,6 +197,21 @@ class Client:
 
     def __str__(self):
         return 'Client{client_id=%s}' % self.client_id
+
+
+def single_request(cfg: ClientConfig, ctx=None, router_type=None) -> requests.Response:
+    ctx = ctx or Context()
+
+    if cfg.client:
+        app_loader = ctx.create_app_loader()
+        app = app_loader.load(cfg.client, cfg.parameters)
+    else:
+        app = DefaultAppClient(cfg.parameters)
+
+    factory = AppClientRequestFactory(cfg.service, app)
+
+    router = ctx.create_router(router_type)
+    return router.request(factory.create_request())
 
 
 def run(ctx: Context, trace_queue: Queue, description: ClientDescription):
