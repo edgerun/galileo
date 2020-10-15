@@ -27,6 +27,29 @@ class AppClient:
         return AppRequest(self.name, method, endpoint, kwargs or {})
 
 
+class DefaultAppClient(AppClient):
+    """
+    The default app client is a flexible http request client. It only requires the client parameters which are used as
+    follows: parameters['method'] holds the HTTP method to use (defaults to 'get'), parameters['path'] holds the path to
+    which the request is sent (defaults to '/'), and parameters['kwargs'] holds a dict with keyword arguments passed to
+    the python requests library when performing the `request` call (e.g., 'data': ..., 'json', ...).
+    """
+
+    def __init__(self, parameters=None) -> None:
+        if parameters:
+            method = parameters.get('method', 'get')
+            path = parameters.get('path', '/')
+            kwargs = parameters.get('kwargs')
+        else:
+            method = 'get'
+            path = '/'
+            kwargs = None
+
+        client = HttpClient(method, path, kwargs)
+
+        super().__init__('http', None, client)
+
+
 class HttpClient:
     def __init__(self, method='get', path='/', parameters=None) -> None:
         super().__init__()

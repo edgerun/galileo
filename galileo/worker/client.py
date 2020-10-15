@@ -11,7 +11,7 @@ from galileodb.model import ServiceRequestTrace
 from pymq.provider.redis import RedisEventBus
 from symmetry.gateway import ServiceRequest
 
-from galileo.apps.app import AppClient, HttpClient
+from galileo.apps.app import AppClient, DefaultAppClient
 from galileo.worker.api import ClientDescription, SetRpsCommand
 from galileo.worker.context import Context
 
@@ -191,7 +191,7 @@ class Client:
             app_loader = self.ctx.create_app_loader()
             app = app_loader.load(self.cfg.client, self.cfg.parameters)
         else:
-            app = AppClient('http', None, HttpClient())
+            app = DefaultAppClient(self.cfg.parameters)
 
         return AppClientRequestFactory(self.cfg.service, app)
 
