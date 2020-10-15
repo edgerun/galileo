@@ -83,7 +83,7 @@ class Context:
             raise ValueError('Unknown trace logging type %s' % trace_logging)
 
     def create_router(self):
-        router_type = self.env.get('galileo_router_type', 'SymmetryServiceRouter')
+        router_type = self.env.get('galileo_router_type', 'SymmetryHostRouter')
 
         if router_type == 'SymmetryServiceRouter':
             rtable = ReadOnlyListeningRedisRoutingTable(self.create_redis())
