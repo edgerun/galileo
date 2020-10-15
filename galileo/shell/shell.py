@@ -1,7 +1,8 @@
+import atexit
 import multiprocessing
 import os
 from typing import List, Dict, NamedTuple
-import atexit
+
 import pymq
 import sys
 import time
@@ -186,17 +187,31 @@ class Galileo:
 
         return ClientGroup(self.ctrl, clients)
 
-    def spawn(self, service, num: int = 1, client: str = None, client_parameters: dict = None) -> ClientGroup:
+    def spawn(self, service, num: int = 1, client: str = None, parameters: dict = None) -> ClientGroup:
         """
-        Spawn clients for the given service and distribute them across workers.
+        Spawn clients for the given service and distribute them across workers. If no client app is specified, a default
+        http client will be created that creates http requests from the (optional) parameters::
+
+            spawn('myservice', parameters={'method': 'get', 'path': '/', 'kwargs': None}
+
+        is equivalent to::
+
+            spawn('myservice')
+
+        Another example::
+
+            spawn('myservice', 2, parameters={'method': 'post', 'path': '/', 'kwargs': {'data': 'my post data'}})
+
+        will result is POST requests to the path '/' where the 'kwargs' dict is passed to the python
+        ``requests.request`` call as keyword arguments.
 
         :param service: the service name
         :param num: the number of clients
         :param client: the client app name (optional, if not given will use service name)
-        :param client_parameters: parameters for the app (optional, e.g.: '{ "size": "small" }'
+        :param parameters: parameters for the app (optional, e.g.: '{ "size": "small" }'
         :return a new ClientGroup for the created clients
         """
-        cfg = ClientConfig(service, client=client, parameters=client_parameters)
+        cfg = ClientConfig(service, client=client, parameters=parameters)
         clients = self.ctrl.create_clients(cfg, num)
         return ClientGroup(self.ctrl, clients, cfg)
 
