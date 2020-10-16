@@ -12,23 +12,36 @@ from pymq.provider.redis import RedisEventBus
 from symmetry.gateway import ServiceRequest
 
 from galileo.apps.app import AppClient, DefaultAppClient
-from galileo.worker.api import ClientDescription, SetRpsCommand, ClientConfig
+from galileo.worker.api import ClientDescription, ClientConfig, SetWorkloadCommand, StopWorkloadCommand
 from galileo.worker.context import Context
+from galileo.worker.random import create_sampler
 
 logger = logging.getLogger(__name__)
 
 
 def constant(mean):
     while True:
-        new = yield mean
-
-        if new is not None:
-            mean = new
+        yield mean
 
 
-generators = {
-    'constant': constant
-}
+def limiter(limit, gen):
+    for _ in range(limit):
+        yield next(gen)
+
+
+def create_interarrival_generator(cmd: SetWorkloadCommand):
+    if not cmd.distribution or cmd.distribution == 'constant':
+        if cmd.parameters:
+            gen = constant(*cmd.parameters)
+        else:
+            gen = constant(0)
+    else:
+        gen = create_sampler(cmd.distribution, cmd.parameters)
+
+    if cmd.num:
+        return limiter(cmd.num, gen)
+    else:
+        return gen
 
 
 class RequestGenerator:
@@ -39,7 +52,6 @@ class RequestGenerator:
 
         self._closed = False
 
-        self.rps = (0, 'none')
         self.counter = 0
         self._gen = None
         self._gen_lock = threading.Condition()
@@ -50,30 +62,21 @@ class RequestGenerator:
             self._closed = True
             self._gen_lock.notify_all()
 
-    def set_rps(self, value, dist='constant', *args):
-        logger.debug('setting RPS of generator: %s, %s, %s', value, dist, args)
+    def set_workload(self, cmd: SetWorkloadCommand):
         with self._gen_lock:
-            if self._closed:
-                return
+            gen = create_interarrival_generator(cmd)
+            self._gen = gen
+            self._gen_lock.notify_all()
 
-            self.rps = (value, dist)
-
-            if value is None or value <= 0:
-                # pauses the request generator
-                self._gen = None
-                return
-
-            if self._gen is not None and self._gen.__name__ == dist:
-                self._gen.send(value)
-            else:
-                self._gen = generators[dist](value, *args)
-
+    def pause(self):
+        with self._gen_lock:
+            self._gen = None
             self._gen_lock.notify_all()
 
     def _next_interarrival(self):
-        gen = self._gen  # TODO: benchmark this. doing the check on every call may slow down the request generator.
+        gen = self._gen
         if gen is not None:
-            return 1 / next(gen)
+            return next(gen)
 
         with self._gen_lock:
             if self._gen is None:  # set_rps may already have been called and notified has_gen
@@ -84,7 +87,7 @@ class RequestGenerator:
 
             logger.debug('generator resumed %s', self)
 
-            return 1 / next(self._gen)
+            return next(self._gen)
 
     def run(self):
         logger.debug('running request generator %s', self)
@@ -94,7 +97,12 @@ class RequestGenerator:
         while not self._closed:
             try:
                 a = self._next_interarrival()  # may block until a generator is available
-                time.sleep(a)
+                if a > 0:
+                    time.sleep(a)
+            except StopIteration:
+                with self._gen_lock:
+                    self._gen = None
+                continue
             except InterruptedError:
                 break
 
@@ -135,7 +143,8 @@ class Client:
 
         self.router = ctx.create_router()
         self.request_generator = RequestGenerator(self._create_request_factory())
-        self.eventbus.subscribe(self._on_set_rps_command)
+        self.eventbus.subscribe(self._on_set_workload_command)
+        self.eventbus.subscribe(self._on_stop_workload_command)
 
     def run(self):
         client_id = self.client_id
@@ -180,11 +189,17 @@ class Client:
     def close(self):
         self.request_generator.close()
 
-    def _on_set_rps_command(self, cmd: SetRpsCommand):
+    def _on_set_workload_command(self, cmd: SetWorkloadCommand):
         if cmd.client_id != self.client_id:
             return
 
-        self.request_generator.set_rps(cmd.value, dist=cmd.dist)
+        self.request_generator.set_workload(cmd)
+
+    def _on_stop_workload_command(self, cmd: StopWorkloadCommand):
+        if cmd.client_id != self.client_id:
+            return
+
+        self.request_generator.pause()
 
     def _create_request_factory(self):
         if self.cfg.client:

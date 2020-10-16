@@ -57,8 +57,12 @@ class ClientStoppedEvent(NamedTuple):
     client_id: str
 
 
-class SetRpsCommand(NamedTuple):
+class SetWorkloadCommand(NamedTuple):
     client_id: str
-    value: float
-    dist: str = 'constant'
-    args: tuple = None
+    num: int = None
+    distribution: str = 'constant'
+    parameters: tuple = None
+
+
+class StopWorkloadCommand(NamedTuple):
+    client_id: str

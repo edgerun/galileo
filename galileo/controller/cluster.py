@@ -11,7 +11,7 @@ from pymq.typing import deep_from_dict
 from redis import Redis
 
 from galileo.worker.api import RegisterWorkerCommand, ClientDescription, CreateClientCommand, ClientConfig, \
-    StartTracingCommand, PauseTracingCommand, SetRpsCommand
+    StartTracingCommand, PauseTracingCommand, SetWorkloadCommand, StopWorkloadCommand
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,10 @@ class ClusterController:
     def stop_tracing(self):
         raise NotImplementedError
 
-    def set_rps(self, client_id, n: float, dist: str = "constant", dist_args=None):
+    def set_workload(self, client_id, ia=None, n: int = None):
+        raise NotImplementedError
+
+    def stop_workload(self, client_id):
         raise NotImplementedError
 
 
@@ -211,8 +214,22 @@ class RedisClusterController(ClusterController):
     def stop_tracing(self):
         return self.eventbus.publish(PauseTracingCommand())
 
-    def set_rps(self, client_id, n: float, dist="constant", dist_args=None):
-        return self.eventbus.publish(SetRpsCommand(client_id, n, dist, dist_args))
+    def set_workload(self, client_id, ia=None, n: int = None):
+        if ia is None and n is None:
+            raise ValueError('need interarrival or number of messages')
+
+        dist, params = 'constant', None
+
+        if isinstance(ia, (int, float)):
+            dist, params = 'constant', (ia,)
+        elif isinstance(ia, tuple):
+            dist, params = ia[0], ia[1:]
+
+        cmd = SetWorkloadCommand(client_id, num=n, distribution=dist, parameters=params)
+        return self.eventbus.publish(cmd)
+
+    def stop_workload(self, client_id):
+        return self.eventbus.publish(StopWorkloadCommand(client_id))
 
     def count_worker_clients(self):
         workers = self.list_workers()

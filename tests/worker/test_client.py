@@ -1,4 +1,5 @@
 import os
+import threading
 import time
 import unittest
 from queue import Queue
@@ -7,8 +8,8 @@ from typing import List
 from symmetry.gateway import ServiceRequest
 from timeout_decorator import timeout_decorator
 
-from galileo.worker.api import ClientDescription, ClientConfig
-from galileo.worker.client import Client
+from galileo.worker.api import ClientDescription, ClientConfig, SetWorkloadCommand
+from galileo.worker.client import Client, RequestGenerator
 from galileo.worker.context import Context, DebugRouter
 
 
@@ -97,3 +98,63 @@ class ClientTest(unittest.TestCase):
 
         self.assertEqual(-1, trace1.sent)
         self.assertAlmostEqual(trace2.sent, time.time(), delta=2)
+
+
+def queue_collect(vq: Queue, gen):
+    for v in gen:
+        vq.put(v)
+
+
+class RequestGeneratorTest(unittest.TestCase):
+    def test_with_limit_and_no_interval(self):
+        workload = SetWorkloadCommand('myclient', 3)
+        request_generator = RequestGenerator(lambda: 1)
+        q = Queue()
+
+        t = threading.Thread(target=queue_collect, args=(q, request_generator.run()))
+        t.start()
+
+        try:
+            request_generator.set_workload(workload)
+            q.get(timeout=1)
+            q.get(timeout=1)
+            q.get(timeout=1)
+            time.sleep(0.5)
+            self.assertEqual(0, q.qsize())
+        finally:
+            request_generator.close()
+            t.join(2)
+
+    def test_with_interval(self):
+        workload = SetWorkloadCommand('myclient', parameters=(0.1,))  # 0.1 interarrival delay
+        request_generator = RequestGenerator(lambda: 1)
+        q = Queue()
+
+        t = threading.Thread(target=queue_collect, args=(q, request_generator.run()))
+        t.start()
+
+        try:
+            request_generator.set_workload(workload)
+            time.sleep(2)
+            self.assertAlmostEqual(20, q.qsize(), delta=3)
+        finally:
+            request_generator.close()
+            t.join(2)
+
+    def test_with_interval_and_limit(self):
+        workload = SetWorkloadCommand('myclient', num=10, parameters=(0.1,))  # 0.1 interarrival delay
+        request_generator = RequestGenerator(lambda: 1)
+        q = Queue()
+
+        t = threading.Thread(target=queue_collect, args=(q, request_generator.run()))
+        t.start()
+
+        try:
+            request_generator.set_workload(workload)
+            time.sleep(0.5)
+            self.assertGreater(10, q.qsize())
+            time.sleep(1.5)
+            self.assertEqual(10, q.qsize())
+        finally:
+            request_generator.close()
+            t.join(2)

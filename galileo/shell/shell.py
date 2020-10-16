@@ -89,8 +89,50 @@ class ClientGroup:
         Set the request generation rate of all clients in the group.
         :param n: requests per second (can be fractional, e.g. 0.5 to send a request every 2 seconds)
         """
+        if n == 0:
+            self.pause()
+        else:
+            self.request(ia=(1 / n))
+
+    def request(self, n=None, ia=None):
+        """
+        Tell the clients in the group to start generating requests. You can specify a message rate, or a number of
+        requests, or both.
+
+        The interarrival can be specified either as int/float, then it is interpreted as constant interarrival. The
+        following example causes clients to send 5 message per second::
+
+            c.request(ia=0.2)
+
+        It can also be specified as a tuple, where the first element specifies the distribution used from ``random``:
+        ``random.<distribution>``, and the remaining elements specify the arguments that are passed to the call::
+
+            c.requests(ia=('expovariate', 1))
+
+        Uses ``random.expovariate(1)`` to generate interarrivals.
+
+        The messages limit can be used with or without the ``ia`` parameter::
+
+            c.requests(n=100)
+
+        will send 100 messages as fast as possible (clients currently work synchronously). Whereas::
+
+            c.requests(n=100, ia=0.2)
+
+        Will send 100 messages but pause for 0.2 between each message.
+
+        :param n: the maximum number of requests
+        :param ia: the request interarrival
+        """
         for c in self.clients:
-            self.ctrl.set_rps(c.client_id, n)
+            self.ctrl.set_workload(c.client_id, ia, n)
+
+    def pause(self):
+        """
+        Pause the current workload set by ``ClientGroup.request``.
+        """
+        for c in self.clients:
+            self.ctrl.stop_workload(c)
 
     def add(self, n=1):
         """
