@@ -169,6 +169,7 @@ class Client:
                 request.request_id = self.create_request_id(request)
 
                 try:
+                    request.sent = -1  # will be updated by router
                     response: requests.Response = router.request(request)
                     host = response.url.split("//")[-1].split("/")[0].split('?')[0]
 
