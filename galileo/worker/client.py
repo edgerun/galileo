@@ -7,10 +7,11 @@ from queue import Full
 
 import pymq
 import requests
-from galileodb.model import ServiceRequestTrace
+from galileodb.model import RequestTrace
 from pymq.provider.redis import RedisEventBus
 from symmetry.gateway import ServiceRequest
 
+from galileo import util
 from galileo.apps.app import AppClient, DefaultAppClient
 from galileo.worker.api import ClientDescription, ClientConfig, SetWorkloadCommand, StopWorkloadCommand
 from galileo.worker.context import Context
@@ -146,6 +147,9 @@ class Client:
         self.eventbus.subscribe(self._on_set_workload_command)
         self.eventbus.subscribe(self._on_stop_workload_command)
 
+    def create_request_id(self, request: ServiceRequest) -> str:
+        return util.uuid()  # FIXME (and update schema)
+
     def run(self):
         client_id = self.client_id
         traces = self.traces
@@ -163,19 +167,38 @@ class Client:
 
                 logger.debug('client %s processing request %s', client_id, request)
                 request.client_id = client_id
+                request.request_id = self.create_request_id(request)
 
                 try:
                     response: requests.Response = router.request(request)
                     host = response.url.split("//")[-1].split("/")[0].split('?')[0]
-                    t = ServiceRequestTrace(client_id, request.service, host, request.created, request.sent,
-                                            time.time())
+
+                    t = RequestTrace(
+                        request_id=request.request_id,
+                        client=client_id,
+                        service=request.service,
+                        created=request.created,
+                        sent=request.sent,
+                        done=time.time(),
+                        status=response.status_code,
+                        server=host,
+                        response=response.text
+                    )
                 except Exception as e:
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception('error while handling request %s', request)
                     else:
-                        logger.error('error while handling request %sL %s', request, e)
+                        logger.error('error while handling request %s: %s', request, e)
 
-                    t = ServiceRequestTrace(client_id, request.service, 'none', request.created, -1, time.time())
+                    t = RequestTrace(
+                        request_id=request.request_id,
+                        client=client_id,
+                        service=request.service,
+                        created=request.created,
+                        sent=request.sent,
+                        done=time.time(),
+                        status=-1
+                    )
 
                 try:
                     traces.put_nowait(t)
@@ -184,7 +207,7 @@ class Client:
         except KeyboardInterrupt:
             return
         except:
-            logger.exception("Error during read loop in client %s", client_id)
+            logger.exception("error during read loop in client %s", client_id)
 
     def close(self):
         self.request_generator.close()

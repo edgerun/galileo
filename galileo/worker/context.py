@@ -15,7 +15,7 @@ from galileo.apps.loader import AppClientLoader, AppClientDirectoryLoader, AppRe
 from galileo.apps.repository import RepositoryClient
 from galileodb import ExperimentDatabase
 from galileodb.factory import create_experiment_database_from_env
-from galileodb.trace import TraceLogger, TraceDatabaseLogger, TraceFileLogger, TraceRedisLogger
+from galileodb.trace import TraceLogger, TraceWriter, FileTraceWriter, RedisTopicTraceWriter, DatabaseTraceWriter
 
 logger = logging.getLogger(__name__)
 
@@ -65,22 +65,24 @@ class Context:
     def worker_name(self):
         return self.env.get('galileo_worker_name', gethostname())
 
-    def create_trace_logger(self, trace_queue, start=True) -> TraceLogger:
+    def create_trace_writer(self) -> TraceWriter:
         trace_logging = self.env.get('galileo_trace_logging')
-
         logger.debug('trace logging: %s', trace_logging or 'None')
 
-        # careful when passing state to the TraceLogger: it's a new process
         if not trace_logging:
-            return TraceLogger(trace_queue, start)
+            return None
         elif trace_logging == 'file':
-            return TraceFileLogger(trace_queue, host_name=self.worker_name, start=start)
+            return FileTraceWriter(self.worker_name)
         elif trace_logging == 'redis':
-            return TraceRedisLogger(trace_queue, rds=self.create_redis(), start=start)
+            return RedisTopicTraceWriter(self.create_redis())
         elif trace_logging == 'sql':
-            return TraceDatabaseLogger(trace_queue, experiment_db=self.create_exp_db(), start=start)
+            return DatabaseTraceWriter(self.create_exp_db())
         else:
             raise ValueError('Unknown trace logging type %s' % trace_logging)
+
+    def create_trace_logger(self, trace_queue, start=True) -> TraceLogger:
+        writer = self.create_trace_writer()
+        return TraceLogger(trace_queue, writer, start)
 
     def create_router(self, router_type=None):
         if router_type is None:

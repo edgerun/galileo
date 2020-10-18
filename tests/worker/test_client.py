@@ -58,8 +58,8 @@ class ClientTest(unittest.TestCase):
         self.assertEqual('aservice', trace1.service)
         self.assertEqual('aservice', trace2.service)
 
-        self.assertEqual('debughost', trace1.host)
-        self.assertEqual('debughost', trace2.host)
+        self.assertEqual('debughost', trace1.server)
+        self.assertEqual('debughost', trace2.server)
 
         now = time.time()
         self.assertAlmostEqual(now, trace1.done, delta=2)
