@@ -132,7 +132,7 @@ class ClientGroup:
         Pause the current workload set by ``ClientGroup.request``.
         """
         for c in self.clients:
-            self.ctrl.stop_workload(c)
+            self.ctrl.stop_workload(c.client_id)
 
     def add(self, n=1):
         """

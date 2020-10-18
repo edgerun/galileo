@@ -72,7 +72,6 @@ class RequestGenerator:
     def pause(self):
         with self._gen_lock:
             self._gen = None
-            self._gen_lock.notify_all()
 
     def _next_interarrival(self):
         gen = self._gen
