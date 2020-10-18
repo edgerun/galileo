@@ -1,7 +1,6 @@
 from typing import List
 
-from galileodb.model import Experiment, Telemetry, ServiceRequestTrace
-
+from galileodb.model import Experiment, Telemetry, RequestTrace
 from tests.api import ResourceTest
 
 
@@ -20,8 +19,8 @@ class TestExperimentResource(ResourceTest):
         exp = Experiment(exp_id, 'name1', 'creator1', 1, 20, 7, 'FINISH')
         telemetry: List[Telemetry] = [Telemetry(1, 'metric1', 'node1', 1, exp_id),
                                       Telemetry(2, 'metric2', 'node2', 2, exp_id)]
-        traces: List[ServiceRequestTrace] = [ServiceRequestTrace('client1', 'service1', 'host1', 2, 2, 3),
-                                             ServiceRequestTrace('client2', 'service2', 'host2', 6, 5, 4)]
+        traces: List[RequestTrace] = [RequestTrace('req1', 'client1', 'service1', 2, 2, 3),
+                                      RequestTrace('req2', 'client2', 'service2', 6, 5, 4)]
         db = self.db_resource.db
         db.save_experiment(exp)
         db.save_telemetry(telemetry)
