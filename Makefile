@@ -36,6 +36,9 @@ install: venv
 docker:
 	docker build -f docker/galileo/Dockerfile.amd64 -t galileo/galileo .
 
+deploy: venv clean-dist test dist
+	$(VENV_ACTIVATE); pip install --upgrade twine; twine upload dist/*
+
 docker-arm:
 	docker build -f docker/galileo/Dockerfile.arm -t galileo/galileo-arm32v7 .
 
