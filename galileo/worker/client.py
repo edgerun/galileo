@@ -194,7 +194,7 @@ class Client:
                         done=time.time(),
                         status=response.status_code,
                         server=host,
-                        response=response.text
+                        response=response.text.strip()
                     )
                 except Exception as e:
                     if logger.isEnabledFor(logging.DEBUG):
