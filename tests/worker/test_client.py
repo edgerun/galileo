@@ -5,6 +5,7 @@ import unittest
 from queue import Queue
 from typing import List
 
+from pymq.provider.simple import SimpleEventBus
 from symmetry.gateway import ServiceRequest
 from timeout_decorator import timeout_decorator
 
@@ -43,7 +44,7 @@ class ClientTest(unittest.TestCase):
         description = ClientDescription(client_id, 'unittest_worker', ClientConfig('aservice'))
         # ctx: Context, trace_queue: Queue, description: ClientDescription
 
-        client = Client(ctx, trace_queue, description)
+        client = Client(ctx, trace_queue, description, eventbus=SimpleEventBus())
 
         client.request_generator = StaticRequestGenerator([
             ServiceRequest('aservice'),
@@ -84,7 +85,7 @@ class ClientTest(unittest.TestCase):
         description = ClientDescription(client_id, 'unittest_worker', ClientConfig('aservice'))
         # ctx: Context, trace_queue: Queue, description: ClientDescription
 
-        client = Client(ctx, trace_queue, description)
+        client = Client(ctx, trace_queue, description, eventbus=SimpleEventBus())
 
         client.request_generator = StaticRequestGenerator([
             ServiceRequest('aservice', path='/api/nonexisting'),

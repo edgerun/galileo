@@ -35,20 +35,15 @@ class MockQueue:
 
 class WorkerTest(unittest.TestCase):
     redis_resource = RedisResource()
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.redis_resource.setUp()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        cls.redis_resource.tearDown()
+    eventbus: pymq.EventBus
 
     def setUp(self) -> None:
-        pymq.init(RedisConfig(self.redis_resource.rds))
+        self.redis_resource.setUp()
+        self.eventbus = pymq.init(RedisConfig(self.redis_resource.rds))
 
     def tearDown(self) -> None:
         pymq.shutdown()
+        self.redis_resource.tearDown()
 
     @timeout_decorator.timeout(5)
     def test_worker_start_register(self):
@@ -63,11 +58,11 @@ class WorkerTest(unittest.TestCase):
         def register_listener(event: RegisterWorkerEvent):
             register_event.set()
 
-        pymq.subscribe(register_listener)
+        self.eventbus.subscribe(register_listener)
 
         ctx = TestContext()
 
-        worker = WorkerDaemon(ctx)
+        worker = WorkerDaemon(ctx, eventbus=self.eventbus)
 
         worker_thread = threading.Thread(target=worker.run)
         worker_thread.start()
@@ -94,7 +89,7 @@ class WorkerTest(unittest.TestCase):
         def started_listener(event: RegisterWorkerEvent):
             started.set()
 
-        pymq.subscribe(started_listener)
+        self.eventbus.subscribe(started_listener)
 
         with patch.object(WorkerDaemon, '_create_trace_queue', return_value=trace_queue):
             rds = self.redis_resource.rds
@@ -105,14 +100,14 @@ class WorkerTest(unittest.TestCase):
 
             ctx = TestContext()
 
-            worker = WorkerDaemon(ctx)
+            worker = WorkerDaemon(ctx, eventbus=self.eventbus)
 
             worker_thread = threading.Thread(target=worker.run)
             worker_thread.start()
 
             started.wait(3)
 
-            pymq.publish(cmd)
+            self.eventbus.publish(cmd)
 
             got = trace_queue.traces.get()
             self.assertEqual(msg, got)
