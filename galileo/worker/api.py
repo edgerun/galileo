@@ -33,6 +33,12 @@ class ClientDescription(NamedTuple):
     config: ClientConfig
 
 
+class ClientInfo(NamedTuple):
+    description: ClientDescription
+    requests: int
+    failed: int
+
+
 class CloseClientCommand(NamedTuple):
     client_id: str
 

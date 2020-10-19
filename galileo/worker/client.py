@@ -13,7 +13,7 @@ from symmetry.gateway import ServiceRequest
 
 from galileo import util
 from galileo.apps.app import AppClient, DefaultAppClient
-from galileo.worker.api import ClientDescription, ClientConfig, SetWorkloadCommand, StopWorkloadCommand
+from galileo.worker.api import ClientDescription, ClientConfig, ClientInfo, SetWorkloadCommand, StopWorkloadCommand
 from galileo.worker.context import Context
 from galileo.worker.random import create_sampler
 
@@ -53,7 +53,6 @@ class RequestGenerator:
 
         self._closed = False
 
-        self.counter = 0
         self._gen = None
         self._gen_lock = threading.Condition()
 
@@ -106,7 +105,6 @@ class RequestGenerator:
             except InterruptedError:
                 break
 
-            self.counter += 1
             yield factory()
 
 
@@ -143,11 +141,25 @@ class Client:
 
         self.router = ctx.create_router()
         self.request_generator = RequestGenerator(self._create_request_factory())
+
+        # used for generating request ids
+        self.client_uuid = util.uuid()[-10:]
+        self.request_counter = 0
+
+        # used for statistics
+        self.failed_counter = 0
+
+        # expose methods
         self.eventbus.subscribe(self._on_set_workload_command)
         self.eventbus.subscribe(self._on_stop_workload_command)
+        self.eventbus.expose(self.get_info, 'Client.get_info')
 
-    def create_request_id(self, request: ServiceRequest) -> str:
-        return util.uuid()  # FIXME (and update schema)
+    def _create_request_id(self, _: ServiceRequest) -> str:
+        self.request_counter += 1
+        return self.client_uuid + ":" + str(self.request_counter)
+
+    def get_info(self) -> ClientInfo:
+        return ClientInfo(self.description, self.request_counter, self.failed_counter)
 
     def run(self):
         client_id = self.client_id
@@ -166,7 +178,7 @@ class Client:
 
                 logger.debug('client %s processing request %s', client_id, request)
                 request.client_id = client_id
-                request.request_id = self.create_request_id(request)
+                request.request_id = self._create_request_id(request)
 
                 try:
                     request.sent = -1  # will be updated by router
@@ -200,6 +212,9 @@ class Client:
                         status=-1
                     )
 
+                if t.status < 0 or t.status >= 300:
+                    self.failed_counter += 1
+
                 try:
                     traces.put_nowait(t)
                 except Full:
@@ -211,6 +226,9 @@ class Client:
 
     def close(self):
         self.request_generator.close()
+        self.eventbus.unsubscribe(self._on_set_workload_command)
+        self.eventbus.unsubscribe(self._on_stop_workload_command)
+        # self.eventbus.unexpose(self.get_info, 'Client.get_info') # FIXME: github.com/pymq #2
 
     def _on_set_workload_command(self, cmd: SetWorkloadCommand):
         if cmd.client_id != self.client_id:

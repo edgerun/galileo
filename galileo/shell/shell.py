@@ -12,7 +12,7 @@ from symmetry.routing import RedisRoutingTable
 
 from galileo.controller.cluster import ClusterController, RedisClusterController
 from galileo.shell.printer import sprint_routing_table, print_tabular, Stringer
-from galileo.worker.api import ClientConfig, ClientDescription, CloseClientCommand
+from galileo.worker.api import ClientConfig, ClientDescription, CloseClientCommand, ClientInfo
 from galileo.worker.client import single_request
 from galileodb.cli.recorder import run as run_recorder
 from galileodb.model import Event as ExperimentEvent
@@ -133,6 +133,9 @@ class ClientGroup:
         """
         for c in self.clients:
             self.ctrl.stop_workload(c.client_id)
+
+    def info(self) -> List[ClientInfo]:
+        return pymq.stub('Client.get_info', timeout=2, multi=True)()
 
     def add(self, n=1):
         """
@@ -344,6 +347,21 @@ class Show:
     def clients(self):
         cs = self.g.clients().clients
         data = [c._asdict() for c in cs]
+        print_tabular(data)
+
+    def info(self):
+        data = []
+        for info in self.g.clients().info():
+            data.append({
+                'client id': info.description.client_id,
+                'worker': info.description.worker,
+                'service': info.description.config.service,
+                'client': info.description.config.client or 'default',
+                'parameters': info.description.config.parameters,
+                'requests': info.requests,
+                'failed': info.failed,
+            })
+
         print_tabular(data)
 
 
