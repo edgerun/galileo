@@ -1,6 +1,8 @@
 Galileo: MC2 Experimentation Environment
 ========================================
 
+[![PyPI Version](https://badge.fury.io/py/mc2-galileo.svg)](https://badge.fury.io/py/mc2-galileo)
+
 This project allows users to define operational experiments for the MC2 (Mini Compute Cluster),
 and interact with the experimentation environment during runtime.
 Galileo consists of two major components a user can interact with:
