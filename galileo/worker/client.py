@@ -13,7 +13,8 @@ from symmetry.gateway import ServiceRequest
 
 from galileo import util
 from galileo.apps.app import AppClient, DefaultAppClient
-from galileo.worker.api import ClientDescription, ClientConfig, ClientInfo, SetWorkloadCommand, StopWorkloadCommand
+from galileo.worker.api import ClientDescription, ClientConfig, ClientInfo, SetWorkloadCommand, StopWorkloadCommand, \
+    WorkloadDoneEvent
 from galileo.worker.context import Context
 from galileo.worker.random import create_sampler
 
@@ -46,6 +47,8 @@ def create_interarrival_generator(cmd: SetWorkloadCommand):
 
 
 class RequestGenerator:
+
+    DONE = object()
 
     def __init__(self, factory) -> None:
         super().__init__()
@@ -101,6 +104,7 @@ class RequestGenerator:
             except StopIteration:
                 with self._gen_lock:
                     self._gen = None
+                yield RequestGenerator.DONE
                 continue
             except InterruptedError:
                 break
@@ -175,6 +179,10 @@ class Client:
                     request = next(rgen)
                 except StopIteration:
                     break
+
+                if request is RequestGenerator.DONE:
+                    self.eventbus.publish(WorkloadDoneEvent(self.client_id))
+                    continue
 
                 logger.debug('client %s processing request %s', client_id, request)
                 request.client_id = client_id

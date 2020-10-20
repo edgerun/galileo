@@ -1,6 +1,7 @@
 import atexit
 import multiprocessing
 import os
+from threading import Event
 from typing import List, Dict, NamedTuple
 
 import pymq
@@ -12,7 +13,7 @@ from symmetry.routing import RedisRoutingTable
 
 from galileo.controller.cluster import ClusterController, RedisClusterController
 from galileo.shell.printer import sprint_routing_table, print_tabular, Stringer
-from galileo.worker.api import ClientConfig, ClientDescription, CloseClientCommand, ClientInfo
+from galileo.worker.api import ClientConfig, ClientDescription, CloseClientCommand, ClientInfo, WorkloadDoneEvent
 from galileo.worker.client import single_request
 from galileodb.cli.recorder import run as run_recorder
 from galileodb.model import Event as ExperimentEvent
@@ -94,7 +95,7 @@ class ClientGroup:
         else:
             self.request(ia=(1 / n))
 
-    def request(self, n=None, ia=None):
+    def request(self, n=None, ia=None, wait=False):
         """
         Tell the clients in the group to start generating requests. You can specify a message rate, or a number of
         requests, or both.
@@ -121,11 +122,36 @@ class ClientGroup:
 
         Will send 100 messages but pause for 0.2 between each message.
 
+        If you want the method to block until the clients are done sending their requests, set ``wait`` to ``True``.
+
         :param n: the maximum number of requests
         :param ia: the request interarrival
+        :param wait: if wait is true, method blocks until requests are done on the client side or CTRL+C is pressed
         """
-        for c in self.clients:
-            self.ctrl.set_workload(c.client_id, ia, n)
+        if wait is False:
+            for c in self.clients:
+                self.ctrl.set_workload(c.client_id, ia, n)
+            return
+
+        # lots of problems with this unfortunately, may never terminate if clients disappear
+        clients = {c.client_id for c in self.clients}
+
+        clients_done = set(clients)
+        done = Event()
+
+        def done_subscriber(event: WorkloadDoneEvent):
+            print(event.client_id, 'done')
+            clients_done.remove(event.client_id)
+            if len(clients_done) == 0:
+                done.set()
+
+        try:
+            pymq.subscribe(done_subscriber)
+            for c in clients:
+                self.ctrl.set_workload(c, ia, n)
+            done.wait()
+        finally:
+            pymq.unsubscribe(done_subscriber)
 
     def pause(self):
         """

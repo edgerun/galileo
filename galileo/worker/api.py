@@ -72,3 +72,7 @@ class SetWorkloadCommand(NamedTuple):
 
 class StopWorkloadCommand(NamedTuple):
     client_id: str
+
+
+class WorkloadDoneEvent(NamedTuple):
+    client_id: str
