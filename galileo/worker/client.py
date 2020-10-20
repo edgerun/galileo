@@ -236,7 +236,7 @@ class Client:
         self.request_generator.close()
         self.eventbus.unsubscribe(self._on_set_workload_command)
         self.eventbus.unsubscribe(self._on_stop_workload_command)
-        # self.eventbus.unexpose(self.get_info, 'Client.get_info') # FIXME: github.com/pymq #2
+        self.eventbus.unexpose(self.get_info, 'Client.get_info')
 
     def _on_set_workload_command(self, cmd: SetWorkloadCommand):
         if cmd.client_id != self.client_id:
