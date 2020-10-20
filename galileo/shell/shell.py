@@ -1,8 +1,8 @@
 import atexit
 import multiprocessing
 import os
-from threading import Event
-from typing import List, Dict, NamedTuple
+from threading import Thread, Condition
+from typing import List, Dict, NamedTuple, Set, Optional
 
 import pymq
 import sys
@@ -70,6 +70,58 @@ def pwd():
     return os.path.abspath(os.curdir)
 
 
+class RequestFuture:
+
+    ctrl: ClusterController
+    client_ids: Set[str]
+
+    def __init__(self, ctrl, client_ids) -> None:
+        super().__init__()
+        self.ctrl = ctrl
+        self.client_ids = client_ids
+        self.done = False
+        self.aborted = False
+        self.lock = Condition()
+
+    def run(self, n=None, ia=None):
+        clients_done = set(self.client_ids)
+
+        # lots of problems with this unfortunately, may never terminate if clients disappear, concurrent events from
+        # previous (aborted) calls will interfere with future calls, etc.
+
+        def done_subscriber(event: WorkloadDoneEvent):
+            clients_done.remove(event.client_id)
+            if len(clients_done) == 0:
+                with self.lock:
+                    self.done = True
+                    self.lock.notify_all()
+
+        try:
+            with self.lock:
+                pymq.subscribe(done_subscriber)
+                for c in self.client_ids:
+                    self.ctrl.set_workload(c, ia, n)
+
+                self.lock.wait_for(self.stopped)
+        finally:
+            pymq.unsubscribe(done_subscriber)
+
+    def stopped(self):
+        return self.done or self.aborted
+
+    def abort(self):
+        with self.lock:
+            self.aborted = True
+            self.lock.notify_all()
+
+    def wait(self, timeout=None, abort_after_timeout=True):
+        with self.lock:
+            result = self.lock.wait_for(self.stopped, timeout=timeout)
+
+        if not result and abort_after_timeout:
+            self.abort()  # make sure run terminates as well
+
+
 class ClientGroup:
     """
     Allows the interaction with a set of galileo clients. Functions like `rps`, `close` operate on all clients in the
@@ -95,7 +147,7 @@ class ClientGroup:
         else:
             self.request(ia=(1 / n))
 
-    def request(self, n=None, ia=None, wait=False):
+    def request(self, n=None, ia=None) -> RequestFuture:
         """
         Tell the clients in the group to start generating requests. You can specify a message rate, or a number of
         requests, or both.
@@ -122,36 +174,19 @@ class ClientGroup:
 
         Will send 100 messages but pause for 0.2 between each message.
 
-        If you want the method to block until the clients are done sending their requests, set ``wait`` to ``True``.
+        The method returns a RequestFuture on which you can call ``wait()`` if you want to block until the clients are
+        done.
+
+            c.request(n=100).wait()
 
         :param n: the maximum number of requests
         :param ia: the request interarrival
-        :param wait: if wait is true, method blocks until requests are done on the client side or CTRL+C is pressed
+        :return a RequestFuture object
         """
-        if wait is False:
-            for c in self.clients:
-                self.ctrl.set_workload(c.client_id, ia, n)
-            return
-
-        # lots of problems with this unfortunately, may never terminate if clients disappear
-        clients = {c.client_id for c in self.clients}
-
-        clients_done = set(clients)
-        done = Event()
-
-        def done_subscriber(event: WorkloadDoneEvent):
-            print(event.client_id, 'done')
-            clients_done.remove(event.client_id)
-            if len(clients_done) == 0:
-                done.set()
-
-        try:
-            pymq.subscribe(done_subscriber)
-            for c in clients:
-                self.ctrl.set_workload(c, ia, n)
-            done.wait()
-        finally:
-            pymq.unsubscribe(done_subscriber)
+        future = RequestFuture(self.ctrl, {c.client_id for c in self.clients})
+        t = Thread(target=future.run, args=(n, ia))
+        t.start()
+        return future
 
     def pause(self):
         """
