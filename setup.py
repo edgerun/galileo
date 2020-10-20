@@ -13,7 +13,7 @@ with open("requirements.txt", "r") as fh:
 
 setuptools.setup(
     name="mc2-galileo",
-    version="0.5.0.dev1",
+    version="0.5.0",
     author="Thomas Rausch",
     author_email="t.rausch@dsg.tuwien.ac.at",
     description="Galileo: Experimentation and Analytics Framework for MC2",
