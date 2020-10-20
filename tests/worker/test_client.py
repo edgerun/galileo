@@ -117,10 +117,10 @@ class RequestGeneratorTest(unittest.TestCase):
 
         try:
             request_generator.set_workload(workload)
-            q.get(timeout=1)
-            q.get(timeout=1)
-            q.get(timeout=1)
-            time.sleep(0.5)
+            self.assertEqual(1, q.get(timeout=1))
+            self.assertEqual(1, q.get(timeout=1))
+            self.assertEqual(1, q.get(timeout=1))
+            self.assertEqual(RequestGenerator.DONE, q.get())
             self.assertEqual(0, q.qsize())
         finally:
             request_generator.close()
@@ -143,7 +143,7 @@ class RequestGeneratorTest(unittest.TestCase):
             t.join(2)
 
     def test_with_interval_and_limit(self):
-        workload = SetWorkloadCommand('myclient', num=10, parameters=(0.1,))  # 0.1 interarrival delay
+        workload = SetWorkloadCommand('myclient', num=10, parameters=(0.05,))  # 0.05 interarrival delay
         request_generator = RequestGenerator(lambda: 1)
         q = Queue()
 
@@ -152,10 +152,13 @@ class RequestGeneratorTest(unittest.TestCase):
 
         try:
             request_generator.set_workload(workload)
-            time.sleep(0.5)
-            self.assertGreater(10, q.qsize())
-            time.sleep(1.5)
-            self.assertEqual(10, q.qsize())
+
+            while True:
+                item = q.get(timeout=2)
+                if item is RequestGenerator.DONE:
+                    break
+
+            self.assertEqual(0, q.qsize())
         finally:
             request_generator.close()
             t.join(2)
