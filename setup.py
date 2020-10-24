@@ -12,14 +12,14 @@ with open("requirements.txt", "r") as fh:
     install_requires = [line for line in fh.read().split(os.linesep) if line and not line.startswith('git')]
 
 setuptools.setup(
-    name="mc2-galileo",
+    name="edgerun-galileo",
     version="0.6.0.dev1",
     author="Thomas Rausch",
     author_email="t.rausch@dsg.tuwien.ac.at",
-    description="Galileo: Experimentation and Analytics Framework for MC2",
+    description="Galileo: A framework for distributed load testing experiments",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://git.dsg.tuwien.ac.at/mc2/galileo",
+    url="https://github.com/edgerun/galileo",
     packages=setuptools.find_packages(),
     test_suite="tests",
     tests_require=tests_require,
