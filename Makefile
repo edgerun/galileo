@@ -40,7 +40,8 @@ deploy: venv clean-dist test dist
 	$(VENV_ACTIVATE); pip install --upgrade twine; twine upload dist/*
 
 docker-arm:
-	docker build -f docker/galileo/Dockerfile.arm -t galileo/galileo-arm32v7 .
+	docker run --rm --privileged multiarch/qemu-user-static:register --reset; \
+	docker build -f docker/galileo/Dockerfile.arm32v7 -t galileo/galileo-arm32v7 .
 
 clean-dist: clean
 	rm -rf dist/
