@@ -13,7 +13,7 @@ with open("requirements.txt", "r") as fh:
 
 setuptools.setup(
     name="edgerun-galileo",
-    version="0.6.0",
+    version="0.7.0.dev1",
     author="Thomas Rausch",
     author_email="t.rausch@dsg.tuwien.ac.at",
     description="Galileo: A framework for distributed load testing experiments",
