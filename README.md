@@ -2,6 +2,8 @@ Galileo: A framework for distributed load testing experiments
 =============================================================
 
 [![PyPI Version](https://badge.fury.io/py/edgerun-galileo.svg)](https://badge.fury.io/py/edgerun-galileo)
+[![Build Status](https://travis-ci.org/edgerun/galileo.svg?branch=master)](https://travis-ci.org/edgerun/galileo)
+[![Coverage Status](https://coveralls.io/repos/github/edgerun/galileo/badge.svg?branch=master)](https://coveralls.io/github/edgerun/galileo?branch=master)
 
 This project allows users to define, run, and interact with distributed load testing experiments for distributed
 web-service-oriented systems.
