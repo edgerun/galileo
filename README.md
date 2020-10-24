@@ -8,24 +8,15 @@ and interact with the experimentation environment during runtime.
 Galileo consists of two major components a user can interact with:
 the experiment controller shell and the galileo dashboard.
 The experiment controller can spawn emulated clients on workers, and control the amount of load they generate.
-Furthermore, a user can interact with Symmetry's routing table shell to control to which cluster node a service request
+Furthermore, a user can interact with the service routing table shell to control to which cluster node a service request
 is sent to.
 
 Build
 -----
 
-Create and activate a new virtual environment
+Create a new virtual environment and install all dependencies
 
-    virtualenv .venv
-    source .venv/bin/activate
-
-Install requirements
-
-    pip install -r requirements.txt
-
-If you have symmetry locally in the parent folder, link it via
-
-    pip install -e ../symmetry
+    make venv
 
 #### Docker
 
@@ -105,7 +96,7 @@ Objects:
   g             Galileo object that allows you to interact with the system
   show          Prints runtime information about the system to system out
   exp           Galileo experiment
-  rtbl          Symmetry routing table
+  rtbl          Service routing table
 
 Type help(<function>) or help(<object>) to learn how to use the functions.
 
