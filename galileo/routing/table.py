@@ -33,7 +33,7 @@ class RoutingTable(abc.ABC):
 
 
 class RedisRoutingTable(RoutingTable):
-    update_channel = 'symmetry:routing:updates'
+    update_channel = 'routing:updates'
 
     def __init__(self, rds) -> None:
         super().__init__()
