@@ -1,5 +1,3 @@
-# you can also install it via pip install -e ../symmetry/
-mc2-symmetry>=0.6.0
 galileo-db==0.6.1
 telemc>=0.3.0
 gunicorn==19.9.0

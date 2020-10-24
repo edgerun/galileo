@@ -1,23 +1,22 @@
 import atexit
 import multiprocessing
 import os
-from threading import Thread, Condition
-from typing import List, Dict, NamedTuple, Set, Optional
-
-import pymq
 import sys
 import time
-from pymq.provider.redis import RedisConfig
-from symmetry.api import RoutingRecord, RoutingTable
-from symmetry.routing import RedisRoutingTable
+from threading import Thread, Condition
+from typing import List, Dict, NamedTuple, Set
 
-from galileo.controller.cluster import ClusterController, RedisClusterController
-from galileo.shell.printer import sprint_routing_table, print_tabular, Stringer
-from galileo.worker.api import ClientConfig, ClientDescription, CloseClientCommand, ClientInfo, WorkloadDoneEvent
-from galileo.worker.client import single_request
+import pymq
 from galileodb.cli.recorder import run as run_recorder
 from galileodb.model import Event as ExperimentEvent
 from galileodb.reporter.events import RedisEventReporter as ExperimentEventReporter
+from pymq.provider.redis import RedisConfig
+
+from galileo.controller.cluster import ClusterController, RedisClusterController
+from galileo.routing import RoutingRecord, RoutingTable, RedisRoutingTable
+from galileo.shell.printer import sprint_routing_table, print_tabular, Stringer
+from galileo.worker.api import ClientConfig, ClientDescription, CloseClientCommand, ClientInfo, WorkloadDoneEvent
+from galileo.worker.client import single_request
 
 prompt = 'galileo> '
 
@@ -71,7 +70,6 @@ def pwd():
 
 
 class RequestFuture:
-
     ctrl: ClusterController
     client_ids: Set[str]
 

@@ -4,13 +4,13 @@ import threading
 from typing import Dict, List
 
 import pymq
+from galileodb.trace import START, PAUSE
 
 import galileo.worker.client as client
 from galileo.controller.cluster import RedisClusterController
 from galileo.worker.api import RegisterWorkerEvent, UnregisterWorkerEvent, RegisterWorkerCommand, \
     StartTracingCommand, PauseTracingCommand, CreateClientCommand, CloseClientCommand, ClientDescription, ClientConfig
 from galileo.worker.context import Context
-from galileodb.trace import START, PAUSE
 
 logger = logging.getLogger(__name__)
 

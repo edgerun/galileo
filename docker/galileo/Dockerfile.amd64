@@ -5,7 +5,7 @@
 FROM python:3.7-alpine as base
 
 FROM base as builder
-RUN apk add --no-cache openssh-client git make gcc musl-dev libffi-dev libressl-dev
+RUN apk add --no-cache gcc musl-dev
 
 # install galileo dependencies
 COPY requirements.txt ./requirements.txt
