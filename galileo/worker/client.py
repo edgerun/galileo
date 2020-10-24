@@ -9,10 +9,10 @@ import pymq
 import requests
 from galileodb.model import RequestTrace
 from pymq.provider.redis import RedisEventBus
-from symmetry.gateway import ServiceRequest
 
 from galileo import util
 from galileo.apps.app import AppClient, DefaultAppClient
+from galileo.routing import ServiceRequest
 from galileo.worker.api import ClientDescription, ClientConfig, ClientInfo, SetWorkloadCommand, StopWorkloadCommand, \
     WorkloadDoneEvent
 from galileo.worker.context import Context

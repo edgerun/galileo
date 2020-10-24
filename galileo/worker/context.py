@@ -10,12 +10,11 @@ import requests
 from galileodb import ExperimentDatabase
 from galileodb.factory import create_experiment_database_from_env
 from galileodb.trace import TraceLogger, TraceWriter, FileTraceWriter, RedisTopicTraceWriter, DatabaseTraceWriter
-from symmetry.gateway import SymmetryServiceRouter, SymmetryHostRouter, StaticRouter, Router, \
-    ServiceRequest, WeightedRoundRobinBalancer
-from symmetry.routing import ReadOnlyListeningRedisRoutingTable, RedisRoutingTable
 
 from galileo.apps.loader import AppClientLoader, AppClientDirectoryLoader, AppRepositoryFallbackLoader
 from galileo.apps.repository import RepositoryClient
+from galileo.routing import Router, ServiceRequest, ServiceRouter, HostRouter, StaticRouter, RedisRoutingTable, \
+    ReadOnlyListeningRedisRoutingTable, WeightedRoundRobinBalancer
 
 logger = logging.getLogger(__name__)
 
@@ -91,23 +90,23 @@ class Context:
         if router_type == 'SymmetryServiceRouter':
             rtable = RedisRoutingTable(self.create_redis())
             balancer = WeightedRoundRobinBalancer(rtable)
-            return SymmetryServiceRouter(balancer)
+            return ServiceRouter(balancer)
         elif router_type == 'CachingSymmetryServiceRouter':
             rtable = ReadOnlyListeningRedisRoutingTable(self.create_redis())
             rtable.start()
             atexit.register(rtable.stop, timeout=2)
             balancer = WeightedRoundRobinBalancer(rtable)
-            return SymmetryServiceRouter(balancer)
+            return ServiceRouter(balancer)
         elif router_type == 'SymmetryHostRouter':
             rtable = RedisRoutingTable(self.create_redis())
             balancer = WeightedRoundRobinBalancer(rtable)
-            return SymmetryHostRouter(balancer)
+            return HostRouter(balancer)
         elif router_type == 'CachingSymmetryHostRouter':
             rtable = ReadOnlyListeningRedisRoutingTable(self.create_redis())
             rtable.start()
             atexit.register(rtable.stop, timeout=2)
             balancer = WeightedRoundRobinBalancer(rtable)
-            return SymmetryHostRouter(balancer)
+            return HostRouter(balancer)
         elif router_type == 'StaticRouter':
             host = self.env.get('galileo_router_static_host', 'http://localhost')
             return StaticRouter(host)
