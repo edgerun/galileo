@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-image=git.dsg.tuwien.ac.at:5005/mc2/galileo/galileo
+image=edgerun/galileo
 # registry/group/repository/image
 builddir="docker/galileo"
 
