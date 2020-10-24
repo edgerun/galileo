@@ -47,7 +47,6 @@ def create_interarrival_generator(cmd: SetWorkloadCommand):
 
 
 class RequestGenerator:
-
     DONE = object()
 
     def __init__(self, factory) -> None:
