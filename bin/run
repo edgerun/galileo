@@ -36,10 +36,6 @@ function shell() {
     exec python -i -m galileo.cli.shell "$@"
 }
 
-function rtable() {
-    exec python -m symmetry.cli.rtable "$@"
-}
-
 function require_galileo() {
     if `python -c "import galileo; import redis" &> /dev/null`; then
         return 0
