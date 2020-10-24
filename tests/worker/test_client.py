@@ -6,9 +6,9 @@ from queue import Queue
 from typing import List
 
 from pymq.provider.simple import SimpleEventBus
-from symmetry.gateway import ServiceRequest
 from timeout_decorator import timeout_decorator
 
+from galileo.routing import ServiceRequest
 from galileo.worker.api import ClientDescription, ClientConfig, SetWorkloadCommand
 from galileo.worker.client import Client, RequestGenerator
 from galileo.worker.context import Context, DebugRouter
