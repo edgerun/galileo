@@ -11,7 +11,7 @@ from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController
 from galileo.experiment.experimentd import ExperimentDaemon
-from galileo.experiment.service.experiment import SimpleExperimentService
+from galileo.experiment.service import SimpleExperimentService
 
 logger = logging.getLogger(__name__)
 

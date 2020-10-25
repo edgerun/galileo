@@ -3,18 +3,17 @@ import time
 
 from galileodb.model import ExperimentConfiguration
 
-from galileo.controller import RedisClusterController
+from galileo.controller import ClusterController
 from galileo.shell.shell import Galileo
 
 
-def run_experiment(rds, exp: ExperimentConfiguration):
-    g = Galileo(RedisClusterController(rds))
-
+def run_experiment(ctrl: ClusterController, exp: ExperimentConfiguration):
+    g = Galileo(ctrl)
     workload_clients = {}
 
     for workload in exp.workloads:
         workload_clients[workload] = g.spawn(workload.service, num=workload.clients_per_host, client=workload.client,
-                                             client_parameters=workload.client_parameters)
+                                             parameters=workload.client_parameters)
 
     ticks = int(math.ceil(exp.duration / exp.interval))
 

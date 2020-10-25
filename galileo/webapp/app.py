@@ -8,7 +8,7 @@ from galileodb.model import WorkloadConfiguration, ExperimentConfiguration, Expe
 
 from galileo.apps.repository import Repository, RepositoryResource
 from galileo.controller import ExperimentController, CancelError, ClusterController
-from galileo.experiment.service.experiment import ExperimentService
+from galileo.experiment.service import ExperimentService
 from galileo.util import to_seconds
 
 logger = logging.getLogger(__name__)
