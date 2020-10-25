@@ -5,6 +5,8 @@ from tempfile import TemporaryDirectory
 
 from galileo.apps.repository import Repository
 
+this_dir = os.path.join(os.path.dirname(__file__))
+
 
 class TemporaryRepositoryResource:
     """
@@ -82,6 +84,27 @@ class RepositoryTest(unittest.TestCase):
     def test_get_app_without_manifestreturns_none(self):
         info = self.repo.repository.get_app('nomanifest')
         self.assertIsNone(info)
+
+    def test_add_and_get(self):
+        repo = self.repo.repository
+        info = repo.add(os.path.join(this_dir, 'testapp2.zip'))
+
+        self.assertEqual('testapp2', info.name)
+        self.assertEqual({'name': 'testapp2'}, info.manifest)
+
+        actual = repo.get_app('testapp2')
+        self.assertEqual(info, actual)
+
+    def test_add_and_remove(self):
+        repo = self.repo.repository
+        info = repo.add(os.path.join(this_dir, 'testapp2.zip'))
+
+        self.assertTrue(os.path.isfile(info.archive_path))
+
+        deleted = repo.delete_app('testapp2')
+        self.assertTrue(deleted)
+
+        self.assertFalse(os.path.isfile(info.archive_path))
 
 
 if __name__ == '__main__':
