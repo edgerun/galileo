@@ -2,8 +2,8 @@ import unittest
 import unittest.mock
 from collections import Counter, defaultdict
 
-from galileo.routing.table import RoutingTable, RoutingRecord
 from galileo.routing.balancer import WeightedRandomBalancer, WeightedRoundRobinBalancer
+from galileo.routing.table import RoutingTable, RoutingRecord
 
 
 class BalancerTest(unittest.TestCase):

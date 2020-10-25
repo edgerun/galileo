@@ -122,8 +122,16 @@ class Context:
         return AppRepositoryFallbackLoader(loader, repo)
 
     def create_redis(self) -> redis.Redis:
+        host = self.env.get('galileo_redis_host', 'localhost')
+
+        if host.startswith('file://'):
+            import redislite
+            f_path = host.replace('file://', '')
+            print('redispath', f_path)
+            return redislite.Redis(dbfilename=f_path, decode_responses=True)
+
         params = {
-            'host': self.env.get('galileo_redis_host', 'localhost'),
+            'host': host,
             'port': int(self.env.get('galileo_redis_port', '6379')),
             'decode_responses': True,
         }

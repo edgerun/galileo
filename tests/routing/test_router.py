@@ -1,9 +1,8 @@
 import unittest
 
+import galileo.routing.router
 from galileo.routing.balancer import StaticLocalhostBalancer
 from galileo.routing.router import StaticRouter, ServiceRequest, HostRouter, ServiceRouter
-
-import galileo.routing.router
 
 
 class TestRouterUrlCreation(unittest.TestCase):

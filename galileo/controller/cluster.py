@@ -195,7 +195,7 @@ class RedisClusterController(ClusterController):
         client_keys = [self.client_key % client_id for client_id in client_ids]
         docs = rds.mget(client_keys)
 
-        descriptions = [deserialize_client_description(doc) for doc in docs]
+        descriptions = [deserialize_client_description(doc) for doc in docs if doc is not None]
 
         return descriptions
 

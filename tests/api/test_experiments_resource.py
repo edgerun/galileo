@@ -1,9 +1,7 @@
 import pymq
 from galileodb import Experiment
 
-from galileo.controller import ExperimentController, RedisClusterController
-from galileo.util import poll
-from galileo.worker.api import RegisterWorkerEvent
+from galileo.controller import ExperimentController
 from tests.api import ResourceTest
 
 

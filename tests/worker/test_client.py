@@ -5,13 +5,15 @@ import unittest
 from queue import Queue
 from typing import List
 
+import responses
 from pymq.provider.simple import SimpleEventBus
 from timeout_decorator import timeout_decorator
 
-from galileo.routing import ServiceRequest
+from galileo.routing import ServiceRequest, RedisRoutingTable, RoutingRecord
 from galileo.worker.api import ClientDescription, ClientConfig, SetWorkloadCommand
-from galileo.worker.client import Client, RequestGenerator
+from galileo.worker.client import Client, RequestGenerator, single_request
 from galileo.worker.context import Context, DebugRouter
+from tests.testutils import RedisResource
 
 
 class StaticRequestGenerator:
@@ -99,6 +101,35 @@ class ClientTest(unittest.TestCase):
 
         self.assertEqual(-1, trace1.sent)
         self.assertAlmostEqual(trace2.sent, time.time(), delta=2)
+
+
+class TestSingleRequest(unittest.TestCase):
+    redis_resource = RedisResource()
+
+    def setUp(self) -> None:
+        self.redis_resource.setUp()
+        self.rds = self.redis_resource.rds
+        self.rtbl = RedisRoutingTable(self.rds)
+
+    def tearDown(self) -> None:
+        self.redis_resource.tearDown()
+
+    @responses.activate
+    def test_single_request(self):
+        # overwrite `Context` used by client
+        ctx = Context()
+        ctx.create_redis = lambda: self.redis_resource.rds
+
+        # mock requests call
+        responses.add(responses.GET, 'http://localhost:8000', body="ok", status=200)
+
+        # create routing record
+        self.rtbl.set_routing(RoutingRecord('myservice', ['localhost:8000'], [1]))
+
+        # make request
+        response = single_request(ClientConfig('myservice'), ctx, router_type='SymmetryHostRouter')
+
+        self.assertEqual(200, response.status_code)
 
 
 def queue_collect(vq: Queue, gen):
