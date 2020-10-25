@@ -1,6 +1,6 @@
 import unittest
+from unittest.mock import patch
 
-import galileo.routing.router
 from galileo.routing.balancer import StaticLocalhostBalancer
 from galileo.routing.router import StaticRouter, ServiceRequest, HostRouter, ServiceRouter
 
@@ -25,11 +25,13 @@ class TestRouterUrlCreation(unittest.TestCase):
         url = router._get_url(ServiceRequest('foobar', '/some/service'))
         self.assertEqual('http://localhost/foobar/some/service', url)
 
-    def test_request_basic(self):
+    @patch('galileo.routing.router.requests.request')
+    def test_request_basic(self, mock_request):
         """
         Whitebox test to check whether requests is called correctly by the router
         """
 
+        # mock http server
         class MockResponse:
             method = 'get'
             status_code = 200
@@ -42,7 +44,8 @@ class TestRouterUrlCreation(unittest.TestCase):
             response.kwargs = kwargs
             return response
 
-        galileo.routing.router.requests.request = mocked_request  # FIXME use mocks
+        mock_request.side_effect = mocked_request
+
         router = StaticRouter('http://localhost')
         response = router.request(ServiceRequest('foobar', '/some/service'))
 
