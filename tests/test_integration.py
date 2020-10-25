@@ -40,8 +40,6 @@ class TestIntegration(unittest.TestCase):
 
     @timeout_decorator.timeout(30)
     def test_single_client_scenario(self):
-        logging.basicConfig(level=logging.DEBUG)
-
         os.environ['galileo_redis_host'] = 'file://' + self.redis_resource.tmpfile
         os.environ['galileo_trace_logging'] = 'redis'
         os.environ['galileo_router_type'] = 'SymmetryHostRouter'

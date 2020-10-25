@@ -127,7 +127,6 @@ class Context:
         if host.startswith('file://'):
             import redislite
             f_path = host.replace('file://', '')
-            print('redispath', f_path)
             return redislite.Redis(dbfilename=f_path, decode_responses=True)
 
         params = {
