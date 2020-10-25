@@ -53,6 +53,8 @@ class WorkerDaemon:
         return multiprocessing.Queue()
 
     def run(self):
+        self.rds.ping()
+
         self.eventbus.subscribe(self._on_create_client_command)
         self.eventbus.subscribe(self._on_close_client_command)
         self.eventbus.subscribe(self._on_register_command)
