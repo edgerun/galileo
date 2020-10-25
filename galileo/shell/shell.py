@@ -135,6 +135,8 @@ class ClientGroup:
         self.clients: List[ClientDescription] = clients
         self.cfg = cfg
 
+        self.running_request: RequestFuture = None
+
     def rps(self, n: float):
         """
         Set the request generation rate of all clients in the group.
@@ -181,9 +183,18 @@ class ClientGroup:
         :param ia: the request interarrival
         :return a RequestFuture object
         """
+
+        # if a previous request is running, abort the future to unsubscribe from events properly
+        if self.running_request and not self.running_request.stopped():
+            self.running_request.abort()
+            self.running_request.wait(1)
+
         future = RequestFuture(self.ctrl, {c.client_id for c in self.clients})
         t = Thread(target=future.run, args=(n, ia))
         t.start()
+
+        self.running_request = future
+
         return future
 
     def pause(self):
