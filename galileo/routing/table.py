@@ -3,6 +3,8 @@ import logging
 import threading
 from typing import NamedTuple, List
 
+import redis
+
 logger = logging.getLogger(__name__)
 
 
@@ -133,11 +135,20 @@ class ReadOnlyListeningRedisRoutingTable(RoutingTable):
                     if service in self._cache:
                         del self._cache[service]
                     self._services = self.rtable.list_services()
+        except redis.ConnectionError:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception('listener terminated due to connection error')
+            else:
+                logger.error('listener terminated due to connection error')
         finally:
             self._pubsub.close()
 
     def close(self):
-        self._pubsub.unsubscribe()
+        try:
+            self._pubsub.unsubscribe()
+        except redis.ConnectionError:
+            # fail silently if connection is already closed
+            pass
 
     def list_services(self):
         return self._services
