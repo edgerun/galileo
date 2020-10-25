@@ -3,9 +3,9 @@ import threading
 import time
 import unittest
 from queue import Queue
-from typing import List
+from typing import List, NamedTuple
+from unittest.mock import patch
 
-import responses
 from pymq.provider.simple import SimpleEventBus
 from timeout_decorator import timeout_decorator
 
@@ -114,14 +114,19 @@ class TestSingleRequest(unittest.TestCase):
     def tearDown(self) -> None:
         self.redis_resource.tearDown()
 
-    @responses.activate
-    def test_single_request(self):
+    @patch('galileo.routing.router.requests.request')
+    def test_single_request(self, mock_request):
+        # mock http server
+        Response = NamedTuple('Response', status_code=int, text=str, url=str, method=str)
+
+        def fake_response(method, url):
+            return Response(200, 'ok', url, method)
+
+        mock_request.side_effect = fake_response
+
         # overwrite `Context` used by client
         ctx = Context()
         ctx.create_redis = lambda: self.redis_resource.rds
-
-        # mock requests call
-        responses.add(responses.GET, 'http://localhost:8000', body="ok", status=200)
 
         # create routing record
         self.rtbl.set_routing(RoutingRecord('myservice', ['localhost:8000'], [1]))
