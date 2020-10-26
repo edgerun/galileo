@@ -419,18 +419,33 @@ class Show:
         data = [c._asdict() for c in cs]
         print_tabular(data)
 
-    def info(self):
+    def info(self, **exclude):
+        """
+        Print tabular info about the currently running clients.
+        :param exclude: kwargs that exclude fields, e.g., parameters=False to hide the parameter column
+        """
         data = []
         for info in self.g.clients().info():
-            data.append({
+
+            param_str = str(info.description.config.parameters)
+            if len(param_str) > 80:
+                param_str = param_str[:75] + ' ...}'
+
+            record = {
                 'client id': info.description.client_id,
                 'worker': info.description.worker,
                 'service': info.description.config.service,
                 'client': info.description.config.client or 'default',
-                'parameters': info.description.config.parameters,
+                'parameters': param_str,
                 'requests': info.requests,
                 'failed': info.failed,
-            })
+            }
+
+            for k, v in exclude.items():
+                if k in record and v is False:
+                    del record[k]
+
+            data.append(record)
 
         print_tabular(data)
 

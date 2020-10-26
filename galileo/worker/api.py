@@ -26,6 +26,21 @@ class ClientConfig(NamedTuple):
     client: str = None
     parameters: dict = None
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self) -> str:
+        return 'ClientConfig(service={}, client={}, parameters={})'.format(
+            self.service, self.client, self._abbrv_parameters(self.parameters))
+
+    def _abbrv_parameters(self, d):
+        if d is None:
+            return d
+
+        s = str(d)
+        if len(s) > 120:
+            return s[:105] + ' <abbreviated> }'
+
 
 class ClientDescription(NamedTuple):
     client_id: str
