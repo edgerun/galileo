@@ -36,8 +36,11 @@ install: venv
 docker:
 	docker build -f docker/galileo/Dockerfile.amd64 -t galileo/galileo .
 
-deploy: venv clean-dist test dist
+deploy: venv clean-dist pytest dist
 	$(VENV_ACTIVATE); pip install --upgrade twine; twine upload dist/*
+
+upload:
+	twine upload dist/*
 
 docker-arm:
 	docker run --rm --privileged multiarch/qemu-user-static:register --reset; \
