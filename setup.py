@@ -1,15 +1,25 @@
-import os
-
 import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-with open("requirements-dev.txt", "r") as fh:
-    tests_require = [line for line in fh.read().split(os.linesep) if line]
-
-with open("requirements.txt", "r") as fh:
-    install_requires = [line for line in fh.read().split(os.linesep) if line and not line.startswith('git')]
+tests_require = [
+    'redislite>=5.0.124623',
+    'timeout_decorator>=0.4.1',
+    'pytest>=5.0.0',
+    'pytest-cov>=2.7.1',
+    'coverage>=4.5.3',
+    'coveralls'
+]
+install_requires = [
+    'galileo-db>=0.6.1',
+    'telemc>=0.3.0',
+    'requests>=2.20.1',
+    'redis>=3.2.1',
+    'pymq>=0.4.0',
+    'pyyaml==5.1',
+    'click>=7.0',
+]
 
 setuptools.setup(
     name="edgerun-galileo",
