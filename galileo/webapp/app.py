@@ -6,7 +6,8 @@ import redis
 from galileodb import ExperimentDatabase
 from galileodb.model import WorkloadConfiguration, ExperimentConfiguration, Experiment, generate_experiment_id
 
-from galileo.apps.repository import Repository, RepositoryResource
+from galileo.apps.repository import Repository
+from galileo.webapp.repository import RepositoryResource
 from galileo.controller import ExperimentController, CancelError, ClusterController
 from galileo.experiment.service import ExperimentService
 from galileo.util import to_seconds
