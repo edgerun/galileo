@@ -247,6 +247,20 @@ class ClientGroup:
 
         return '\n'.join([c.client_id for c in self.clients])
 
+    def __add__(self, other) -> 'ClientGroup':
+        return ClientGroup.merge(self, other)
+
+    @staticmethod
+    def merge(c1: 'ClientGroup', c2: 'ClientGroup') -> 'ClientGroup':
+        if c1.ctrl is not c2.ctrl:
+            raise ValueError('client groups have different controllers')
+
+        clients = list()
+        clients.extend(c1.clients)
+        clients.extend(c2.clients)
+
+        return ClientGroup(c1.ctrl, clients)
+
 
 class Galileo:
     ctrl: ClusterController = None
