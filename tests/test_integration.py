@@ -69,7 +69,7 @@ class TestIntegration(unittest.TestCase):
                 for d in data:
                     traces.put(d)
 
-        recorder = RedisTraceRecorder(self.rds, QueueTraceWriter(), flush_every=1)
+        recorder = RedisTraceRecorder(self.rds, exp_id='exp_01', writer=QueueTraceWriter(), flush_every=1)
         recorder.start()
 
         try:
