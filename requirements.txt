@@ -1,4 +1,4 @@
-galileo-db>=0.7.0
+galileo-db>=0.8.0
 telemc>=0.3.0
 gunicorn==19.9.0
 falcon==2.0.0
