@@ -4,7 +4,7 @@ import os
 import sys
 import time
 from threading import Thread, Condition
-from typing import List, Dict, NamedTuple, Set
+from typing import List, Dict, NamedTuple, Set, Tuple
 
 import pymq
 from galileodb.cli.recorder import run as run_recorder
@@ -290,6 +290,9 @@ class Galileo:
         """
         return self.ctrl.list_workers()
 
+    def workers_info(self) -> List[Tuple[str, str]]:
+        return self.ctrl.list_workers_info()
+
     def ping(self):
         """
         Send a synchronous ping to all workers and return the response. May contain error tuples.
@@ -317,17 +320,19 @@ class Galileo:
 
         return ClientGroup(self.ctrl, clients)
 
-    def request(self, service, client: str = None, parameters: dict = None, router_type='SymmetryHostRouter'):
+    def request(self, service, client: str = None, parameters: dict = None, router_type='SymmetryHostRouter',
+                worker_labels: dict = None):
         """
         Send a request with the given configuration like a client would. See ``spawn`` for the parameters. An additional
         parameter is the ``router_type`` which specifies which router to use (see `Context.create_router`)
         """
-        cfg = ClientConfig(service, client=client, parameters=parameters)
+        cfg = ClientConfig(service, client=client, parameters=parameters, worker_labels=worker_labels)
         resp = single_request(cfg, router_type=router_type)
 
         return resp
 
-    def spawn(self, service, num: int = 1, client: str = None, parameters: dict = None) -> ClientGroup:
+    def spawn(self, service, num: int = 1, client: str = None, parameters: dict = None,
+              worker_labels: dict = None) -> ClientGroup:
         """
         Spawn clients for the given service and distribute them across workers. If no client app is specified, a default
         http client will be created that creates http requests from the (optional) parameters::
@@ -349,9 +354,10 @@ class Galileo:
         :param num: the number of clients
         :param client: the client app name (optional, if not given will use service name)
         :param parameters: parameters for the app (optional, e.g.: '{ "size": "small" }'
+        :param worker_labels: labels that workers must match to be part of the group
         :return a new ClientGroup for the created clients
         """
-        cfg = ClientConfig(service, client=client, parameters=parameters)
+        cfg = ClientConfig(service, client=client, parameters=parameters, worker_labels=worker_labels)
         clients = self.ctrl.create_clients(cfg, num)
         return ClientGroup(self.ctrl, clients, cfg)
 

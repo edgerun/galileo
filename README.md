@@ -65,6 +65,13 @@ The devices hosting the workers that generate load need to run the experiment co
 
 All runtime parameters are controlled via `galileo_*` environment variables. Check `docker/galileo-worker/worker.env` for some examples.
 
+All environment variables, that start with `galileo_`, can be used as worker label when creating a client group.
+
+I.e., if you start a worker process with the env variable `galileo_zone=A`, you can spawn a client group that contains only 
+workers with this labels as follows:
+
+    g.spawn('service',worker_labels={'galileo_zone': 'A'})
+
 
 Run the Experiment Controller Shell
 -----------------------------------

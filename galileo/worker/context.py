@@ -3,7 +3,7 @@ import logging
 import os
 import time
 from socket import gethostname
-from typing import MutableMapping
+from typing import MutableMapping, List, Dict
 
 import redis
 import requests
@@ -59,6 +59,23 @@ class Context:
 
     def getenv(self, *args, **kwargs):
         return self.env.get(*args, **kwargs)
+
+    def keys(self, prefix: str = 'galileo_') -> List[str]:
+        if prefix is None:
+            return list(self.env.keys())
+        else:
+            return list(filter(lambda x: x.startswith('galileo_'), self.env.keys()))
+
+    def items(self, prefix: str = 'galileo_') -> Dict[str, str]:
+        if prefix is None:
+            return dict(self.env.values())
+        else:
+            values = {}
+            keys = self.keys(prefix)
+            for key in keys:
+                value = self.getenv(key)
+                values[key] = value
+        return values
 
     @property
     def worker_name(self):

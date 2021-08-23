@@ -149,7 +149,8 @@ class WorkerDaemon:
 
     def _register_worker(self):
         logger.info('registering name %s', self.name)
-        self.ctrl.register_worker(self.name)
+        items = self.ctx.items()
+        self.ctrl.register_worker(self.name, items)
         self.eventbus.publish(RegisterWorkerEvent(self.name))
 
     def _unregister_worker(self):
