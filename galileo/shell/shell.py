@@ -11,6 +11,7 @@ from galileodb.cli.recorder import run as run_recorder
 from galileodb.model import Event as ExperimentEvent
 from galileodb.reporter.events import RedisEventReporter as ExperimentEventReporter
 from pymq.provider.redis import RedisConfig
+from telemc import TelemetryController
 
 from galileo.controller.cluster import ClusterController, RedisClusterController
 from galileo.routing import RoutingRecord, RoutingTable, RedisRoutingTable
@@ -45,6 +46,7 @@ Objects:
   show          Prints runtime information about the system to system out
   exp           Galileo experiment
   rtbl          Symmetry routing table
+  telemd        Telemd object to pause, unpause and list registered telemd daemons
 
 Type help(<function>) or help(<object>) to learn how to use the functions.
 ''')
@@ -260,6 +262,38 @@ class ClientGroup:
         clients.extend(c2.clients)
 
         return ClientGroup(c1.ctrl, clients)
+
+
+class Telemd:
+    telemd_ctrl: TelemetryController = None
+
+    def __init__(self, telemd_ctrl) -> None:
+        super().__init__()
+        self.telemd_ctrl = telemd_ctrl
+
+    def start_telemd(self, hosts: List[str] = None):
+        """
+        Send a unpause message to all registered telemd hosts
+        """
+        if hosts is not None:
+            for host in hosts:
+                self.telemd_ctrl.unpause(host)
+        else:
+            self.telemd_ctrl.unpause_all()
+
+    def stop_telemd(self, hosts: List[str] = None):
+        """
+        Send a pause message to all registered telemd hosts
+        """
+        if hosts is not None:
+            for host in hosts:
+                self.telemd_ctrl.pause(host)
+        else:
+            self.telemd_ctrl.pause_all()
+
+    def list_telemd_hosts(self):
+        """List all registered telemd hosts"""
+        return self.telemd_ctrl.get_nodes()
 
 
 class Galileo:
@@ -588,6 +622,7 @@ def init(rds) -> Dict[str, object]:
     show = Show(g)
     rtbl = RoutingTableHelper(RedisRoutingTable(rds))
     exp = Experiment(rds)
+    telemd = Telemd(TelemetryController(rds))
 
     return {
         'g': g,
@@ -595,6 +630,7 @@ def init(rds) -> Dict[str, object]:
         'rtbl': rtbl,
         'exp': exp,
         'eventbus': eventbus,
+        'telemd': telemd
     }
 
 
