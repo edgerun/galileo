@@ -31,14 +31,14 @@ def limiter(limit, gen):
         yield next(gen)
 
 
-def create_interarrival_generator(cmd: SetWorkloadCommand):
+def create_interarrival_generator(cmd: SetWorkloadCommand, ctx: Context):
     if not cmd.distribution or cmd.distribution == 'constant':
         if cmd.parameters:
             gen = constant(*cmd.parameters)
         else:
             gen = constant(0)
     else:
-        gen = create_sampler(cmd.distribution, cmd.parameters)
+        gen = create_sampler(cmd.distribution, cmd.parameters, ctx)
 
     if cmd.num:
         return limiter(cmd.num, gen)
@@ -49,9 +49,10 @@ def create_interarrival_generator(cmd: SetWorkloadCommand):
 class RequestGenerator:
     DONE = object()
 
-    def __init__(self, factory) -> None:
+    def __init__(self, factory, ctx=None) -> None:
         super().__init__()
         self.factory = factory
+        self.ctx = ctx
 
         self._closed = False
 
@@ -66,7 +67,7 @@ class RequestGenerator:
 
     def set_workload(self, cmd: SetWorkloadCommand):
         with self._gen_lock:
-            gen = create_interarrival_generator(cmd)
+            gen = create_interarrival_generator(cmd, self.ctx)
             self._gen = gen
             self._gen_lock.notify_all()
 
@@ -143,7 +144,7 @@ class Client:
         self.eventbus = eventbus or pymq
 
         self.router = ctx.create_router()
-        self.request_generator = RequestGenerator(self._create_request_factory())
+        self.request_generator = RequestGenerator(self._create_request_factory(), self.ctx)
 
         # used for generating request ids
         self.client_uuid = util.uuid()[-10:]
