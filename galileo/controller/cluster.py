@@ -114,7 +114,7 @@ class RedisClusterController(ClusterController):
     def register_worker(self, name: str, labels: Dict[str, str] = None):
         logger.info('registering worker %s', name)
         self.rds.sadd(self.worker_key, name)
-        if labels is not None:
+        if labels is not None and len(labels) > 0:
             self.rds.hmset(name, labels)
 
     def unregister_worker(self, name: str):
