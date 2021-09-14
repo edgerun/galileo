@@ -113,6 +113,8 @@ class TestIntegration(unittest.TestCase):
             t: RequestTrace = traces.get(timeout=5)
             self.assertEqual(200, t.status)
             self.assertEqual('ok', t.response)
+            headers = '"content-type": ["Content-type", "text/html"]'
+            self.assertTrue(headers in t.headers)
             self.assertEqual('myservice', t.service)
             self.assertEqual('localhost:31523', t.server)
 

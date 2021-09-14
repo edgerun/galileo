@@ -1,3 +1,4 @@
+import json
 import logging
 import signal
 import threading
@@ -202,7 +203,8 @@ class Client:
                         done=time.time(),
                         status=response.status_code,
                         server=host,
-                        response=response.text.strip()
+                        response=response.text.strip(),
+                        headers=json.dumps(dict(response.headers))
                     )
                 except Exception as e:
                     if logger.isEnabledFor(logging.DEBUG):
