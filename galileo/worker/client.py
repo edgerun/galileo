@@ -2,6 +2,7 @@ import logging
 import signal
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Queue
 from queue import Full
 
@@ -156,6 +157,7 @@ class Client:
         self.eventbus.subscribe(self._on_set_workload_command)
         self.eventbus.subscribe(self._on_stop_workload_command)
         self.eventbus.expose(self.get_info, 'Client.get_info')
+        self.request_executor = ThreadPoolExecutor(max_workers=50)
 
     def _create_request_id(self, _: ServiceRequest) -> str:
         self.request_counter += 1
@@ -163,6 +165,58 @@ class Client:
 
     def get_info(self) -> ClientInfo:
         return ClientInfo(self.description, self.request_counter, self.failed_counter)
+
+    def perform_request(self, request):
+        client_id = self.client_id
+        traces = self.traces
+        router = self.router
+        if request is RequestGenerator.DONE:
+            self.eventbus.publish(WorkloadDoneEvent(self.client_id))
+            return
+
+        logger.debug('client %s processing request %s', client_id, request)
+        request.client_id = client_id
+        request.request_id = self._create_request_id(request)
+
+        try:
+            request.sent = -1  # will be updated by router
+            response: requests.Response = router.request(request)
+            host = response.url.split("//")[-1].split("/")[0].split('?')[0]
+
+            t = RequestTrace(
+                request_id=request.request_id,
+                client=client_id,
+                service=request.service,
+                created=request.created,
+                sent=request.sent,
+                done=time.time(),
+                status=response.status_code,
+                server=host
+            )
+            # TODO: Re-add request body if so wished. Removed to keep db-size small
+        except Exception as e:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception('error while handling request %s', request)
+            else:
+                logger.error('error while handling request %s: %s', request, e)
+
+            t = RequestTrace(
+                request_id=request.request_id,
+                client=client_id,
+                service=request.service,
+                created=request.created,
+                sent=request.sent,
+                done=time.time(),
+                status=-1
+            )
+
+        if t.status < 0 or t.status >= 300:
+            self.failed_counter += 1
+
+        try:
+            traces.put_nowait(t)
+        except Full:
+            pass
 
     def run(self):
         client_id = self.client_id
@@ -176,56 +230,11 @@ class Client:
                 logger.debug("client %s waiting for next request", client_id)
                 try:
                     request = next(rgen)
+                    self.request_executor.submit(self.perform_request, request)
                 except StopIteration:
                     break
+                # todo here is the place where we would need parallelism to make things concurrent (I think)
 
-                if request is RequestGenerator.DONE:
-                    self.eventbus.publish(WorkloadDoneEvent(self.client_id))
-                    continue
-
-                logger.debug('client %s processing request %s', client_id, request)
-                request.client_id = client_id
-                request.request_id = self._create_request_id(request)
-
-                try:
-                    request.sent = -1  # will be updated by router
-                    response: requests.Response = router.request(request)
-                    host = response.url.split("//")[-1].split("/")[0].split('?')[0]
-
-                    t = RequestTrace(
-                        request_id=request.request_id,
-                        client=client_id,
-                        service=request.service,
-                        created=request.created,
-                        sent=request.sent,
-                        done=time.time(),
-                        status=response.status_code,
-                        server=host,
-                        response=response.text.strip()
-                    )
-                except Exception as e:
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception('error while handling request %s', request)
-                    else:
-                        logger.error('error while handling request %s: %s', request, e)
-
-                    t = RequestTrace(
-                        request_id=request.request_id,
-                        client=client_id,
-                        service=request.service,
-                        created=request.created,
-                        sent=request.sent,
-                        done=time.time(),
-                        status=-1
-                    )
-
-                if t.status < 0 or t.status >= 300:
-                    self.failed_counter += 1
-
-                try:
-                    traces.put_nowait(t)
-                except Full:
-                    pass
         except KeyboardInterrupt:
             return
         except:
