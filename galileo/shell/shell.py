@@ -4,13 +4,14 @@ import os
 import sys
 import time
 from threading import Thread, Condition
-from typing import List, Dict, NamedTuple, Set
+from typing import List, Dict, NamedTuple, Set, Tuple
 
 import pymq
 from galileodb.cli.recorder import run as run_recorder
 from galileodb.model import Event as ExperimentEvent
 from galileodb.reporter.events import RedisEventReporter as ExperimentEventReporter
 from pymq.provider.redis import RedisConfig
+from telemc import TelemetryController
 
 from galileo.controller.cluster import ClusterController, RedisClusterController
 from galileo.routing import RoutingRecord, RoutingTable, RedisRoutingTable
@@ -45,6 +46,7 @@ Objects:
   show          Prints runtime information about the system to system out
   exp           Galileo experiment
   rtbl          Symmetry routing table
+  telemd        Telemd object to pause, unpause and list registered telemd daemons
 
 Type help(<function>) or help(<object>) to learn how to use the functions.
 ''')
@@ -135,6 +137,8 @@ class ClientGroup:
         self.clients: List[ClientDescription] = clients
         self.cfg = cfg
 
+        self.running_request: RequestFuture = None
+
     def rps(self, n: float):
         """
         Set the request generation rate of all clients in the group.
@@ -181,9 +185,18 @@ class ClientGroup:
         :param ia: the request interarrival
         :return a RequestFuture object
         """
+
+        # if a previous request is running, abort the future to unsubscribe from events properly
+        if self.running_request and not self.running_request.stopped():
+            self.running_request.abort()
+            self.running_request.wait(1)
+
         future = RequestFuture(self.ctrl, {c.client_id for c in self.clients})
         t = Thread(target=future.run, args=(n, ia))
         t.start()
+
+        self.running_request = future
+
         return future
 
     def pause(self):
@@ -236,6 +249,52 @@ class ClientGroup:
 
         return '\n'.join([c.client_id for c in self.clients])
 
+    def __add__(self, other) -> 'ClientGroup':
+        return ClientGroup.merge(self, other)
+
+    @staticmethod
+    def merge(c1: 'ClientGroup', c2: 'ClientGroup') -> 'ClientGroup':
+        if c1.ctrl is not c2.ctrl:
+            raise ValueError('client groups have different controllers')
+
+        clients = list()
+        clients.extend(c1.clients)
+        clients.extend(c2.clients)
+
+        return ClientGroup(c1.ctrl, clients)
+
+
+class Telemd:
+    telemd_ctrl: TelemetryController = None
+
+    def __init__(self, telemd_ctrl) -> None:
+        super().__init__()
+        self.telemd_ctrl = telemd_ctrl
+
+    def start_telemd(self, hosts: List[str] = None):
+        """
+        Send a unpause message to all registered telemd hosts
+        """
+        if hosts is not None:
+            for host in hosts:
+                self.telemd_ctrl.unpause(host)
+        else:
+            self.telemd_ctrl.unpause_all()
+
+    def stop_telemd(self, hosts: List[str] = None):
+        """
+        Send a pause message to all registered telemd hosts
+        """
+        if hosts is not None:
+            for host in hosts:
+                self.telemd_ctrl.pause(host)
+        else:
+            self.telemd_ctrl.pause_all()
+
+    def list_telemd_hosts(self):
+        """List all registered telemd hosts"""
+        return self.telemd_ctrl.get_nodes()
+
 
 class Galileo:
     ctrl: ClusterController = None
@@ -265,6 +324,9 @@ class Galileo:
         """
         return self.ctrl.list_workers()
 
+    def workers_info(self) -> List[Tuple[str, str]]:
+        return self.ctrl.list_workers_info()
+
     def ping(self):
         """
         Send a synchronous ping to all workers and return the response. May contain error tuples.
@@ -292,17 +354,19 @@ class Galileo:
 
         return ClientGroup(self.ctrl, clients)
 
-    def request(self, service, client: str = None, parameters: dict = None, router_type='SymmetryHostRouter'):
+    def request(self, service, client: str = None, parameters: dict = None, router_type='SymmetryHostRouter',
+                worker_labels: dict = None):
         """
         Send a request with the given configuration like a client would. See ``spawn`` for the parameters. An additional
         parameter is the ``router_type`` which specifies which router to use (see `Context.create_router`)
         """
-        cfg = ClientConfig(service, client=client, parameters=parameters)
+        cfg = ClientConfig(service, client=client, parameters=parameters, worker_labels=worker_labels)
         resp = single_request(cfg, router_type=router_type)
 
         return resp
 
-    def spawn(self, service, num: int = 1, client: str = None, parameters: dict = None) -> ClientGroup:
+    def spawn(self, service, num: int = 1, client: str = None, parameters: dict = None,
+              worker_labels: dict = None) -> ClientGroup:
         """
         Spawn clients for the given service and distribute them across workers. If no client app is specified, a default
         http client will be created that creates http requests from the (optional) parameters::
@@ -324,9 +388,10 @@ class Galileo:
         :param num: the number of clients
         :param client: the client app name (optional, if not given will use service name)
         :param parameters: parameters for the app (optional, e.g.: '{ "size": "small" }'
+        :param worker_labels: labels that workers must match to be part of the group
         :return a new ClientGroup for the created clients
         """
-        cfg = ClientConfig(service, client=client, parameters=parameters)
+        cfg = ClientConfig(service, client=client, parameters=parameters, worker_labels=worker_labels)
         clients = self.ctrl.create_clients(cfg, num)
         return ClientGroup(self.ctrl, clients, cfg)
 
@@ -408,18 +473,33 @@ class Show:
         data = [c._asdict() for c in cs]
         print_tabular(data)
 
-    def info(self):
+    def info(self, **exclude):
+        """
+        Print tabular info about the currently running clients.
+        :param exclude: kwargs that exclude fields, e.g., parameters=False to hide the parameter column
+        """
         data = []
         for info in self.g.clients().info():
-            data.append({
+
+            param_str = str(info.description.config.parameters)
+            if len(param_str) > 80:
+                param_str = param_str[:75] + ' ...}'
+
+            record = {
                 'client id': info.description.client_id,
                 'worker': info.description.worker,
                 'service': info.description.config.service,
                 'client': info.description.config.client or 'default',
-                'parameters': info.description.config.parameters,
+                'parameters': param_str,
                 'requests': info.requests,
                 'failed': info.failed,
-            })
+            }
+
+            for k, v in exclude.items():
+                if k in record and v is False:
+                    del record[k]
+
+            data.append(record)
 
         print_tabular(data)
 
@@ -542,6 +622,7 @@ def init(rds) -> Dict[str, object]:
     show = Show(g)
     rtbl = RoutingTableHelper(RedisRoutingTable(rds))
     exp = Experiment(rds)
+    telemd = Telemd(TelemetryController(rds))
 
     return {
         'g': g,
@@ -549,6 +630,7 @@ def init(rds) -> Dict[str, object]:
         'rtbl': rtbl,
         'exp': exp,
         'eventbus': eventbus,
+        'telemd': telemd
     }
 
 

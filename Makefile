@@ -1,4 +1,4 @@
-.PHONY: usage clean clean-dist docker
+.PHONY: usage clean clean-dist docker upload
 
 VENV_BIN = python3 -m venv
 VENV_DIR ?= .venv
@@ -36,7 +36,10 @@ install: venv
 docker:
 	docker build -f docker/galileo/Dockerfile.amd64 -t galileo/galileo .
 
-deploy: venv clean-dist test dist
+deploy: venv clean-dist pytest dist
+	$(VENV_ACTIVATE); pip install --upgrade twine; twine upload dist/*
+
+upload: venv
 	$(VENV_ACTIVATE); pip install --upgrade twine; twine upload dist/*
 
 docker-arm:

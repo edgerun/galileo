@@ -8,7 +8,7 @@ from galileodb.sql.adapter import ExperimentSQLDatabase
 from pymq.provider.redis import RedisConfig
 
 from galileo.controller import ExperimentController, RedisClusterController
-from galileo.experiment.service.experiment import SimpleExperimentService
+from galileo.experiment.service import SimpleExperimentService
 from galileo.webapp.app import setup, CORSComponent, AppContext
 from tests.testutils import RedisResource, SqliteResource
 

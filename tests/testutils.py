@@ -56,8 +56,8 @@ class SqliteResource(TestResource):
         os.remove(self.db_file)
 
 
-def assert_poll(condition, msg='Condition failed'):
+def assert_poll(condition, msg='Condition failed', timeout=2):
     try:
-        poll(condition, 2, 0.01)
+        poll(condition, timeout, 0.01)
     except TimeoutError:
         raise AssertionError(msg)

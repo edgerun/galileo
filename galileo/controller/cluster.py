@@ -4,7 +4,7 @@ import logging
 import re
 import sre_constants
 from collections import Counter
-from typing import List, Optional
+from typing import List, Optional, Dict, Tuple
 
 import pymq
 from pymq.typing import deep_from_dict
@@ -30,13 +30,16 @@ class ClusterController:
     def create_clients(self, cfg: ClientConfig, num=1) -> List[ClientDescription]:
         raise NotImplementedError
 
-    def register_worker(self, name: str):
+    def register_worker(self, name: str, labels: Dict[str, str] = None):
         raise NotImplementedError
 
     def unregister_worker(self, name: str):
         raise NotImplementedError
 
     def list_workers(self, pattern: str = ''):
+        raise NotImplementedError
+
+    def list_workers_info(self, pattern: str = ''):
         raise NotImplementedError
 
     def register_client(self, client: ClientDescription):
@@ -108,9 +111,11 @@ class RedisClusterController(ClusterController):
         self.rds.delete(self.worker_key)
         return self.eventbus.publish(RegisterWorkerCommand())
 
-    def register_worker(self, name: str):
+    def register_worker(self, name: str, labels: Dict[str, str] = None):
         logger.info('registering worker %s', name)
         self.rds.sadd(self.worker_key, name)
+        if labels is not None and len(labels) > 0:
+            self.rds.hmset(name, labels)
 
     def unregister_worker(self, name: str):
         logger.info('unregistering worker %s', name)
@@ -128,6 +133,14 @@ class RedisClusterController(ClusterController):
         except sre_constants.error as e:
             raise ValueError('Invalid pattern %s: %s' % (pattern, e))
 
+    def list_workers_info(self, pattern: str = '') -> List[Tuple[str, Dict[str, str]]]:
+        workers = self.list_workers(pattern)
+        items = []
+        for worker in workers:
+            data = self.rds.hgetall(worker)
+            items.append((worker, data))
+        return items
+
     def create_client(self, host: str, cfg: ClientConfig, num=1) -> List[ClientDescription]:
         cmd = CreateClientCommand(host, cfg, num)
         stub = self.eventbus.stub(f'WorkerDaemon.create_client:{host}', timeout=3)
@@ -137,8 +150,9 @@ class RedisClusterController(ClusterController):
         return [deep_from_dict(d, ClientDescription) for d in result]
 
     def create_clients(self, cfg: ClientConfig, num=1) -> List[ClientDescription]:
-        worker_client_count = self.count_worker_clients()
+        worker_client_count = self.count_worker_clients(cfg.worker_labels)
         workers = list(worker_client_count.keys())
+
         nr_clients = list(worker_client_count.values())
 
         schedule = pack(num, workers, nr_clients)
@@ -195,7 +209,7 @@ class RedisClusterController(ClusterController):
         client_keys = [self.client_key % client_id for client_id in client_ids]
         docs = rds.mget(client_keys)
 
-        descriptions = [deserialize_client_description(doc) for doc in docs]
+        descriptions = [deserialize_client_description(doc) for doc in docs if doc is not None]
 
         return descriptions
 
@@ -231,8 +245,18 @@ class RedisClusterController(ClusterController):
     def stop_workload(self, client_id):
         return self.eventbus.publish(StopWorkloadCommand(client_id))
 
-    def count_worker_clients(self):
-        workers = self.list_workers()
+    def count_worker_clients(self, worker_labels: Dict[str, str] = None):
+        workers_labels = self.list_workers_info()
+        workers = list(map(lambda x: x[0], workers_labels))
+        if worker_labels is not None:
+            for worker, labels in workers_labels:
+                for k, v in worker_labels.items():
+                    if labels[k] != v:
+                        workers.remove(worker)
+                        break
+
+        if len(workers) == 0:
+            raise IndexError('No workers found that match labels.')
 
         pipe = self.rds.pipeline()
         for worker in workers:

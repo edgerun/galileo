@@ -13,7 +13,7 @@ from pymq.provider.redis import RedisConfig
 
 from galileo.apps.repository import Repository
 from galileo.controller import ExperimentController, RedisClusterController
-from galileo.experiment.service.experiment import SimpleExperimentService
+from galileo.experiment.service import SimpleExperimentService
 from galileo.webapp.app import AppContext, CORSComponent, setup
 
 

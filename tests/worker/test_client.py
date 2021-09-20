@@ -3,15 +3,17 @@ import threading
 import time
 import unittest
 from queue import Queue
-from typing import List
+from typing import List, NamedTuple
+from unittest.mock import patch
 
 from pymq.provider.simple import SimpleEventBus
-from symmetry.gateway import ServiceRequest
 from timeout_decorator import timeout_decorator
 
+from galileo.routing import ServiceRequest, RedisRoutingTable, RoutingRecord
 from galileo.worker.api import ClientDescription, ClientConfig, SetWorkloadCommand
-from galileo.worker.client import Client, RequestGenerator
+from galileo.worker.client import Client, RequestGenerator, single_request
 from galileo.worker.context import Context, DebugRouter
+from tests.testutils import RedisResource
 
 
 class StaticRequestGenerator:
@@ -99,6 +101,40 @@ class ClientTest(unittest.TestCase):
 
         self.assertEqual(-1, trace1.sent)
         self.assertAlmostEqual(trace2.sent, time.time(), delta=2)
+
+
+class TestSingleRequest(unittest.TestCase):
+    redis_resource = RedisResource()
+
+    def setUp(self) -> None:
+        self.redis_resource.setUp()
+        self.rds = self.redis_resource.rds
+        self.rtbl = RedisRoutingTable(self.rds)
+
+    def tearDown(self) -> None:
+        self.redis_resource.tearDown()
+
+    @patch('galileo.routing.router.requests.request')
+    def test_single_request(self, mock_request):
+        # mock http server
+        Response = NamedTuple('Response', status_code=int, text=str, url=str, method=str)
+
+        def fake_response(method, url):
+            return Response(200, 'ok', url, method)
+
+        mock_request.side_effect = fake_response
+
+        # overwrite `Context` used by client
+        ctx = Context()
+        ctx.create_redis = lambda: self.redis_resource.rds
+
+        # create routing record
+        self.rtbl.set_routing(RoutingRecord('myservice', ['localhost:8000'], [1]))
+
+        # make request
+        response = single_request(ClientConfig('myservice'), ctx, router_type='SymmetryHostRouter')
+
+        self.assertEqual(200, response.status_code)
 
 
 def queue_collect(vq: Queue, gen):

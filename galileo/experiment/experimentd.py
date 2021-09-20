@@ -11,9 +11,9 @@ import redis
 from galileodb.model import Experiment, QueuedExperiment, ExperimentConfiguration, generate_experiment_id
 from telemc import TelemetryRecorder
 
-from galileo.controller import ExperimentController
+from galileo.controller import ExperimentController, RedisClusterController
 from galileo.experiment import runner
-from galileo.experiment.service.experiment import ExperimentService
+from galileo.experiment.service import ExperimentService
 from galileo.worker.api import StartTracingCommand, PauseTracingCommand
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class ExperimentDaemon:
 
         with managed_recorder(self.create_recorder, exp.id):
             logger.info("starting experiment %s", exp.id)
-            runner.run_experiment(self.rds, cfg)
+            runner.run_experiment(RedisClusterController(self.rds), cfg)
 
     def load_experiment(self, queued: QueuedExperiment) -> (Experiment, ExperimentConfiguration):
         exp = self.exp_service.find(queued.experiment.id) if queued.experiment.id else None

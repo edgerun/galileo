@@ -1,3 +1,4 @@
+import json
 import logging
 import signal
 import threading
@@ -32,14 +33,14 @@ def limiter(limit, gen):
         yield next(gen)
 
 
-def create_interarrival_generator(cmd: SetWorkloadCommand):
+def create_interarrival_generator(cmd: SetWorkloadCommand, ctx: Context):
     if not cmd.distribution or cmd.distribution == 'constant':
         if cmd.parameters:
             gen = constant(*cmd.parameters)
         else:
             gen = constant(0)
     else:
-        gen = create_sampler(cmd.distribution, cmd.parameters)
+        gen = create_sampler(cmd.distribution, cmd.parameters, ctx)
 
     if cmd.num:
         return limiter(cmd.num, gen)
@@ -50,9 +51,10 @@ def create_interarrival_generator(cmd: SetWorkloadCommand):
 class RequestGenerator:
     DONE = object()
 
-    def __init__(self, factory) -> None:
+    def __init__(self, factory, ctx=None) -> None:
         super().__init__()
         self.factory = factory
+        self.ctx = ctx
 
         self._closed = False
 
@@ -67,7 +69,7 @@ class RequestGenerator:
 
     def set_workload(self, cmd: SetWorkloadCommand):
         with self._gen_lock:
-            gen = create_interarrival_generator(cmd)
+            gen = create_interarrival_generator(cmd, self.ctx)
             self._gen = gen
             self._gen_lock.notify_all()
 
@@ -144,7 +146,7 @@ class Client:
         self.eventbus = eventbus or pymq
 
         self.router = ctx.create_router()
-        self.request_generator = RequestGenerator(self._create_request_factory())
+        self.request_generator = RequestGenerator(self._create_request_factory(), self.ctx)
 
         # used for generating request ids
         self.client_uuid = util.uuid()[-10:]
@@ -191,9 +193,10 @@ class Client:
                 sent=request.sent,
                 done=time.time(),
                 status=response.status_code,
-                server=host
+                server=host,
+                response=response.text.strip(),
+                headers=json.dumps(dict(response.headers))
             )
-            # TODO: Re-add request body if so wished. Removed to keep db-size small
         except Exception as e:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.exception('error while handling request %s', request)
@@ -220,8 +223,6 @@ class Client:
 
     def run(self):
         client_id = self.client_id
-        traces = self.traces
-        router = self.router
 
         rgen = self.request_generator.run()
 
@@ -233,12 +234,13 @@ class Client:
                     self.request_executor.submit(self.perform_request, request)
                 except StopIteration:
                     break
-                # todo here is the place where we would need parallelism to make things concurrent (I think)
 
         except KeyboardInterrupt:
             return
         except:
             logger.exception("error during read loop in client %s", client_id)
+        finally:
+            self.request_executor.shutdown(wait=True)
 
     def close(self):
         self.request_generator.close()

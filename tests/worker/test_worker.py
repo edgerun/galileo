@@ -6,13 +6,13 @@ from unittest.mock import patch
 
 import pymq
 import redis
+from galileodb.trace import START, PAUSE
 from pymq.provider.redis import RedisConfig
 from timeout_decorator import timeout_decorator
 
 from galileo.worker.api import RegisterWorkerEvent, StartTracingCommand, PauseTracingCommand
 from galileo.worker.context import Context
 from galileo.worker.daemon import WorkerDaemon
-from galileodb.trace import START, PAUSE
 from tests.testutils import RedisResource
 
 

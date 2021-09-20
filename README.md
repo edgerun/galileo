@@ -1,10 +1,12 @@
-Galileo: MC2 Experimentation Environment
-========================================
+Galileo: A framework for distributed load testing experiments
+=============================================================
 
-[![PyPI Version](https://badge.fury.io/py/mc2-galileo.svg)](https://badge.fury.io/py/mc2-galileo)
+[![PyPI Version](https://badge.fury.io/py/edgerun-galileo.svg)](https://badge.fury.io/py/edgerun-galileo)
+[![Build Status](https://travis-ci.org/edgerun/galileo.svg?branch=master)](https://travis-ci.org/edgerun/galileo)
+[![Coverage Status](https://coveralls.io/repos/github/edgerun/galileo/badge.svg?branch=master)](https://coveralls.io/github/edgerun/galileo?branch=master)
 
-This project allows users to define operational experiments for the MC2 (Mini Compute Cluster),
-and interact with the experimentation environment during runtime.
+This project allows users to define, run, and interact with distributed load testing experiments for distributed
+web-service-oriented systems.
 Galileo consists of two major components a user can interact with:
 the experiment controller shell and the galileo dashboard.
 The experiment controller can spawn emulated clients on workers, and control the amount of load they generate.
@@ -63,12 +65,19 @@ The devices hosting the workers that generate load need to run the experiment co
 
 All runtime parameters are controlled via `galileo_*` environment variables. Check `docker/galileo-worker/worker.env` for some examples.
 
+All environment variables, that start with `galileo_`, can be used as worker label when creating a client group.
+
+I.e., if you start a worker process with the env variable `galileo_zone=A`, you can spawn a client group that contains only 
+workers with this labels as follows:
+
+    g.spawn('service',worker_labels={'galileo_zone': 'A'})
+
 
 Run the Experiment Controller Shell
 -----------------------------------
 
 ```
-(.venv) pi@graviton:~/mc2/galileo $ bin/run shell
+(.venv) pi@graviton:~/edgerun/galileo $ bin/run shell
                                    __  __
  .-.,="``"=.          ____ _____ _/ (_) /__  ____
  '=/_       \        / __ `/ __ `/ / / / _ \/ __ \

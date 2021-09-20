@@ -1,6 +1,7 @@
 from typing import List
 
 from galileodb.model import Experiment, Telemetry, RequestTrace
+
 from tests.api import ResourceTest
 
 

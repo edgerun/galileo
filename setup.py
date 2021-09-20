@@ -1,25 +1,35 @@
-import os
-
 import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-with open("requirements-dev.txt", "r") as fh:
-    tests_require = [line for line in fh.read().split(os.linesep) if line]
-
-with open("requirements.txt", "r") as fh:
-    install_requires = [line for line in fh.read().split(os.linesep) if line and not line.startswith('git')]
+tests_require = [
+    'redislite>=5.0.124623',
+    'timeout_decorator>=0.4.1',
+    'pytest>=5.0.0',
+    'pytest-cov>=2.7.1',
+    'coverage>=4.5.3',
+    'coveralls'
+]
+install_requires = [
+    'galileo-db>=0.10.2.dev3',
+    'telemc>=0.3.0',
+    'requests>=2.20.1',
+    'redis>=3.2.1',
+    'pymq>=0.4.0',
+    'pyyaml>=5.4.1',
+    'click>=7.0',
+]
 
 setuptools.setup(
-    name="mc2-galileo",
-    version="0.6.0.dev1",
+    name="edgerun-galileo",
+    version="0.10.1.dev1",
     author="Thomas Rausch",
     author_email="t.rausch@dsg.tuwien.ac.at",
-    description="Galileo: Experimentation and Analytics Framework for MC2",
+    description="Galileo: A framework for distributed load testing experiments",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://git.dsg.tuwien.ac.at/mc2/galileo",
+    url="https://github.com/edgerun/galileo",
     packages=setuptools.find_packages(),
     test_suite="tests",
     tests_require=tests_require,

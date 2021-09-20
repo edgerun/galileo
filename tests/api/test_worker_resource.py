@@ -1,8 +1,5 @@
 from time import sleep
 
-import pymq
-
-from galileo.worker.api import RegisterWorkerEvent
 from tests.api import ResourceTest
 
 
