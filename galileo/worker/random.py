@@ -1,7 +1,9 @@
 import random
-
+import time
+import logging
 from galileo.worker.context import Context
 
+logger = logging.getLogger(__name__)
 
 class InvalidDistributionException(Exception):
     pass
@@ -29,15 +31,18 @@ distributions = {
 
 def pre_recorded_profile(ctx: Context, list_key: str):
     rds = ctx.create_redis()
-    print(rds)
-    while rds.llen(list_key) != 0:
-        ia = float(rds.rpop(list_key))
-        print(ia)
-        yield ia
-    print('done')
+    start = time.time()
+    values = rds.lrange(list_key, 0, rds.llen(list_key))
+    rds.delete(list_key)
+    # Values need to be reversed since we originally treated this like a stack
+    values.reverse()
+    end = time.time()
+    logger.debug(f'loaded {len(values)} ia values in {end - start}s from redis')
+    for value in values:
+        yield float(value)
+    logger.info('done')
 
-
-def create_sampler(distribution: str, args: tuple, ctx: Context):
+def create_sampler(distribution: str, args: tuple, ctx: Context, client_id=None):
     """
     Creates a generator for the given distribution with the given arguments.
 
@@ -48,8 +53,7 @@ def create_sampler(distribution: str, args: tuple, ctx: Context):
     """
     print("create sampler")
     if distribution == 'prerecorded':
-        list_key = args[0]
-        yield from pre_recorded_profile(ctx, list_key)
+        yield from pre_recorded_profile(ctx, client_id)
     else:
         if distribution not in distributions:
             raise InvalidDistributionException('unknown distribution ' + distribution)

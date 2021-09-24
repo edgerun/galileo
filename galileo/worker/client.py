@@ -6,7 +6,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Queue
 from queue import Full
-
 import pymq
 import requests
 from galileodb.model import RequestTrace
@@ -40,7 +39,8 @@ def create_interarrival_generator(cmd: SetWorkloadCommand, ctx: Context):
         else:
             gen = constant(0)
     else:
-        gen = create_sampler(cmd.distribution, cmd.parameters, ctx)
+        logger.debug(f'generating sampler {cmd.distribution} with client_id {cmd.client_id}')
+        gen = create_sampler(cmd.distribution, cmd.parameters, ctx, client_id=cmd.client_id)
 
     if cmd.num:
         return limiter(cmd.num, gen)
@@ -97,12 +97,18 @@ class RequestGenerator:
         logger.debug('running request generator %s', self)
 
         factory = self.factory
+        last_log_time = time.time()
 
         while not self._closed:
             try:
                 a = self._next_interarrival()  # may block until a generator is available
                 if a > 0:
                     time.sleep(a)
+                else:
+                    raise ValueError('ia time was 0, which is invalid and leads to massive crashes!')
+                if time.time() - last_log_time >= 5 and a != 0:
+                    logger.debug(f'Last ia time indicated target request rate of {str(1/a)}rps')
+                    last_log_time = time.time()
             except StopIteration:
                 with self._gen_lock:
                     self._gen = None
@@ -225,13 +231,19 @@ class Client:
         client_id = self.client_id
 
         rgen = self.request_generator.run()
-
+        last_log_update = time.time()
+        dispatches_since_last_log_update = 0
         try:
             while True:
                 logger.debug("client %s waiting for next request", client_id)
                 try:
                     request = next(rgen)
                     self.request_executor.submit(self.perform_request, request)
+                    dispatches_since_last_log_update += 1
+                    if time.time() - last_log_update >= 1:
+                        logger.debug(f'queued {dispatches_since_last_log_update} requests last second')
+                        dispatches_since_last_log_update = 0
+                        last_log_update = time.time()
                 except StopIteration:
                     break
 
@@ -240,7 +252,7 @@ class Client:
         except:
             logger.exception("error during read loop in client %s", client_id)
         finally:
-            self.request_executor.shutdown(wait=True)
+            self.request_executor.shutdown(wait=False)
 
     def close(self):
         self.request_generator.close()
