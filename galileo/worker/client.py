@@ -105,7 +105,7 @@ class RequestGenerator:
                 if a > 0:
                     time.sleep(a)
                 else:
-                    raise ValueError('ia time was 0, which is invalid and leads to massive crashes!')
+                    raise ValueError(f'ia time was {a}, which is invalid and leads to massive crashes!')
                 if time.time() - last_log_time >= 5 and a != 0:
                     logger.debug(f'Last ia time indicated target request rate of {str(1/a)}rps')
                     last_log_time = time.time()
