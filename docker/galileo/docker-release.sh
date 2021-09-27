@@ -13,7 +13,8 @@ cd $PROJECT_ROOT
 if [[ $1 ]]; then
     version="$1"
 else
-    version=$(grep "version" setup.py | cut -d'=' -f 2 | sed 's/[",]//g')-$(git rev-parse --short HEAD)
+    version=$(grep "version" setup.py | cut -d'=' -f 2 | sed 's/[",]//g')
+    #-$(git rev-parse --short HEAD)
 fi
 basetag="${image}:${version}"
 
