@@ -3,9 +3,9 @@ import logging
 import signal
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Queue
 from queue import Full
-
 import pymq
 import requests
 from galileodb.model import RequestTrace
@@ -39,7 +39,8 @@ def create_interarrival_generator(cmd: SetWorkloadCommand, ctx: Context):
         else:
             gen = constant(0)
     else:
-        gen = create_sampler(cmd.distribution, cmd.parameters, ctx)
+        logger.debug(f'generating sampler {cmd.distribution} with client_id {cmd.client_id}')
+        gen = create_sampler(cmd.distribution, cmd.parameters, ctx, client_id=cmd.client_id)
 
     if cmd.num:
         return limiter(cmd.num, gen)
@@ -96,12 +97,18 @@ class RequestGenerator:
         logger.debug('running request generator %s', self)
 
         factory = self.factory
+        last_log_time = time.time()
 
         while not self._closed:
             try:
                 a = self._next_interarrival()  # may block until a generator is available
                 if a > 0:
                     time.sleep(a)
+                else:
+                    raise ValueError('ia time was 0, which is invalid and leads to massive crashes!')
+                if time.time() - last_log_time >= 5 and a != 0:
+                    logger.debug(f'Last ia time indicated target request rate of {str(1/a)}rps')
+                    last_log_time = time.time()
             except StopIteration:
                 with self._gen_lock:
                     self._gen = None
@@ -158,6 +165,7 @@ class Client:
         self.eventbus.subscribe(self._on_set_workload_command)
         self.eventbus.subscribe(self._on_stop_workload_command)
         self.eventbus.expose(self.get_info, 'Client.get_info')
+        self.request_executor = ThreadPoolExecutor(max_workers=50)
 
     def _create_request_id(self, _: ServiceRequest) -> str:
         self.request_counter += 1
@@ -166,73 +174,85 @@ class Client:
     def get_info(self) -> ClientInfo:
         return ClientInfo(self.description, self.request_counter, self.failed_counter)
 
-    def run(self):
+    def perform_request(self, request):
         client_id = self.client_id
         traces = self.traces
         router = self.router
+        if request is RequestGenerator.DONE:
+            self.eventbus.publish(WorkloadDoneEvent(self.client_id))
+            return
+
+        logger.debug('client %s processing request %s', client_id, request)
+        request.client_id = client_id
+        request.request_id = self._create_request_id(request)
+
+        try:
+            request.sent = -1  # will be updated by router
+            response: requests.Response = router.request(request)
+            host = response.url.split("//")[-1].split("/")[0].split('?')[0]
+
+            t = RequestTrace(
+                request_id=request.request_id,
+                client=client_id,
+                service=request.service,
+                created=request.created,
+                sent=request.sent,
+                done=time.time(),
+                status=response.status_code,
+                server=host,
+                response=response.text.strip(),
+                headers=json.dumps(dict(response.headers))
+            )
+        except Exception as e:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.exception('error while handling request %s', request)
+            else:
+                logger.error('error while handling request %s: %s', request, e)
+
+            t = RequestTrace(
+                request_id=request.request_id,
+                client=client_id,
+                service=request.service,
+                created=request.created,
+                sent=request.sent,
+                done=time.time(),
+                status=-1
+            )
+
+        if t.status < 0 or t.status >= 300:
+            self.failed_counter += 1
+
+        try:
+            traces.put_nowait(t)
+        except Full:
+            pass
+
+    def run(self):
+        client_id = self.client_id
 
         rgen = self.request_generator.run()
-
+        last_log_update = time.time()
+        dispatches_since_last_log_update = 0
         try:
             while True:
                 logger.debug("client %s waiting for next request", client_id)
                 try:
                     request = next(rgen)
+                    self.request_executor.submit(self.perform_request, request)
+                    dispatches_since_last_log_update += 1
+                    if time.time() - last_log_update >= 1:
+                        logger.debug(f'queued {dispatches_since_last_log_update} requests last second')
+                        dispatches_since_last_log_update = 0
+                        last_log_update = time.time()
                 except StopIteration:
                     break
 
-                if request is RequestGenerator.DONE:
-                    self.eventbus.publish(WorkloadDoneEvent(self.client_id))
-                    continue
-
-                logger.debug('client %s processing request %s', client_id, request)
-                request.client_id = client_id
-                request.request_id = self._create_request_id(request)
-
-                try:
-                    request.sent = -1  # will be updated by router
-                    response: requests.Response = router.request(request)
-                    host = response.url.split("//")[-1].split("/")[0].split('?')[0]
-
-                    t = RequestTrace(
-                        request_id=request.request_id,
-                        client=client_id,
-                        service=request.service,
-                        created=request.created,
-                        sent=request.sent,
-                        done=time.time(),
-                        status=response.status_code,
-                        server=host,
-                        response=response.text.strip(),
-                        headers=json.dumps(dict(response.headers))
-                    )
-                except Exception as e:
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.exception('error while handling request %s', request)
-                    else:
-                        logger.error('error while handling request %s: %s', request, e)
-
-                    t = RequestTrace(
-                        request_id=request.request_id,
-                        client=client_id,
-                        service=request.service,
-                        created=request.created,
-                        sent=request.sent,
-                        done=time.time(),
-                        status=-1
-                    )
-
-                if t.status < 0 or t.status >= 300:
-                    self.failed_counter += 1
-
-                try:
-                    traces.put_nowait(t)
-                except Full:
-                    pass
         except KeyboardInterrupt:
             return
         except:
             logger.exception("error during read loop in client %s", client_id)
+        finally:
+            self.request_executor.shutdown(wait=False)
 
     def close(self):
         self.request_generator.close()

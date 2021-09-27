@@ -30,6 +30,10 @@ class ServiceRequest:
 
 class Router(abc.ABC):
 
+    def __init__(self):
+        self.last_log_update = time.time()
+        self.requests_since_last_log_update = 0
+
     def request(self, req: ServiceRequest) -> requests.Response:
         url = self._get_url(req)
 
@@ -40,6 +44,11 @@ class Router(abc.ABC):
         req.done = req.sent
 
         logger.debug('%s %s: %s', req.method, url, response.status_code)
+        self.requests_since_last_log_update += 1
+        if time.time() - self.last_log_update >= 1:
+            logger.debug(f'Sent {self.requests_since_last_log_update} requests in the last second')
+            self.requests_since_last_log_update = 0
+            self.last_log_update = time.time()
         return response
 
     def _get_url(self, req: ServiceRequest) -> str:
