@@ -12,7 +12,7 @@ tests_require = [
     'coveralls'
 ]
 install_requires = [
-    'galileo-db>=0.10.2',
+    'galileo-db>=0.10.3',
     'telemc>=0.3.0',
     'requests>=2.20.1',
     'redis>=3.2.1',
@@ -23,7 +23,7 @@ install_requires = [
 
 setuptools.setup(
     name="edgerun-galileo",
-    version="0.10.3.dev1",
+    version="0.10.3.dev2",
     author="Thomas Rausch",
     author_email="t.rausch@dsg.tuwien.ac.at",
     description="Galileo: A framework for distributed load testing experiments",
