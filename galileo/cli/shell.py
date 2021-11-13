@@ -13,6 +13,7 @@ def main():
 
     rds = redis.Redis(
         host=os.getenv('galileo_redis_host', 'localhost'),
+        password=os.getenv('galileo_redis_password', None),
         port=int(os.getenv('galileo_redis_port', 6379)),
         decode_responses=True
     )

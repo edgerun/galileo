@@ -29,6 +29,7 @@ class Context:
     - Redis connection:
         - galileo_redis_host (localhost)
         - galileo_redis_port (6379)
+        - galileo_redis_password (None)
 
     - Trace logging:
         - galileo_trace_logging: file|redis|sql
@@ -149,6 +150,7 @@ class Context:
         params = {
             'host': host,
             'port': int(self.env.get('galileo_redis_port', '6379')),
+            'password': self.env.get('galileo_redis_password', 'None'),
             'decode_responses': True,
         }
         logger.debug("establishing redis connection with params %s", params)
