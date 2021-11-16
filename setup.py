@@ -23,7 +23,7 @@ install_requires = [
 
 setuptools.setup(
     name="edgerun-galileo",
-    version="0.10.4",
+    version="0.10.4.dev1",
     author="Thomas Rausch",
     author_email="t.rausch@dsg.tuwien.ac.at",
     description="Galileo: A framework for distributed load testing experiments",
