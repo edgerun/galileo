@@ -12,7 +12,7 @@ tests_require = [
     'coveralls'
 ]
 install_requires = [
-    'galileo-db>=0.10.4',
+    'galileo-db>=0.10.4.dev1',
     'telemc>=0.3.0',
     'requests>=2.20.1',
     'redis>=3.2.1',
