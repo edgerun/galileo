@@ -399,6 +399,7 @@ class Galileo:
 class ExperimentArguments(NamedTuple):
     name: str = None
     creator: str = None
+    metadata: Dict = None
 
 
 class Experiment:
@@ -424,7 +425,7 @@ class Experiment:
         else:
             print(f'%.3f: %s' % (ts, name))
 
-    def start(self, name=None, creator=None):
+    def start(self, name=None, creator=None, metadata=None):
         if self.experiment is not None:
             raise ValueError('experiment already running')
 
@@ -432,7 +433,7 @@ class Experiment:
             self._atexit = True
             atexit.register(self.stop)
 
-        args = ExperimentArguments(name, creator)
+        args = ExperimentArguments(name, creator, metadata)
 
         # FIXME: i don't really like to re-use the cli module, but it was the easiest to get it working. plus we have
         #  the experiment daemon, experiment runner, experiment recorder, ...
