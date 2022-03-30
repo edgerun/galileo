@@ -631,7 +631,8 @@ def init(rds) -> Dict[str, object]:
         'rtbl': rtbl,
         'exp': exp,
         'eventbus': eventbus,
-        'telemd': telemd
+        'telemd': telemd,
+        'rds': rds
     }
 
 
