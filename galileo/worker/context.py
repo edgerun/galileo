@@ -150,9 +150,12 @@ class Context:
         params = {
             'host': host,
             'port': int(self.env.get('galileo_redis_port', '6379')),
-            'password': self.env.get('galileo_redis_password', 'None'),
             'decode_responses': True,
         }
+
+        if self.env.get('galileo_redis_passwort', None) is not None:
+            params['password'] = self.env['galileo_redis_password']
+
         logger.debug("establishing redis connection with params %s", params)
 
         return redis.Redis(**params)
