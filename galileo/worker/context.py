@@ -153,7 +153,7 @@ class Context:
             'decode_responses': True,
         }
 
-        if self.env.get('galileo_redis_passwort', None) is not None:
+        if self.env.get('galileo_redis_password', None) is not None:
             params['password'] = self.env['galileo_redis_password']
 
         logger.debug("establishing redis connection with params %s", params)
